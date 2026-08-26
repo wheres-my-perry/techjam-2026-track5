@@ -4,12 +4,16 @@ Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines
 
 ## Status: 🟡 Setup
 
-**Now:** Repo live on GitHub, Track 5 brief captured, agent skills ready.
-**Next:** Invite teammates → attend Track 5 webinar (Aug 28 5pm SGT) → pick stack & split roles.
+**Now:** Eval harness built & smoke-tested; datasets scoped (docs/DATA.md).
+**Next:** Decide approach (docs/IDEAS.md) → hardware check → baseline model. Also: invite teammates, webinar Aug 28 5pm SGT.
 
 ---
 
 ## Log
+
+### 2026-08-26 (eval harness)
+- Harness done: 15-condition transform grid, metrics (AUROC / bal.acc @ frozen thr / FPR@95TPR), `src/evaluate.py`, required `src/predict.py` CLI, 8 tests + synthetic smoke test passing. Usage: docs/EVAL.md.
+- Dataset report: docs/DATA.md (WildFake = primary pool). Patch-scoring idea (Thinh): docs/IDEAS.md.
 
 ### 2026-08-26
 - Repo created under org `wheres-my-perry` and seeded (README, docs, skills).

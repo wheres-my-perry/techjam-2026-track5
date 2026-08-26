@@ -1,0 +1,162 @@
+[
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_000.png",
+  "pred": 0.312363
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_001.png",
+  "pred": 0.66421
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_002.png",
+  "pred": 0.311454
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_003.png",
+  "pred": 0.664347
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_004.png",
+  "pred": 0.311752
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_005.png",
+  "pred": 0.665523
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_006.png",
+  "pred": 0.312218
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_007.png",
+  "pred": 0.66434
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_008.png",
+  "pred": 0.312344
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_009.png",
+  "pred": 0.66539
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_010.png",
+  "pred": 0.311055
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_011.png",
+  "pred": 0.665955
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_012.png",
+  "pred": 0.311211
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_013.png",
+  "pred": 0.664385
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_014.png",
+  "pred": 0.311711
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_015.png",
+  "pred": 0.665225
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_016.png",
+  "pred": 0.312526
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_017.png",
+  "pred": 0.666398
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_018.png",
+  "pred": 0.311316
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_019.png",
+  "pred": 0.664772
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_020.png",
+  "pred": 0.311766
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_021.png",
+  "pred": 0.665543
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_022.png",
+  "pred": 0.312084
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_023.png",
+  "pred": 0.665157
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_024.png",
+  "pred": 0.310971
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_025.png",
+  "pred": 0.665447
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_026.png",
+  "pred": 0.311292
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_027.png",
+  "pred": 0.664175
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_028.png",
+  "pred": 0.311943
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_029.png",
+  "pred": 0.664515
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_030.png",
+  "pred": 0.312141
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_031.png",
+  "pred": 0.665276
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_032.png",
+  "pred": 0.31209
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_033.png",
+  "pred": 0.66517
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_034.png",
+  "pred": 0.312283
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_035.png",
+  "pred": 0.663597
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_036.png",
+  "pred": 0.311444
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_037.png",
+  "pred": 0.665098
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_038.png",
+  "pred": 0.312343
+ },
+ {
+  "image_path": "/Users/thinh/Documents/code/hackathon/techjam-2026-track5/outputs/smoke/images/img_039.png",
+  "pred": 0.663787
+ }
+]
