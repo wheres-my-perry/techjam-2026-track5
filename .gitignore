@@ -32,3 +32,6 @@ data/*
 .DS_Store
 .vscode/
 .idea/
+
+# embedding caches (regenerable, large)
+outputs/**/cache/
