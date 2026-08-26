@@ -49,11 +49,27 @@ class MeanBrightnessModel(BaseModel):
 _REGISTRY = {
     "random": RandomModel,
     "brightness": MeanBrightnessModel,
-    # "clip_linear": ...  (v1 real model goes here)
+    # "clip_linear": ...  (candidate v1 real model)
+}
+
+
+# Approaches register here: name -> (module path, class name, default weights).
+# Modules are imported lazily so heavy deps (torch) load only when that approach is used.
+_APPROACHES = {
+    "cnn": ("src.approaches.cnn.model", "CNNModel", "outputs/cnn/baseline.pt"),
+    # "clip_linear": ("src.approaches.clip_linear.model", "CLIPLinearModel", "outputs/clip_linear/baseline.pt"),
 }
 
 
 def load_model(name: str = "random") -> BaseModel:
-    if name in _REGISTRY:
-        return _REGISTRY[name]()
-    raise ValueError(f"Unknown model '{name}'. Known: {sorted(_REGISTRY)}")
+    """Load by name. Approach models accept 'name:path/to/weights.pt' to pick weights."""
+    base, _, path = name.partition(":")
+    if base in _APPROACHES:
+        import importlib
+        mod_path, cls_name, default_weights = _APPROACHES[base]
+        cls = getattr(importlib.import_module(mod_path), cls_name)
+        return cls(path or default_weights)
+    if base in _REGISTRY:
+        return _REGISTRY[base]()
+    known = sorted(_REGISTRY) + [f"{k}[:weights]" for k in _APPROACHES]
+    raise ValueError(f"Unknown model '{name}'. Known: {known}")

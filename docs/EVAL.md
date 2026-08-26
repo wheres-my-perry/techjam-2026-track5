@@ -36,5 +36,16 @@ python -m src.predict --input <image_dir> --output preds.json --model random
 - Transform grid lives in `src/transforms.py::EVAL_GRID`, parameters verbatim from the brief.
   `random_train_transform` mirrors the same distribution for train-time augmentation.
 - Data flows through manifest CSVs (`path,label,generator,source`), paths relative to `$DATA_ROOT`.
-- Models register in `src/model.py::_REGISTRY`. Current entries are toy baselines (`random`,
-  `brightness`) that exist to keep the pipeline runnable before the real model lands.
+- Toy baselines (`random`, `brightness`) live in `src/model.py::_REGISTRY`; real approaches live in
+  `src/approaches/<name>/` and register in `src/model.py::_APPROACHES` — contract and how-to in
+  `src/approaches/README.md`. Select approach weights with `--model <name>:<weights.pt>`.
+
+## Approach workflow (example: cnn)
+
+```bash
+python scripts/get_cifake.py   # data (once)
+python -m src.approaches.cnn.train --train data/manifests/cifake_train.csv \
+    --val data/manifests/cifake_val.csv --epochs 5 --augment --out outputs/cnn/aug.pt
+python -m src.evaluate --manifest data/manifests/cifake_test.csv \
+    --model cnn:outputs/cnn/aug.pt --out outputs/cnn/eval_aug
+```

@@ -17,3 +17,14 @@ Candidate approaches worth building on. Not commitments — see DECISIONS.md for
 **Risk / mitigation.** Hard max over patches amplifies single-patch noise → more false positives on real images. Use top-k mean (e.g. mean of top 5% patch scores) or a learned pooling instead of pure max; calibrate on val.
 
 **Fit into plan.** v1 baseline stays global (simple, fast). Patch head is the v2 upgrade — same backbone, add the 1×1-conv patch head + top-k pooling, train with image labels (+ mask supervision where available).
+
+
+## Variable input sizes: crop, don't resize — 2026-08-26
+
+CNN fixed-input is an artifact of the final FC layer; with Global Average Pooling the net
+accepts any resolution. Resizing is a low-pass filter that erases exactly the high-frequency
+generator artifacts we detect, so: train on random fixed-size crops at native resolution;
+infer on the full image (GAP) or on multiple crops with score aggregation — which is the same
+mechanism as the patch-scoring idea above. Caveat: crops lose global semantic context
+("six fingers"-type tells) → possible v2 hybrid: native-res patch branch + resized global branch.
+`src/cnn.py` implements the GAP design.

@@ -1,0 +1,102 @@
+{
+ "model": "cnn",
+ "summary": {
+  "threshold_frozen_on_clean": 0.6585018038749695,
+  "clean_auroc": 0.9664092500000001,
+  "mean_transformed_auroc": 0.9398473839285714,
+  "worst_transformed_auroc": 0.885211,
+  "worst_condition": "resize_0.25x"
+ },
+ "conditions": {
+  "clean": {
+   "auroc": 0.9664092500000001,
+   "balanced_acc@frozen_thr": 0.8985000000000001,
+   "fpr@tpr95": 0.173,
+   "n": 4000
+  },
+  "jpeg_q90": {
+   "auroc": 0.9662819999999999,
+   "balanced_acc@frozen_thr": 0.894,
+   "fpr@tpr95": 0.172,
+   "n": 4000
+  },
+  "jpeg_q70": {
+   "auroc": 0.9664425,
+   "balanced_acc@frozen_thr": 0.895,
+   "fpr@tpr95": 0.169,
+   "n": 4000
+  },
+  "jpeg_q50": {
+   "auroc": 0.9591219999999999,
+   "balanced_acc@frozen_thr": 0.87925,
+   "fpr@tpr95": 0.1935,
+   "n": 4000
+  },
+  "jpeg_q30": {
+   "auroc": 0.95703225,
+   "balanced_acc@frozen_thr": 0.8812500000000001,
+   "fpr@tpr95": 0.216,
+   "n": 4000
+  },
+  "blur_s0.5": {
+   "auroc": 0.95907175,
+   "balanced_acc@frozen_thr": 0.872,
+   "fpr@tpr95": 0.227,
+   "n": 4000
+  },
+  "blur_s1.0": {
+   "auroc": 0.9283790000000001,
+   "balanced_acc@frozen_thr": 0.80875,
+   "fpr@tpr95": 0.3295,
+   "n": 4000
+  },
+  "blur_s2.0": {
+   "auroc": 0.9044415000000001,
+   "balanced_acc@frozen_thr": 0.7395,
+   "fpr@tpr95": 0.419,
+   "n": 4000
+  },
+  "resize_0.5x": {
+   "auroc": 0.9217655,
+   "balanced_acc@frozen_thr": 0.804,
+   "fpr@tpr95": 0.3525,
+   "n": 4000
+  },
+  "resize_0.25x": {
+   "auroc": 0.885211,
+   "balanced_acc@frozen_thr": 0.6795,
+   "fpr@tpr95": 0.5015,
+   "n": 4000
+  },
+  "noise_s0.02": {
+   "auroc": 0.963479,
+   "balanced_acc@frozen_thr": 0.88625,
+   "fpr@tpr95": 0.183,
+   "n": 4000
+  },
+  "noise_s0.05": {
+   "auroc": 0.95360125,
+   "balanced_acc@frozen_thr": 0.87425,
+   "fpr@tpr95": 0.243,
+   "n": 4000
+  },
+  "noise_s0.10": {
+   "auroc": 0.9186252500000002,
+   "balanced_acc@frozen_thr": 0.8045,
+   "fpr@tpr95": 0.3895,
+   "n": 4000
+  },
+  "jitter_20": {
+   "auroc": 0.9412281250000001,
+   "balanced_acc@frozen_thr": 0.8145,
+   "fpr@tpr95": 0.2935,
+   "n": 4000
+  },
+  "crop_80": {
+   "auroc": 0.9331822500000001,
+   "balanced_acc@frozen_thr": 0.85275,
+   "fpr@tpr95": 0.3095,
+   "n": 4000
+  }
+ }
+}
