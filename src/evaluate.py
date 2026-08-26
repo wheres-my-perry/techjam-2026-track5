@@ -40,11 +40,20 @@ def _score_condition(model, samples, tf, batch=BATCH):
 
 
 def evaluate(model, samples, topk=20):
+    import sys
+    import time
+
     y = np.asarray([s.label for s in samples])
     results, all_scores = {}, {}
 
-    for name, tf in EVAL_GRID:
+    t0 = time.time()
+    for i, (name, tf) in enumerate(EVAL_GRID, 1):
+        t = time.time()
         all_scores[name] = _score_condition(model, samples, tf)
+        done, total = time.time() - t, time.time() - t0
+        eta = total / i * (len(EVAL_GRID) - i)
+        print(f"[{i:2d}/{len(EVAL_GRID)}] {name:14s} {done:5.1f}s  (eta ~{eta:4.0f}s)",
+              file=sys.stderr, flush=True)
 
     thr = pick_threshold(y, all_scores["clean"])
     for name, _ in EVAL_GRID:
@@ -61,16 +70,38 @@ def evaluate(model, samples, topk=20):
         ),
     }
 
+    # per-generator breakdown: each generator's fakes vs ALL reals, per condition.
+    # This is where a held-out (unseen-in-training) generator shows its number.
+    generators = sorted({s.generator for s in samples if s.label == 1 and s.generator})
+    per_generator = {}
+    if len(generators) > 1 or (generators and generators[0]):
+        real_idx = np.where(y == 0)[0]
+        from .metrics import auroc as _auroc
+        for g in generators:
+            g_idx = np.asarray([i for i, s in enumerate(samples)
+                                if s.label == 1 and s.generator == g])
+            sel = np.concatenate([real_idx, g_idx])
+            y_sel = y[sel]
+            aurocs_g = {name: _auroc(y_sel, all_scores[name][sel]) for name, _ in EVAL_GRID}
+            tf_vals = [v for k, v in aurocs_g.items() if k != "clean"]
+            per_generator[g] = {
+                "n_fake": int(len(g_idx)),
+                "clean_auroc": aurocs_g["clean"],
+                "mean_transformed_auroc": float(np.nanmean(tf_vals)),
+                "worst_transformed_auroc": float(np.nanmin(tf_vals)),
+                "conditions": aurocs_g,
+            }
+
     # error analysis on clean: most confident mistakes at the frozen threshold
     s = all_scores["clean"]
     fp = [(samples[i].path, float(s[i])) for i in np.argsort(-s) if y[i] == 0 and s[i] >= thr][:topk]
     fn = [(samples[i].path, float(s[i])) for i in np.argsort(s) if y[i] == 1 and s[i] < thr][:topk]
     errors = {"false_positives": fp, "false_negatives": fn}
 
-    return results, summary, errors
+    return results, summary, errors, per_generator
 
 
-def to_markdown(results, summary, model_name):
+def to_markdown(results, summary, model_name, per_generator=None):
     lines = [
         f"# Robustness evaluation — model `{model_name}`",
         "",
@@ -91,6 +122,19 @@ def to_markdown(results, summary, model_name):
         f"**Worst:** {summary['worst_transformed_auroc']:.4f} ({summary['worst_condition']})",
         "",
     ]
+    if per_generator:
+        lines += [
+            "## Per-generator (each generator's fakes vs all reals)",
+            "",
+            "| generator | n fake | clean AUROC | mean transformed | worst |",
+            "|---|---|---|---|---|",
+        ]
+        for g, r in sorted(per_generator.items()):
+            lines.append(
+                f"| {g} | {r['n_fake']} | {r['clean_auroc']:.4f} "
+                f"| {r['mean_transformed_auroc']:.4f} | {r['worst_transformed_auroc']:.4f} |"
+            )
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -108,17 +152,18 @@ def main(argv=None):
         samples = samples[: args.limit]
     model = load_model(args.model)
 
-    results, summary, errors = evaluate(model, samples, topk=args.topk)
+    results, summary, errors, per_generator = evaluate(model, samples, topk=args.topk)
 
     os.makedirs(args.out, exist_ok=True)
     with open(os.path.join(args.out, "results.json"), "w") as f:
-        json.dump({"model": model.name, "summary": summary, "conditions": results}, f, indent=1)
+        json.dump({"model": model.name, "summary": summary, "conditions": results,
+                   "per_generator": per_generator}, f, indent=1)
     with open(os.path.join(args.out, "robustness_table.md"), "w") as f:
-        f.write(to_markdown(results, summary, model.name))
+        f.write(to_markdown(results, summary, model.name, per_generator))
     with open(os.path.join(args.out, "errors_clean.json"), "w") as f:
         json.dump(errors, f, indent=1)
 
-    print(to_markdown(results, summary, model.name))
+    print(to_markdown(results, summary, model.name, per_generator))
     print(f"Saved to {args.out}/")
 
 

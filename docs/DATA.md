@@ -2,6 +2,15 @@
 
 Factual findings on the three suggested datasets. Sources: dataset pages + original papers (links at bottom). Items marked ⚠ are unverified or need a team decision.
 
+## Counts at a glance
+
+| Dataset | Total | Real | Fake | Notes |
+|---|---|---|---|---|
+| CIFAKE | 120,000 | 60,000 | 60,000 | our local subset: 26K (train 10K+10K, val 1K+1K, test 2K+2K) |
+| SID_Set | 300,000 | 100,000 | 100,000 synthetic + 100,000 tampered | HF hosts 240K (210K train / 30K val); 60K test withheld |
+| WildFake | 3,694,313 | 1,013,446 | 2,680,867 | per-generator counts unpublished |
+| Official val subset | 13,841 | 4,998 (COCO val2017) | 8,843 (DALL·E Advanced) | never train/tune on this |
+
 ## Quick comparison
 
 | | SID_Set | CIFAKE | WildFake |
@@ -14,6 +23,21 @@ Factual findings on the three suggested datasets. Sources: dataset pages + origi
 | Resolution | ~1024×1024 | 32×32 | mixed; paper trains at 224×224 |
 | Download | HF `saberzl/SID_Set` (~140 GB parquet) or Google Drive zips via [SIDA repo](https://github.com/hzlsaber/SIDA) | Kaggle (~small, <1 GB) | ModelScope `hy2628982280/WildFake` (very large; pull per-generator subfolders) |
 | License | CC-BY-4.0 | Not stated in paper ⚠ (Kaggle page lists one — check) | CC-BY-4.0 (paper) |
+
+## WildFake actual layout (verified 2026-08-26)
+
+Per-generator ZIPs under `Images/` + authoritative label CSVs in `label_csv_files/`
+(Generator,Architecture,Weight,Category,IsAdvanced,IsFake,Image_path,Num).
+Official benchmark confirmed: `dalle3.csv` = 8,843 fakes; `real_coco.csv` has exactly 4,998
+`val2017` rows. Key sizes: DALLE.zip 23.8GB (needed for benchmark fakes), coco.zip 2.2GB,
+DDIM 5.6GB, DDPM 7.6GB, Imagen 15.9GB, ADM 17.3GB, GAN_based 44GB (monolithic),
+SD/Midjourney = hundreds of GB (skip). Small reals: imagenet 1.3, church 1.1, ffhq 0.78,
+celebahq 0.33, afhq 0.43GB.
+
+**Constraint: Thinh's Mac has ~21GB free** → DALLE.zip cannot land there. Plan: teammate
+machine or Colab (~80GB disk) downloads DALLE.zip, extracts only the dalle3 subtree
+(~8,843 imgs), transfers those. Mac pool: coco(val2017 only) + DDIM + small reals with
+--extract-filter/--delete-zips.
 
 ## Answers to the key questions
 

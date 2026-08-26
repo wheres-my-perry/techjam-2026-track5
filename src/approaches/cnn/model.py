@@ -79,14 +79,22 @@ class CNNModel(BaseModel):
         self.net.load_state_dict(ckpt["state_dict"])
         self.net.to(self.device).eval()
 
+    # memory guard: cap total pixels per forward pass (8M px ≈ eight 1024x1024
+    # images) so full-resolution eval doesn't blow up GPU/MPS memory.
+    PIXEL_BUDGET = 8_000_000
+
     @torch.no_grad()
     def predict(self, images):
         scores = np.zeros(len(images), dtype=np.float32)
         by_size: dict[tuple, list[int]] = {}
         for i, im in enumerate(images):
             by_size.setdefault(im.size, []).append(i)
-        for _, idxs in by_size.items():
-            x = to_tensor([images[i] for i in idxs]).to(self.device)
-            logits = self.net(x)
-            scores[idxs] = torch.sigmoid(logits).float().cpu().numpy()
+        for (w, h), idxs in by_size.items():
+            per_img = max(1, w * h)
+            chunk = max(1, self.PIXEL_BUDGET // per_img)
+            for j in range(0, len(idxs), chunk):
+                part = idxs[j:j + chunk]
+                x = to_tensor([images[i] for i in part]).to(self.device)
+                logits = self.net(x)
+                scores[part] = torch.sigmoid(logits).float().cpu().numpy()
         return scores

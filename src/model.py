@@ -57,7 +57,7 @@ _REGISTRY = {
 # Modules are imported lazily so heavy deps (torch) load only when that approach is used.
 _APPROACHES = {
     "cnn": ("src.approaches.cnn.model", "CNNModel", "outputs/cnn/baseline.pt"),
-    # "clip_linear": ("src.approaches.clip_linear.model", "CLIPLinearModel", "outputs/clip_linear/baseline.pt"),
+    "clip_linear": ("src.approaches.clip_linear.model", "CLIPLinearModel", "outputs/clip_linear/baseline.pt"),
 }
 
 

@@ -29,21 +29,34 @@ from src.transforms import random_train_transform
 
 
 class ManifestDataset(Dataset):
-    def __init__(self, manifest_csv, augment=False, seed=0):
+    def __init__(self, manifest_csv, augment=False, seed=0, crop=0):
         self.samples = load_manifest(manifest_csv)
         self.augment = augment
         self.seed = seed
+        self.crop = crop  # random fixed-size crop at native resolution (0 = off)
 
     def __len__(self):
         return len(self.samples)
+
+    def _random_crop(self, img, rng):
+        c = self.crop
+        w, h = img.size
+        if w < c or h < c:  # tiny image: minimal upscale so a crop exists
+            s = c / min(w, h)
+            img = img.resize((max(c, int(w * s + 0.5)), max(c, int(h * s + 0.5))))
+            w, h = img.size
+        x = rng.randint(0, w - c)
+        y = rng.randint(0, h - c)
+        return img.crop((x, y, x + c, y + c))
 
     def __getitem__(self, i):
         s = self.samples[i]
         img = load_image(s.path)
         if self.augment:
-            # per-item rng: deterministic per (seed, item, epoch-ish time) is overkill;
             # fresh rng per call keeps augmentation i.i.d. across epochs.
             img = random_train_transform(img, random.Random())
+        if self.crop:
+            img = self._random_crop(img, random.Random())
         x = to_tensor([img])[0]
         return x, float(s.label)
 
@@ -86,6 +99,9 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--width", type=int, default=32)
     ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--crop", type=int, default=0,
+                    help="random-crop size at native resolution (224 recommended "
+                         "for real-resolution data; 0 = whole image)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", default="outputs/cnn_baseline.pt")
     ap.add_argument("--seed", type=int, default=0)
@@ -98,8 +114,9 @@ def main():
     device = pick_device()
     print(f"device={device} augment={args.augment}")
 
-    train_ds = ManifestDataset(args.train, augment=args.augment, seed=args.seed)
-    val_ds = ManifestDataset(args.val, augment=False)
+    train_ds = ManifestDataset(args.train, augment=args.augment, seed=args.seed,
+                               crop=args.crop)
+    val_ds = ManifestDataset(args.val, augment=False, crop=args.crop)
     train_dl = DataLoader(train_ds, batch_size=args.batch, shuffle=True,
                           num_workers=args.workers, collate_fn=collate)
     val_dl = DataLoader(val_ds, batch_size=args.batch, shuffle=False,

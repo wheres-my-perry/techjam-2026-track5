@@ -28,3 +28,29 @@ infer on the full image (GAP) or on multiple crops with score aggregation — wh
 mechanism as the patch-scoring idea above. Caveat: crops lose global semantic context
 ("six fingers"-type tells) → possible v2 hybrid: native-res patch branch + resized global branch.
 `src/cnn.py` implements the GAP design.
+
+
+## Backbone / approach candidates beyond clip_linear — 2026-08-26
+
+Ordered by alignment with the artifact-focus hypothesis (Thinh):
+
+1. **resnet_ft / convnext_ft** — ImageNet-pretrained ResNet-50 or ConvNeXt-Tiny (~25-30M params),
+   FULLY fine-tuned with contest-transform aug. Classic recipe of Wang et al. "CNN-generated images
+   are surprisingly easy to spot" (CVPR'20). Pretrained edge/texture filters ≈ artifact-friendly,
+   without CLIP's semantic bias. Strongest test of the artifact-focus claim. → next approach folder.
+2. **dinov2_linear** — frozen DINOv2 + linear probe. Self-supervised, no text alignment → features
+   keep more texture/local structure than CLIP. "CLIP but less semantic."
+3. **siglip / eva-clip** — better-trained CLIP cousins; same critique as CLIP. Skip unless clip_linear
+   earns its place on WildFake.
+4. **Artifact front-end** — feed high-pass residual / SRM filters / DCT stats instead of RGB, so the
+   model can ONLY see artifacts. Max artifact alignment; pairs with patch-scoring. Risk: JPEG/blur
+   attack exactly this channel → lives or dies by augmentation.
+
+## Why not just keep improving the scratch CNN? — 2026-08-26
+
+Legitimate — cnn stays a live approach. But its CIFAKE 0.94 hides the known cliff: from-scratch CNN
+fingerprint knowledge is generator-specific, and the literature shows such models can drop toward
+chance on UNSEEN generators (contest judges use DALL·E-Advanced, which we never train on).
+CIFAKE cannot measure this (single generator). Improvement path if pursued: error analysis on its
+failures, width/resolution scaling on real data, artifact front-end input, patch head. Verdict by
+harness on WildFake with a held-out generator — not by argument.
