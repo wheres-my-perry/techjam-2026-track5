@@ -41,7 +41,7 @@ tests/       # Tests
 
 | Name | Role | GitHub |
 |---|---|---|
-| Henry | — | natsupercell |
+| Thinh | — | natsupercell |
 | TBD | — | — |
 | TBD | — | — |
 | TBD | — | — |
