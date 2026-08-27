@@ -11,6 +11,12 @@ Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines
 
 ## Log
 
+### 2026-08-27 (evening)
+- Server: job 6 (cnn done: val 0.811 → clip_linear phase) + job 7 (resnet_ft) running in PARALLEL on both 5090s. Bug fixed: never set CUDA_VISIBLE_DEVICES under Slurm (cgroup renumbering → silent CPU fallback).
+- Ideas session: visual cue catalog + anti-overfit approach taxonomy in docs/IDEAS.md; per-approach note files convention started (docs/approaches/02-real-manifold.md, 06-dire.md — DIRE shelved as family-limited per Thinh's "one school" argument).
+- Team-lead docs delivered: ARCHITECTURE.md + CHANGELOG.md + README docs map.
+- Morning: check ALL DONE / RESNET DONE in slurm logs → rsync outputs → three-way verdict.
+
 ### 2026-08-27 (server pipeline running)
 - Full WildFake pipeline running on Thinh's GPU server (Slurm, gpu partition, RTX 5090 shared): train pool 80K imgs / 5 generator families (biggan, ddim, stargan, stylegan, vqvae) + 20K reals; ddpm (20K) held out; official benchmark manifest complete (8843+4998).
 - Jobs: cnn w64 aug crop224 15ep + clip_linear ViT-L-14 aug → 4 evals (wildfake_test + official) each. First cnn epochs on real data: val_auroc 0.63→0.70 (climbing; far below its CIFAKE numbers — real-data difficulty confirmed).

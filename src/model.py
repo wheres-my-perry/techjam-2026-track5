@@ -59,6 +59,7 @@ _APPROACHES = {
     "cnn": ("src.approaches.cnn.model", "CNNModel", "outputs/cnn/baseline.pt"),
     "clip_linear": ("src.approaches.clip_linear.model", "CLIPLinearModel", "outputs/clip_linear/baseline.pt"),
     "resnet_ft": ("src.approaches.resnet_ft.model", "ResNetFTModel", "outputs/resnet_ft/baseline.pt"),
+    "real_manifold": ("src.approaches.real_manifold.model", "RealManifoldModel", "outputs/real_manifold/baseline.npz"),
 }
 
 

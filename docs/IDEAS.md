@@ -54,3 +54,78 @@ chance on UNSEEN generators (contest judges use DALL·E-Advanced, which we never
 CIFAKE cannot measure this (single generator). Improvement path if pursued: error analysis on its
 failures, width/resolution scaling on real data, artifact front-end input, patch head. Verdict by
 harness on WildFake with a held-out generator — not by argument.
+
+
+## Long-range inconsistency detection + score stacking — Thinh, 2026-08-27
+
+**Observation.** Local anomalies (tiny AI-glitch details) are CNN territory. But some fakes are
+exposed by RELATIONS between distant parts (two far-apart regions that are mutually illogical:
+lighting/shadow disagreement, mismatched pairs, impossible geometry). Convolution's local windows
+are structurally weak at this.
+
+**Mechanisms, ranked by fit:**
+1. Self-attention = the direct answer (every patch attends to every patch). CLIP's encoder is a ViT,
+   so clip_linear partially covers this axis already; DINOv2 probe = same recipe, less caption-biased.
+2. **Relation head over patch features (build-weekend candidate):** small 1-2 layer transformer over
+   the backbone's patch-embedding grid, trained with image labels. Combined with the earlier
+   patch-scoring head → one backbone, two observation types (local anomaly + cross-patch consistency).
+   ~150 LOC given our infra; strong innovation-score story.
+3. Explicit physics checks (lighting/shadows/reflections): too handcrafted for 72h. VLM-as-judge:
+   too slow for eval, but great demo explainability garnish.
+
+**Stacking (nothing wasted):** every approach outputs P(AI) per image → stacked ensemble = logistic
+regression over the N model scores, trained on val, registered as approach `ensemble` in the registry
+(drops into the harness unchanged). Pays when members fail differently — check per-generator failure
+overlap in tomorrow's results. Params budget = sum of members; still far under 2B.
+
+
+## Visual-inspection cue catalog — Thinh + Claude, label-blind review of WildFake samples, 2026-08-27
+
+Blind-guess result: reals identifiable via imperfection (sensor grain, motion blur, compositional
+randomness); 3/12 fakes fooled Claude at 200px (stylegan cat, both stargan dogs). Cues found, each
+with mechanism:
+
+1. **Detail-sharpness inconsistency** (stylegan): hyper-sharp focal features in airbrushed surroundings,
+   violating depth-of-field physics; edge halos. → per-patch sharpness map + focus-field plausibility check.
+2. **Regular-structure failure** (ddim bedrooms): irregular window mullions, merging bed rails, wobbling
+   wall lines. Long-range regularity constraint → line/periodicity stats or transformer.
+3. **Broken text** (ddpm, vqvae): looks-like-text-but-gibberish. → cheap OCR-confidence feature
+   (afternoon build, feeds ensemble).
+4. **Periphery/contact melt** (biggan): salient subject fine, supporting objects (hands, contact points)
+   melted. → patch head with attention to off-subject/contact regions.
+5. **Nameable-object failure** (ddpm): regions no label fits. → per-region classification entropy.
+6. **Material-texture mismatch** (furry pillows). → semantic-relational; CLIP features carry implicitly.
+7. **Noise-field inconsistency**: reals have uniform grain; fakes mix sterile and textured regions.
+   → per-patch noise estimation + uniformity test (classic forensics; JPEG-fragile, ensemble-only).
+8. **Compositional intentionality prior**: reals are often pointless; generations look composed.
+   Weak global semantic cue; CLIP-space likely encodes it.
+
+**Physics-check architecture (recap):** two-stage — per-region physical descriptors (lighting dir,
+shadow angle, noise, sharpness) → cross-region consistency module. I.e. the relation head over
+engineered physical features. Unifying architecture for ALL cues above: per-patch descriptors +
+attention consistency + global semantics, fused; standalone cheap cues join via the score-stacking
+ensemble.
+
+
+## General approach families (anti-overfit taxonomy) — 2026-08-27
+
+Principle (Thinh): specific glitches are generator-specific and expire; approaches must target
+cross-generator INVARIANTS. Three invariants: (a) camera-pipeline vs decoder statistics,
+(b) weak cross-region coherence in fakes, (c) off-manifold semantics.
+
+1. **Patch + relation architecture** (b): learn which cross-patch relations betray fakes — never
+   hand-code a specific inconsistency. Flagship candidate.
+2. **Real-manifold anomaly detection** (a) — NEW family: model reals only (noise-residual stats,
+   camera-pipeline regularities), score deviation. Generator-agnostic by construction; new
+   generators can't fake having passed through a camera. ~1 day build (one-class over residual feats).
+3. **Spectral analysis** (a): upsampling signatures persist across generator families; band-limited
+   + augmented to survive blur/JPEG.
+4. **Pretrained-feature probes** (b+c): CLIP/DINO — in flight.
+5. **Test-time prediction-consistency** (meta): score stability across crops/perturbations as a
+   feature; free, reuses existing models.
+6. **Diffusion-reconstruction error / DIRE** (a): pretrained diffusion reconstructs fakes better than
+   reals. (Legit cousin of Thinh's day-1 diffusion instinct.) Heavy inference, GAN-weak; bench only.
+7. **Diversity-designed stacking**: ensemble members chosen one-per-invariant-family, not by solo score.
+
+**Selection discipline:** judge every approach ONLY by held-out-generator AUROC (ddpm row + official
+DALL·E benchmark), never in-domain. Stretch: leave-one-generator-out rotation.

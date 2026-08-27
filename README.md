@@ -54,4 +54,4 @@ cd techjam-2026-track5
 # setup instructions TBD once stack is chosen
 ```
 
-See [docs/PROGRESS.md](docs/PROGRESS.md) for current status.
+Docs map: [ARCHITECTURE.md](ARCHITECTURE.md) (how it works — keep updated with code changes) · [CHANGELOG.md](CHANGELOG.md) (what shipped, dated) · [docs/PROGRESS.md](docs/PROGRESS.md) (status/next) · [docs/DECISIONS.md](docs/DECISIONS.md) · [docs/IDEAS.md](docs/IDEAS.md) · [docs/TRACK5_BRIEF.md](docs/TRACK5_BRIEF.md)
