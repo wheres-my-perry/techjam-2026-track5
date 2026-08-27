@@ -54,7 +54,7 @@ class CLIPLinearModel(BaseModel):
 
     def __init__(self, weights_path: str = "outputs/clip_linear/baseline.pt"):
         self.device = pick_device()
-        ckpt = torch.load(weights_path, map_location="cpu")
+        ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
         self.backbone_name = ckpt["backbone"]
         self.pretrained = ckpt["pretrained"]
         self.model, self.preprocess = load_backbone(

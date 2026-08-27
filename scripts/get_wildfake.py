@@ -222,6 +222,7 @@ def build_official_val_manifest():
             continue
         rows.append({"path": local, "label": 0, "generator": "",
                      "source": "official_val"})
+    random.Random(0).shuffle(rows)  # never write class-sorted manifests
     n_fake = sum(r["label"] for r in rows)
     n_real = len(rows) - n_fake
     print(f"official val: {n_fake}/8843 fakes and {n_real}/4998 reals on disk "

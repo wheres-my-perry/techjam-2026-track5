@@ -100,7 +100,7 @@ def main():
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     state_path = args.out + ".state"
     if os.path.exists(state_path):
-        st = torch.load(state_path, map_location=device)
+        st = torch.load(state_path, map_location=device, weights_only=False)
         net.load_state_dict(st["net"])
         opt.load_state_dict(st["opt"])
         start_epoch, best = st["epoch"] + 1, st["best"]

@@ -74,7 +74,7 @@ class CNNModel(BaseModel):
 
     def __init__(self, weights_path: str = "outputs/cnn_baseline.pt"):
         self.device = pick_device()
-        ckpt = torch.load(weights_path, map_location=self.device)
+        ckpt = torch.load(weights_path, map_location=self.device, weights_only=False)
         self.net = SimpleCNN(width=ckpt.get("width", 32))
         self.net.load_state_dict(ckpt["state_dict"])
         self.net.to(self.device).eval()

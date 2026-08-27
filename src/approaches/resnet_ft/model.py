@@ -48,7 +48,7 @@ class ResNetFTModel(BaseModel):
 
     def __init__(self, weights_path: str = "outputs/resnet_ft/baseline.pt"):
         self.device = pick_device()
-        ckpt = torch.load(weights_path, map_location="cpu")
+        ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
         self.net = build_net(pretrained=False)
         self.net.load_state_dict(ckpt["state_dict"])
         self.net.to(self.device).eval()

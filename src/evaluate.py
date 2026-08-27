@@ -143,12 +143,18 @@ def main(argv=None):
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--model", default="random")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--limit", type=int, default=0, help="evaluate only first N samples")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="evaluate only a seeded random subsample of N")
+    ap.add_argument("--limit-seed", type=int, default=0)
     ap.add_argument("--topk", type=int, default=20)
     args = ap.parse_args(argv)
 
     samples = load_manifest(args.manifest)
     if args.limit:
+        # seeded random subsample — never head-truncate (a class-sorted manifest
+        # would otherwise yield a single-class subset -> NaN AUROC)
+        import random
+        random.Random(args.limit_seed).shuffle(samples)
         samples = samples[: args.limit]
     model = load_model(args.model)
 
