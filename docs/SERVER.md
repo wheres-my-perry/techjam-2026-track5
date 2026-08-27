@@ -21,16 +21,16 @@ and docs/PROGRESS.md (current status).
 - Logs: `slurm_*.log` (Slurm jobs), `real_manifold.log`, `manifold_diag.log` (tmux runs).
 - tmux: session `manifold` may exist (`tmux attach -t manifold`, detach Ctrl-b d).
 
-## Running things (conventions — violating these has burned us)
-- GPU work goes through Slurm: write an sbatch file (`--partition=gpu --gres=gpu:1`), `sbatch it`,
-  monitor `squeue -u chim` + `tail -f slurm_<id>.log`. Empty squeue = finished (check log tail).
-- **NEVER set CUDA_VISIBLE_DEVICES** (Slurm cgroup renumbering -> silent CPU fallback).
-- Jobs get killed unpredictably on this box: long steps must resume (training saves *.state per
-  epoch; clip extraction caches 2000-sample shards) and sbatch steps are wrapped in retry loops
-  (see run_all.sbatch / run_official.sbatch as templates).
+## Running things (conventions — updated 2026-08-27: NO SLURM, per server owner)
+- Do NOT submit via sbatch/Slurm. Run everything in tmux directly:
+  `tmux new -s <name>` -> run -> Ctrl-b d to detach; `tmux attach -t <name>` to return.
+- Pick a GPU manually: check `nvidia-smi`, then `export CUDA_VISIBLE_DEVICES=<freer gpu id>`
+  (this is correct OUTSIDE Slurm; it was only forbidden inside Slurm cgroups).
+- Long steps still must resume (training *.state per epoch; clip shard cache) and be wrapped in
+  retry loops — see run_night.sh for the template. Log with `2>&1 | tee <name>.log`.
 - torch.load needs `weights_only=False` for our checkpoints (new-torch default trap).
 - Eval `--limit N` takes a seeded random subsample (never head-truncation).
-- CPU-only work (real_manifold, scripts) can run directly in tmux without Slurm.
+- CPU-only work (real_manifold, scripts) runs the same way, no GPU pinning needed.
 
 ## Reproducing anything
 All commands are in ARCHITECTURE.md + CHANGELOG.md + docs/approaches/*.md; training entry points:

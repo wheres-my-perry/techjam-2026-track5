@@ -25,6 +25,8 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
 - Never train/tune on the official validation slices (dalle3, coco-val2017). Label 1 = AI-generated, everywhere.
 
 ## Infra facts that bite
+- **NO SLURM on the GPU server** (server owner's rule, 2026-08-27). Run in tmux directly; pick a GPU
+  with `nvidia-smi` then `export CUDA_VISIBLE_DEVICES=<free id>` (correct outside Slurm only).
 - Under Slurm, NEVER set CUDA_VISIBLE_DEVICES (cgroup renumbering -> silent CPU fallback).
 - The shared GPU server kills jobs unpredictably: all long steps must be resumable (epoch state files, sharded caches) and wrapped in retry loops.
 - Heavy data/training runs on the GPU server; the sandbox and bridge VM have no ML-site network.
