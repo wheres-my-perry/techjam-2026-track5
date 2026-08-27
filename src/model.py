@@ -63,8 +63,52 @@ _APPROACHES = {
 }
 
 
+class CropVoteModel(BaseModel):
+    """Inference-time patch voting (approach 01, stage 1 — no training needed).
+
+    Scores a grid of fixed-size crops at native resolution through any inner
+    model and aggregates by top-k mean: "an image is fake if some regions are
+    fake." Fixes the pooling-dilution failure measured on full-resolution eval.
+    All crops share one size -> inner model batches them efficiently.
+    """
+
+    def __init__(self, inner: BaseModel, crop=224, grid=3, topk=3):
+        self.inner = inner
+        self.name = f"vote+{inner.name}"
+        self.crop, self.grid, self.topk = crop, grid, topk
+
+    def _views(self, im):
+        c = self.crop
+        w, h = im.size
+        if min(w, h) < c:  # tiny image: upscale short side, single center view
+            s = c / min(w, h)
+            im = im.resize((max(c, round(w * s)), max(c, round(h * s))))
+            w, h = im.size
+        xs = sorted({round(t * (w - c) / max(1, self.grid - 1)) for t in range(self.grid)})
+        ys = sorted({round(t * (h - c) / max(1, self.grid - 1)) for t in range(self.grid)})
+        return [im.crop((x, y, x + c, y + c)) for y in ys for x in xs]
+
+    def predict(self, images):
+        views, owners = [], []
+        for i, im in enumerate(images):
+            vs = self._views(im)
+            views.extend(vs)
+            owners.extend([i] * len(vs))
+        vscores = self.inner.predict(views)
+        out = np.zeros(len(images), dtype=np.float32)
+        owners = np.asarray(owners)
+        for i in range(len(images)):
+            s = np.sort(vscores[owners == i])[::-1]
+            k = min(self.topk, len(s))
+            out[i] = float(s[:k].mean())
+        return out
+
+
 def load_model(name: str = "random") -> BaseModel:
-    """Load by name. Approach models accept 'name:path/to/weights.pt' to pick weights."""
+    """Load by name. 'name:path.pt' picks weights; 'vote+name:path.pt' wraps any
+    model in inference-time crop voting (grid crops, top-k aggregation)."""
+    if name.startswith("vote+"):
+        return CropVoteModel(load_model(name[len("vote+"):]))
     base, _, path = name.partition(":")
     if base in _APPROACHES:
         import importlib
