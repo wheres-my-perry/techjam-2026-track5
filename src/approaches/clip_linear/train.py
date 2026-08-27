@@ -26,47 +26,65 @@ from src.transforms import random_train_transform
 from .model import embed_images, load_backbone, pick_device
 
 CACHE_DIR = "outputs/clip_linear/cache"
+SHARD = 2000  # samples per cache shard; kills lose at most one shard of work
 
 
-def cache_key(manifest, backbone, pretrained, views, seed):
+def cache_dir_for(manifest, backbone, pretrained, views, seed):
     h = hashlib.md5(f"{os.path.abspath(manifest)}|{backbone}|{pretrained}|{views}|{seed}".encode())
-    return os.path.join(CACHE_DIR, h.hexdigest()[:16] + ".npz")
+    return os.path.join(CACHE_DIR, h.hexdigest()[:16])
+
+
+def _embed_shard(model, preprocess, chunk, augment_views, rng, device, batch):
+    X_parts, ys, todo = [], [], []
+
+    def flush():
+        if todo:
+            X_parts.append(embed_images(model, preprocess, todo, device, batch))
+            todo.clear()
+
+    for s in chunk:
+        img = load_image(s.path)
+        todo.append(img)
+        ys.append(s.label)
+        for _ in range(augment_views):
+            todo.append(random_train_transform(img, rng))
+            ys.append(s.label)
+        if len(todo) >= batch * 4:
+            flush()
+    flush()
+    return np.concatenate(X_parts), np.asarray(ys, dtype=np.int64)
 
 
 def extract(manifest, backbone, pretrained, augment_views, seed, device, batch):
-    key = cache_key(manifest, backbone, pretrained, augment_views, seed)
-    if os.path.exists(key):
-        z = np.load(key)
-        print(f"cache hit: {key} ({len(z['y'])} rows)")
-        return z["X"], z["y"]
-    model, preprocess = load_backbone(backbone, pretrained, device)
+    """Sharded + resumable: each SHARD-sample chunk is cached as its own .npz,
+    so an interrupted run resumes from the last completed shard."""
+    key_dir = cache_dir_for(manifest, backbone, pretrained, augment_views, seed)
+    os.makedirs(key_dir, exist_ok=True)
     samples = load_manifest(manifest)
-    rng = random.Random(seed)
-    X_parts, y_parts = [], []
-    todo = []  # (image, label) pairs, materialized lazily in chunks
-    def flush():
-        if not todo:
-            return
-        imgs, ys = zip(*todo)
-        X_parts.append(embed_images(model, preprocess, list(imgs), device, batch))
-        y_parts.append(np.asarray(ys, dtype=np.int64))
-        todo.clear()
-    for n, s in enumerate(samples):
-        img = load_image(s.path)
-        todo.append((img, s.label))
-        for _ in range(augment_views):
-            todo.append((random_train_transform(img, rng), s.label))
-        if len(todo) >= batch * 4:
-            flush()
-        if (n + 1) % 1000 == 0:
-            print(f"  embedded {n + 1}/{len(samples)} images")
-    flush()
-    X = np.concatenate(X_parts)
-    y = np.concatenate(y_parts)
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    np.savez_compressed(key, X=X, y=y)
-    print(f"cached {len(y)} embeddings -> {key}")
-    return X, y
+    chunks = [samples[i:i + SHARD] for i in range(0, len(samples), SHARD)]
+    model = preprocess = None
+    X_parts, y_parts, cached = [], [], 0
+    for ci, chunk in enumerate(chunks):
+        sp = os.path.join(key_dir, f"shard_{ci:05d}.npz")
+        if os.path.exists(sp):
+            z = np.load(sp)
+            X_parts.append(z["X"])
+            y_parts.append(z["y"])
+            cached += 1
+            continue
+        if model is None:  # lazy: fully-cached extraction never loads the backbone
+            model, preprocess = load_backbone(backbone, pretrained, device)
+        rng = random.Random(seed * 1_000_003 + ci)  # per-shard rng: resume-stable
+        X, y = _embed_shard(model, preprocess, chunk, augment_views, rng, device, batch)
+        tmp = sp + ".tmp.npz"
+        np.savez_compressed(tmp, X=X, y=y)
+        os.replace(tmp, sp)  # atomic: a kill mid-write never corrupts a shard
+        X_parts.append(X)
+        y_parts.append(y)
+        print(f"  shard {ci + 1}/{len(chunks)} embedded ({len(y)} rows)", flush=True)
+    if cached:
+        print(f"  ({cached}/{len(chunks)} shards from cache)")
+    return np.concatenate(X_parts), np.concatenate(y_parts)
 
 
 def train_head(Xtr, ytr, Xva, yva, epochs=200, lr=1e-2, wd=1e-4, seed=0):

@@ -129,8 +129,18 @@ def main():
     loss_fn = nn.BCEWithLogitsLoss()
 
     best = -1.0
+    start_epoch = 1
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
-    for epoch in range(1, args.epochs + 1):
+    state_path = args.out + ".state"
+    if os.path.exists(state_path):  # kill-resume: continue from last finished epoch
+        st = torch.load(state_path, map_location=device)
+        net.load_state_dict(st["net"])
+        opt.load_state_dict(st["opt"])
+        start_epoch = st["epoch"] + 1
+        best = st["best"]
+        print(f"resumed from {state_path}: starting at epoch {start_epoch} "
+              f"(best so far {best:.4f})")
+    for epoch in range(start_epoch, args.epochs + 1):
         net.train()
         t0, running, seen = time.time(), 0.0, 0
         for x, y in train_dl:
@@ -143,11 +153,13 @@ def main():
             seen += len(y)
         val_auc = evaluate_auroc(net, val_dl, device)
         print(f"epoch {epoch}: loss={running/seen:.4f} val_auroc={val_auc:.4f} "
-              f"({time.time()-t0:.0f}s)")
+              f"({time.time()-t0:.0f}s)", flush=True)
         if val_auc > best:
             best = val_auc
             torch.save({"state_dict": net.state_dict(), "width": args.width,
                         "augment": args.augment, "val_auroc": val_auc}, args.out)
+        torch.save({"net": net.state_dict(), "opt": opt.state_dict(),
+                    "epoch": epoch, "best": best}, state_path)
     print(f"best val AUROC {best:.4f}; weights -> {args.out}")
 
 
