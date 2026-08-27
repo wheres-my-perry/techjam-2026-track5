@@ -26,3 +26,14 @@ backbone → patch grid → [local head: top-k patch scores] + [relation head: a
 2. If (1) gains: trained patch head on backbone feature grid.
 3. If (2) gains: add attention relation head.
 4. Optional later: SID_Set tamper masks as patch-level supervision.
+
+## Status 2026-08-28 (night shift): STAGE 2 BUILT (attention head), measurement running
+- src/approaches/patch_relation/ — frozen fine-tuned resnet_ft trunk describes each of a 3x3
+  grid of native-res 224 crops; 2-layer transformer (4 heads, d=256, ~1.6M params) lets patches
+  ATTEND to each other -> cross-patch inconsistency signal (Thinh's logic-detection idea).
+- Head-only training on sharded cached embeddings (resume-safe); checkpoint self-contained.
+- Prediction (vs vote+resnet 0.94 official): >= vote on GANs/diffusion (attention subsumes
+  top-k voting), the interesting cell is whether relations add anything voting lacks; if it
+  only ties, the relation signal at 3x3/224 granularity is too coarse -> weekend variant with
+  finer grids / mid-layer features.
+- Job: run_attn.sbatch (second GPU) = extract + train head + eval wf_test/official 1200.

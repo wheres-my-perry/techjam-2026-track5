@@ -13,6 +13,7 @@ Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines
 
 ### 2026-08-28 (night shift 2 — agent-directed, launched)
 - GPU job (run_night2.sbatch): resnet_ft retrain with --blur-boost (new flag: 60% of samples get extra blur s0.5-2.5 or 0.25-0.6x downscale cycle — attacks the measured ddpm blur/resize hole 0.57-0.62) -> vote-wrapped evals; PLUS Thinh's generalize-the-vote idea: vote+clip_linear (wf_test + official) and vote+cnn (official).
+- GPU-2 job (run_attn.sbatch): approach 01 stage 2 BUILT tonight — patch_relation (frozen resnet trunk + transformer attention head over 3x3 patch grid, Thinh: use both GPUs) -> train + evals.
 - CPU job (run_spec.sbatch): approach 03 spectral built (24-dim FFT artifact features + logistic head) -> train + wf_test/official evals; bonus vote+real_manifold.
 - Predictions registered in GENERATOR_MATRIX before measurement. Morning: pull via tar-over-ssh, read verdicts.
 

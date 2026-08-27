@@ -61,6 +61,7 @@ _APPROACHES = {
     "resnet_ft": ("src.approaches.resnet_ft.model", "ResNetFTModel", "outputs/resnet_ft/baseline.pt"),
     "real_manifold": ("src.approaches.real_manifold.model", "RealManifoldModel", "outputs/real_manifold/baseline.npz"),
     "spectral": ("src.approaches.spectral.model", "SpectralModel", "outputs/spectral/baseline.npz"),
+    "patch_relation": ("src.approaches.patch_relation.model", "PatchRelationModel", "outputs/patch_relation/baseline.pt"),
 }
 
 

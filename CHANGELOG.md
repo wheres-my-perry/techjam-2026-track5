@@ -3,6 +3,11 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (night shift 2b — attention)
+- New approach: src/approaches/patch_relation/ (01 stage 2) — frozen resnet_ft trunk + 2-layer
+  transformer relation head over 3x3 native-res patch grid; registered as `patch_relation`.
+  Sharded resumable embedding cache; self-contained checkpoint. Job: run_attn.{sh,sbatch} (GPU 2).
+
 ## 2026-08-28 (night shift 2)
 - New approach: src/approaches/spectral/ (03) — FFT artifact features + logistic head,
   CPU-only, registered as model name `spectral`. Smoke-tested end-to-end on synthetic
