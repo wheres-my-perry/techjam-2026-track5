@@ -3,6 +3,24 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (night shift 2)
+- New approach: src/approaches/spectral/ (03) — FFT artifact features + logistic head,
+  CPU-only, registered as model name `spectral`. Smoke-tested end-to-end on synthetic
+  checkerboard/upsample fakes (harness integration verified).
+- resnet_ft train gains --blur-boost (extra blur/downscale augmentation targeting the
+  measured blur/resize weakness); new checkpoint target outputs/resnet_ft/wf_blur.pt.
+- Night jobs: run_night2.{sh,sbatch} (GPU: blur retrain + vote+clip_linear/vote+cnn evals),
+  run_spec.{sh,sbatch} (CPU: spectral train+eval, vote+real_manifold).
+
+## 2026-08-28
+- Night eval batch (Slurm job 10) complete: 7 evals at --limit 1200 across wf_test + official.
+  Verdict in docs/PROGRESS.md; per-family actuals in docs/GENERATOR_MATRIX.md.
+- Crop-voting wrapper (vote+<model>) validated: official benchmark resnet_ft 0.207 (inverted) ->
+  vote+resnet_ft 0.938 clean / 0.913 mean transformed. wf_test clean 0.954.
+- Workflow: back to Slurm (sbatch/squeue/scancel) per Thinh; SERVER.md, CHEATSHEET.md, and
+  project-conventions skill reverted. Server has no rsync — results pulled via tar-over-ssh
+  (command in CHEATSHEET.md).
+
 ## 2026-08-27
 
 - Kill-resilient training: per-epoch resume state for cnn/resnet_ft, sharded resumable CLIP

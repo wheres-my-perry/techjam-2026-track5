@@ -11,8 +11,10 @@ EDIT = partial/inpainting (tampered; parked).
 | approach | DIFF | TOKEN | GAN | reasoning anchor |
 |---|---|---|---|---|
 | cnn (scratch) | ✓ 0.73-0.76 (ddim/ddpm) | ✓ 0.53 vqvae — near chance | ✓ 0.63-0.67 | learns fingerprints of seen schools; transfer only within family (ddim→ddpm) |
-| clip_linear | P: moderate, flat across families | P: moderate | P: moderate | semantic layer is family-agnostic but shallow; measured soon (evals running) |
-| resnet_ft | P: best in-domain, family-limited transfer | P: mid | P: mid | pretrained texture filters + finetune; still discriminative on seen schools |
+| clip_linear | ✓ 0.87-0.94 (ddpm HOLDOUT 0.87, dalle 0.86) — flattest transform decay | ✓ 0.64 vqvae | ✓ 0.91-0.92 | PREDICTION CONFIRMED: family-agnostic, moderate ceiling; best worst-case robustness |
+| resnet_ft (full-img) | ✓ 0.95 ddpm but INVERTED 0.21 on dalle full-res | ✓ 0.53 vqvae | ✓ 0.74-0.77 | GAP dilution at unseen resolution flips the score — full-image eval is disqualified |
+| vote+resnet_ft | ✓ 0.94-0.99 (dalle 0.94/0.91 tf!) | ✓ 0.66 vqvae | ✓ 0.93 all three | CHAMPION. Crop voting fixes resolution shift (0.21→0.94 official); weakness: blur/resize on ddpm (0.57-0.62) |
+| vote+cnn | ✓ 0.93-0.99 clean | ✓ 0.65 vqvae | ✓ 0.86-0.90 | voting rescues even the scratch CNN (0.71→0.93 clean wf_test) |
 | real_manifold | ✓ 0.82 ddim, fakes-blind (DALL-E check pending) | ✓ 0.48 vqvae — inverted | ✓ 0.43-0.47 — inverted | measures missing camera grain; diffusion = grain-eraser (natural enemy); GAN/VQ counterfeit dust that blends |
 | spectral (unbuilt) | P: weak-mid (denoisers kill HF peaks) | P: mid (token grid periodicity!) | P: STRONG (upsampler checkerboard) | FFT sees periodic decoder artifacts |
 | patch+relation (unbuilt) | P: strong | P: strong | P: strong | spatial-evidence based, statistics-agnostic → family-agnostic by design |

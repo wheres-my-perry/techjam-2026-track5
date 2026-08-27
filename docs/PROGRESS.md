@@ -2,14 +2,28 @@
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 
-## Status: 🟡 Setup
+## Status: 🟢 Baselines measured, champion identified
 
-**Now:** Eval harness built & smoke-tested; datasets scoped (docs/DATA.md).
-**Next:** Decide approach (docs/IDEAS.md) → hardware check → baseline model. Also: invite teammates, webinar Aug 28 5pm SGT.
+**Now:** vote+resnet_ft is the pre-build-weekend champion: official benchmark (DALL-E vs COCO) clean 0.938 / mean-transformed 0.913; wf_test clean 0.954. Crop voting (Thinh's idea) flipped full-image resnet from INVERTED 0.207 to 0.938 on official.
+**Next:** night shift 2 running (blur-hardened resnet + spectral kill-test + vote+everything). Build weekend (Aug 29): approach 01 patch+relation (flagship), 07 ensemble. Also: invite teammates, webinar Aug 28 5pm SGT.
 
 ---
 
 ## Log
+
+### 2026-08-28 (night shift 2 — agent-directed, launched)
+- GPU job (run_night2.sbatch): resnet_ft retrain with --blur-boost (new flag: 60% of samples get extra blur s0.5-2.5 or 0.25-0.6x downscale cycle — attacks the measured ddpm blur/resize hole 0.57-0.62) -> vote-wrapped evals; PLUS Thinh's generalize-the-vote idea: vote+clip_linear (wf_test + official) and vote+cnn (official).
+- CPU job (run_spec.sbatch): approach 03 spectral built (24-dim FFT artifact features + logistic head) -> train + wf_test/official evals; bonus vote+real_manifold.
+- Predictions registered in GENERATOR_MATRIX before measurement. Morning: pull via tar-over-ssh, read verdicts.
+
+### 2026-08-28 (night-eval verdict — all four models measured)
+- Slurm restored as workflow (Thinh's call, overrides earlier no-Slurm). Night job (7 evals, --limit 1200) DONE.
+- **vote+resnet_ft**: official 0.938 clean / 0.913 mean tf / worst 0.763 (blur1.0); wf_test 0.954 clean, per-gen clean: ddim 0.999, ddpm(holdout) 0.987, biggan/stargan/stylegan 0.93, vqvae 0.66. Weak: blur+resize on ddpm (0.57-0.62), crop_80 ddpm 0.62.
+- **resnet_ft full-image**: official 0.207 — score INVERTED at unseen full resolution (GAP dilution). Full-image eval disqualified for deployment; voting wrapper is mandatory.
+- **clip_linear**: 0.86 both benchmarks, flattest transform decay (mean tf 0.84/0.81), ddpm holdout 0.87 → best generalization-per-point; ensemble backstop.
+- **vote+cnn**: 0.93 clean wf_test (from 0.71 full-image) — voting even rescues the scratch CNN.
+- **vqvae = universal nemesis**: 0.53-0.68 for every approach → spectral kill-test (approach 03) targeted at TOKEN family.
+- Insight: noise conditions IMPROVE vote models (noise_s0.10 → 1.00 on ddpm/official) while blur/downscale hurt → detectors lean on high-frequency artifacts; blur-heavy augmentation or low-freq features are the next robustness lever.
 
 ### 2026-08-27 (evening)
 - Server: job 6 (cnn done: val 0.811 → clip_linear phase) + job 7 (resnet_ft) running in PARALLEL on both 5090s. Bug fixed: never set CUDA_VISIBLE_DEVICES under Slurm (cgroup renumbering → silent CPU fallback).

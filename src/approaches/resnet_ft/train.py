@@ -18,6 +18,7 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
+from PIL import ImageFilter
 from torch.utils.data import DataLoader, Dataset
 
 from src.data import load_image, load_manifest
@@ -27,10 +28,11 @@ from .model import build_net, pick_device, to_tensor
 
 
 class ManifestDataset(Dataset):
-    def __init__(self, manifest_csv, augment=False, crop=224):
+    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False):
         self.samples = load_manifest(manifest_csv)
         self.augment = augment
         self.crop = crop
+        self.blur_boost = blur_boost  # extra low-pass aug: forces blur-surviving cues
 
     def __len__(self):
         return len(self.samples)
@@ -51,6 +53,16 @@ class ManifestDataset(Dataset):
         img = load_image(s.path)
         if self.augment:
             img = random_train_transform(img, random.Random())
+        if self.blur_boost:
+            rng = random.Random()
+            p = rng.random()
+            if p < 0.35:
+                img = img.filter(ImageFilter.GaussianBlur(rng.uniform(0.5, 2.5)))
+            elif p < 0.60:
+                w, h = img.size
+                f = rng.uniform(0.25, 0.6)
+                img = img.resize((max(8, int(w * f)), max(8, int(h * f))))
+                img = img.resize((w, h))
         img = self._random_crop(img, random.Random())
         return to_tensor([img])[0], float(s.label)
 
@@ -74,6 +86,10 @@ def main():
     ap.add_argument("--batch", type=int, default=24)
     ap.add_argument("--lr", type=float, default=1e-4, help="low LR: fine-tuning")
     ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--blur-boost", action="store_true",
+                    help="extra blur/downscale aug on top of --augment (60%% of "
+                         "samples get heavy low-pass; targets the measured "
+                         "blur/resize weakness)")
     ap.add_argument("--crop", type=int, default=224)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--out", default="outputs/resnet_ft/baseline.pt")
@@ -84,9 +100,10 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     device = pick_device()
-    print(f"device={device} augment={args.augment} crop={args.crop}", flush=True)
+    print(f"device={device} augment={args.augment} blur_boost={args.blur_boost} crop={args.crop}", flush=True)
 
-    train_dl = DataLoader(ManifestDataset(args.train, args.augment, args.crop),
+    train_dl = DataLoader(ManifestDataset(args.train, args.augment, args.crop,
+                                          blur_boost=args.blur_boost),
                           batch_size=args.batch, shuffle=True, num_workers=args.workers)
     val_dl = DataLoader(ManifestDataset(args.val, False, args.crop),
                         batch_size=args.batch, shuffle=False, num_workers=args.workers)
