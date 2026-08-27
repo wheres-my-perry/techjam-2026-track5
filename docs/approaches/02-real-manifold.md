@@ -35,3 +35,14 @@ Cousins, two key differences:
    inherit school-overfit (ddpm holdout measures how much). Real-manifold is one-class — never sees
    a fake, structurally cannot overfit to fake schools.
 Complementary on both axes → strong ensemble pair, not redundant.
+
+## First real-data results (2026-08-27, WildFake val, fit on 4000 reals + 2 aug views)
+- Overall AUROC 0.55 — but bimodal: **ddim 0.818** (diffusion separates with ZERO fake supervision!)
+  vs GAN/VAE families 0.43–0.48 (below chance: smooth GAN fakes land NEARER the Gaussian center
+  than content-diverse reals — systematic inversion, not confusion).
+- Real-score spread huge (0.17–0.96): current 32-dim global features are CONTENT-dominated;
+  pipeline signal survives only for diffusion smoothing. Salvage direction if pursued:
+  content-invariant features (per-patch self-normalized residuals) or per-source mixture/kNN.
+- Strategic read: official benchmark fakes are DALL·E = diffusion family = exactly this model's
+  strong axis. Pending: benchmark spot-check (manifold_dalle.log). If ~0.8 holds → keep as
+  fakes-blind diffusion-axis ensemble voice despite "failed" headline number.
