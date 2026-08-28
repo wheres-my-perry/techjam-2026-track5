@@ -36,3 +36,14 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
   outcome WITH reasoning BEFORE measuring; replace with measured verdicts. Never post-hoc rationalize.
 - When analyzing any approach, always reason per generator FAMILY (diffusion/token/GAN/edit), not
   per individual model — models churn, families persist.
+
+## Benchmark integrity (standing rule, Thinh 2026-08-28 — after the official_val size confound)
+- The benchmark is validated INDEPENDENTLY of any model. A flawed model must never look good,
+  and a flawed benchmark must never be able to hand out a high score.
+- Every new or changed manifest MUST pass `python -m scripts.shortcut_audit --manifest <csv>`
+  (metadata-only AUROC ~0.5 = clean; >0.65 = FAIL, results unreportable) plus
+  `python -m scripts.size_audit` eyeball check, BEFORE any model result from it is reported.
+- Re-run the audits periodically ("check it over and over"), not just at creation.
+- Any too-good-to-be-true result (>= 0.99 anywhere, or perfect rows) triggers a shortcut hunt
+  FIRST, celebration never. The 2026-08-28 lesson: official_val reals were 200x200 thumbnails
+  vs 1024+ fakes; metadata alone scored ~1.0; three "miracles" were this one artifact.
