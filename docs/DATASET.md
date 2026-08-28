@@ -138,7 +138,15 @@ If you add a source, check it for the held-out family before merging.
    the correlation exists in the data but no model of ours exploits it.**
    `scripts/canonicalize.py --jpeg-fakes` + `merge_manifests --canon-suffix`
    rebuild an equalized corpus if a future model does.
-5. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
+5. **Official-slice guard.** ArtiFact ships COCO **val2017** under `Real/coco`
+   (4998 images — by name and count the same slice `official_v2` uses for its
+   real class). 487 of them had reached `canon2_train`. `merge_manifests` now
+   drops every row whose `orig` path contains `/coco2017/val2017/` (584 rows)
+   before splitting. A dhash comparison could NOT prove the individual images
+   are the same (ArtiFact re-encodes to 200x200 and only ~1% matched at
+   Hamming<=4), but the standing rule is never to train on an official slice,
+   so it is excluded by name rather than by pixel proof.
+6. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
    `stylegan1/2/3` are the same family under different names; same for
    `biggan`/`big_gan` and `stargan`/`star_gan`. A "held-out" experiment must
    exclude the family, not just the string.

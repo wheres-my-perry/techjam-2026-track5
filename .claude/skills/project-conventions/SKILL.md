@@ -66,6 +66,9 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
 - Tampered/inpainted images (lama, mat, generative_inpainting, palette, glide-in) never enter
   train — a random crop of a locally-edited photo is usually an unedited crop with a "fake"
   label. They live in test as the tampered stress-test.
+- Official-slice hygiene: any newly added source may CONTAIN an official benchmark slice under a
+  different name (ArtiFact ships COCO val2017; caught 2026-08-29 with 487 rows already in train).
+  Grep each new source for the benchmark's slices and exclude by name — do not wait for pixel proof.
 - Hunt every >=0.99 row with the audits restricted to that subject/generator vs reals. Found
   2026-08-29: face_synthetics / star_gan / sfhq are separable from real faces by mean colour and
   file size alone — their perfect rows are excluded from any claim.

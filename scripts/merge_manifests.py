@@ -14,6 +14,17 @@ import random
 
 TAMPERED = {"lama", "mat", "generative_inpainting", "palette"}
 
+# Official benchmark slices. Standing rule: never train on these. ArtiFact
+# ships COCO val2017 under Real/coco (4998 images -- the same slice, by name
+# and by count, that official_v2 uses for its real class), so those rows must
+# not reach train/val even though a dhash comparison could not prove the
+# individual images are byte-identical (ArtiFact re-encodes to 200x200).
+OFFICIAL_SLICES = ("/coco2017/val2017/",)
+
+
+def official_slice(r) -> bool:
+    return any(k in r.get("orig", "") for k in OFFICIAL_SLICES)
+
 
 def tampered(r) -> bool:
     """Inpainting generators, plus GLIDE's inpainting subset (glide-in)."""
@@ -54,6 +65,9 @@ def main():
     # training -- a random crop can land on the untouched part and carry a
     # "fake" label, which is label noise. They stay in test as a stress-test.
     art = read(f"data/manifests/canon{args.canon_suffix}_artifact.csv")
+    n_off = sum(1 for r in art if official_slice(r))
+    art = [r for r in art if not official_slice(r)]
+    print(f"official-slice guard: dropped {n_off} ArtiFact COCO val2017 rows")
     art_hold = [r for r in art if r.get("generator") == "ddpm" or tampered(r)]
     art_rest = [r for r in art if not (r.get("generator") == "ddpm" or tampered(r))]
     a_tr, a_va, a_te = split(art_rest, (0.8, 0.1), args.seed)
