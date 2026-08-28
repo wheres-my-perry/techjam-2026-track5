@@ -33,3 +33,17 @@ biases in GenImage that we found in WildFake — audit-gating is the field-recom
   treatment or size-matched real partner.
 - Standing rule unchanged: on arrival, every set still passes shortcut_audit + size_audit before
   entering any manifest (verification-by-documentation is necessary, not sufficient).
+
+## APPROVED SET (Thinh, 2026-08-28 night) — the definitive data plan
+| source | class | native size | available | we use | disk |
+|---|---|---|---|---|---|
+| ArtiFact (HF bitmind/ArtiFact) | real+fake, 25 generators (13 GAN, 7 diffusion, 5 misc incl. Taming Transformer/VQ Diffusion) | uniform 200x200, JPEG QF randomized by authors | 2,496,738 (964,989 real / 1,531,749 fake) | 150K real + 150K fake | 31.7 GB |
+| LSUN Church (HF tglcourse/lsun_church_train) | real | short side 256 (measured via HF rows API) | 126,227 | 45K (matches our ~45K ddim/ddpm 256px fakes) | ~2 GB subset |
+| WildFake (on server) | real+fake | reals 200, GAN/vqvae 200, ddim/ddpm 256 | ~150K in manifests | all | present |
+
+Merged canon2 corpus: ~430K images, ~50/50 real/fake, both labels present in every size bucket
+(200-bucket: ArtiFact+WildFake both classes; 256-bucket: LSUN reals vs ddim/ddpm fakes).
+Pipeline: run_data.sbatch (download -> build_artifact_manifest [verify printed folder table] ->
+get_lsun -> canonicalize crop 176 -> merge_manifests -> AUDIT GATES must print CLEAN) chained
+--dependency=afterok to run_canon2.sbatch (resnet retrain crop 160 -> evals). Final balance
+confirmation = the arrival audits, nothing less.
