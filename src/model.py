@@ -80,7 +80,9 @@ class CropVoteModel(BaseModel):
     """
 
     def __init__(self, inner: BaseModel, cmin=None, cmax=None,
-                 grid=3, topk=3, n_sizes=3):
+                 grid=3, topk=0, n_sizes=3):
+        # topk=0 -> MEAN over all views. Chosen on canon2_val 2026-08-29 (job 36):
+        # mean beat top-3 by +0.02 clean / +0.03 worst; max (k=1) was worst.
         self.inner = inner
         self.name = f"vote+{inner.name}"
         # an approach may declare its own crop range/step (a ViT-L/14 needs
@@ -179,7 +181,7 @@ def load_model(name: str = "random") -> BaseModel:
     """Load by name. 'name:path.pt' picks weights; 'vote+name:path.pt' wraps any
     model in inference-time crop voting (grid crops, top-k aggregation)."""
     if name.startswith("vote"):
-        # vote+inner            defaults (grid 3, top-k 3, 3 sizes)
+        # vote+inner            defaults (grid 3, mean over views, 3 sizes)
         # vote(k=9,g=3,n=3)+inner   explicit; k=0 -> mean over all views
         m = re.match(r"vote(?:\(([^)]*)\))?\+(.*)$", name)
         if not m:
