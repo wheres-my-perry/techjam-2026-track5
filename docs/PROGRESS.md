@@ -2,14 +2,21 @@
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 
-## Status: 🔴 BENCHMARK CONFOUND FOUND — official numbers suspect
+## Status: 🔴🔴 SIZE CONFOUND IS EVERYWHERE — full protocol rebuild needed
 
-**Now:** official_val reals are ALL 200x200 (WildFake ships downsized COCO) vs 1024+ fakes — size alone separates the classes, so EVERY official-benchmark number so far is inflated to an unknown degree (incl. patch_relation 0.958; explains noise+patch_relation "1.0000" and vote+cnn "0.996": tiny-image upscale path + duplicate-crop padding acted as a label giveaway; also explains the crop_80 inversion). Caught by Thinh's overfitting question + the too-good-to-be-true rule. wf_test per-generator numbers remain the compass (mixed real sizes) pending audit.
-**Next:** run_fix.sbatch = size audits + official_v2 (original-res COCO val2017 reals) + re-measure {patch_relation, std+patch_relation, noise+patch_relation, std+vote+resnet} on honest data. std+ wrapper (short side -> 512, both classes) makes models size-blind.
+**Now (2026-08-28 evening):** wf_test is ALSO size-structured: reals 200x200, GAN+vqvae fakes 200x200 (size-MATCHED = honest cells), diffusion fakes 256x256 (leaky cells). Honest picture: GANs ~0.91-0.93, vqvae 0.66-0.70 (stacked 0.703 = best), diffusion rows INFLATED everywhere, all clean/meanTF aggregates inflated. On honest official_v2: raw patch_relation INVERTED (0.272 — model is size-poisoned by training data); std+patch_relation 0.886/0.871; std+vote+resnet 0.889/0.878 (attention ≈ voting once the artifact is gone). noise+ trick DEAD (0.335 on honest data — observation #12 was 100% artifact). std+ on wf_test collapses (0.50) because class-dependent upscale factors leak — wrappers cannot launder a size-biased dataset.
+**Next:** canonical protocol v2 (Thinh-approved design): seeded-random CROP at native resolution (wildfake: crop 176, zero resampling — nothing to learn from; official: downscale-only band 375-640 then crop 320; downscale traces only in eval-only sets, deflationary at worst) so size/resample factor is statistically independent of label; purely-generated + purely-real only (tampered excluded from training — localized fakeness breaks region labels; tampered becomes a later stress-test). run_canon.sbatch: canonicalize 4 datasets -> audit gates -> retrain resnet (crop 160) -> honest evals (canon wf_test, canon official, clip baseline). Patch/vote/attention v2 on clean data = weekend. Deadline Sep 1 noon SGT.
 
 ---
 
 ## Log
+
+### 2026-08-28 (evening — the full honest verdict)
+- wf_test size audit: reals 200, biggan/stargan/stylegan/vqvae 200 (matched->honest), ddim/ddpm 256 (leaky). The vqvae "wall" was the only fair fight all along; the stellar diffusion numbers (0.986-0.999) were partly the duplicate-crop token giveaway.
+- official_v2 (original-res COCO 375-640 vs DALL-E 1024-1792): still metadata-separable (size differs by class) but far milder in effect. Raw patch_relation 0.272 (inverted — size-poisoned), std+patch_relation 0.886/0.871 worst 0.720, std+vote+resnet 0.889/0.878 — attention advantage over voting mostly evaporated with the artifact.
+- noise+patch_relation on official_v2: 0.335. Observation #12 (noise paradox) confirmed pure artifact; killed and buried.
+- std+ wrapper on wf_test: 0.503 — resizing cannot fix a dataset whose classes differ in size (upscale factor itself leaks). Benchmark must be fixed at the DATA level (Thinh's decoupling principle, proven twice today).
+- stacked (from rescued job-22 eval): wf_test 0.944 clean, vqvae 0.703 = best-ever honest vqvae cell; GAN rows 0.92-0.94.
 
 ### 2026-08-28 (afternoon — benchmark confound)
 - **CONFOUND:** official_val reals 200x200 thumbnails vs 1024+ DALL-E fakes → size = label. All official AUROCs inflated; "perfect" noise results and crop_80 inversion fully explained by the <224px upscale/duplicate-crop path. wf_test remains trustworthy pending audit (mixed real sizes).

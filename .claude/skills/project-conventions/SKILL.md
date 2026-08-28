@@ -47,3 +47,11 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
 - Any too-good-to-be-true result (>= 0.99 anywhere, or perfect rows) triggers a shortcut hunt
   FIRST, celebration never. The 2026-08-28 lesson: official_val reals were 200x200 thumbnails
   vs 1024+ fakes; metadata alone scored ~1.0; three "miracles" were this one artifact.
+
+## Size-canonicalization tiers (Thinh 2026-08-28: transforms cannot fix disjoint size classes)
+- Measure class size distributions first (size_audit). Near-overlap (ratio <~1.5x): seeded
+  random-band resize (scripts/canonicalize.py) is adequate; verify empirically after training.
+- Large gap (e.g. 200 vs 1024+): NO transform is trusted — either the output size or the resize
+  factor must correlate with the label. Fix the DATA: re-source the mismatched class at native
+  resolution, subset to overlap, or report the limitation. Never launder with math.
+- Canonicalizer never upscales (target clamped to source size). Always audit after.

@@ -3,6 +3,20 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (night — canonical protocol)
+- scripts/canonicalize.py: seeded-random per-image resize into overlapping band, one filter/one
+  format both classes; verified to produce CLEAN shortcut audits. run_canon.{sh,sbatch}:
+  canonicalize wildfake train/val/test (band 176-200) + official_v2 (band 320-512), audit gates,
+  retrain resnet_ft at crop 160 -> outputs/resnet_ft/canon.pt, evals on canon manifests.
+- Decision (Thinh): training stays purely-generated vs purely-real; tampered data excluded
+  (crops would cut off edited regions -> label noise), reserved as future stress-test.
+
+## 2026-08-28 (evening)
+- FIX DONE results: honest official_v2 numbers std+patch_relation 0.886/0.871, std+vote+resnet
+  0.889/0.878; raw patch_relation inverted (0.272); noise+ trick dead (0.335). wf_test itself
+  size-structured (reals+GAN+vqvae 200px matched, diffusion 256px leaky). Full size-canonical
+  data protocol scheduled: single preprocess pipeline for all data, remanifest, retrain.
+
 ## 2026-08-28 (afternoon — confound response)
 - Found official_val size confound (200x200 reals vs 1024+ fakes). Added std+ wrapper
   (src/model.py), scripts/size_audit.py, scripts/rebuild_official.py (-> official_v2.csv with

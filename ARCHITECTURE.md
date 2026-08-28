@@ -67,3 +67,11 @@ Planned next: `ensemble` (logistic regression over member scores), patch + relat
 - Thresholds are picked on clean val once and frozen across transforms.
 - Weights/caches are gitignored; eval result JSON/tables are committed.
 - Seeds fixed (default 0); manifests are committed so splits are reproducible.
+
+## Addendum 2026-08-28
+- Model wrappers (src/model.py prefixes, composable): `vote+` (3x3 crop voting), `noise+`
+  (retired experiment), `std+` (short-side-512 resize). New approaches: spectral (killed),
+  patch_relation (attention over patch grid), stacked (ensemble over member scores).
+- Data tooling: scripts/{size_audit,shortcut_audit,canonicalize,rebuild_official}.py; canonical
+  crop-based manifests data/manifests/canon_*.csv. Server git = fetch + reset --hard (see
+  docs/CHEATSHEET.md).

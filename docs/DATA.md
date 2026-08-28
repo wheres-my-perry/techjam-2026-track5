@@ -65,3 +65,18 @@ Open question for team ⚠: total training budget (50K vs 200K images) depends o
 - [SID_Set on HF](https://huggingface.co/datasets/saberzl/SID_Set) · [SIDA paper (CVPR'25)](https://arxiv.org/abs/2412.04292) · [SIDA repo](https://github.com/hzlsaber/SIDA)
 - [CIFAKE on Kaggle](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images) · [CIFAKE paper](https://arxiv.org/pdf/2303.14126)
 - [WildFake on ModelScope](https://modelscope.cn/datasets/hy2628982280/WildFake/summary) · [WildFake paper (AAAI'25)](https://arxiv.org/abs/2402.11843)
+
+## ⚠️ Measured size structure (2026-08-28 — read before adding ANY data)
+Every current dataset has class-correlated image sizes ("metadata leak"):
+- wildfake train/val/test: ALL reals 200x200; biggan/stargan/stylegan/vqvae fakes 200x200
+  (size-matched -> honest); ddim/ddpm fakes 256x256 (leaky vs 200 reals).
+- official_val (RETIRED): reals 200x200 thumbnails vs DALL-E 1024+ -> size alone separated
+  classes; replaced by official_v2 (original-res COCO val2017 reals 375-640, still size-gapped
+  vs 1024+ fakes -> treated with caveat).
+- Consequence: models trained on this learned size shortcuts (docs/PROGRESS.md 2026-08-28
+  entries). Mitigations: scripts/canonicalize.py (random native crop protocol, canon_* manifests),
+  audits below.
+- RULES: every new/changed manifest must pass `python -m scripts.shortcut_audit` (metadata-only
+  AUROC ~0.5) and be size-audited (`python -m scripts.size_audit`) BEFORE any result is reported.
+  Data gap wanted: reals at native 256x256-ish and at 1024+; fakes at 200x200 and varied sizes;
+  modern TOKEN/AR-family fakes. See docs/GENERATOR_MATRIX.md.
