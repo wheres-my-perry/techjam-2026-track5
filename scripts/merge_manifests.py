@@ -34,8 +34,16 @@ def main():
     tr = read("data/manifests/canon_wf_train.csv")
     va = read("data/manifests/canon_wf_val.csv")
     te = read("data/manifests/canon_wf_test.csv")
-    a_tr, a_va, a_te = split(read("data/manifests/canon_artifact.csv"),
-                             (0.8, 0.1), args.seed)
+    # ddpm is the designated held-out generator (WildFake's 20K ddpm is
+    # test-only). ArtiFact ships its own small ddpm folder; an 80/10/10 split
+    # would put it in TRAIN and silently contaminate the one number we quote
+    # as "unseen generator". Route every ArtiFact ddpm row to test.
+    art = read("data/manifests/canon_artifact.csv")
+    art_ddpm = [r for r in art if r.get("generator") == "ddpm"]
+    art_rest = [r for r in art if r.get("generator") != "ddpm"]
+    a_tr, a_va, a_te = split(art_rest, (0.8, 0.1), args.seed)
+    a_te += art_ddpm
+    print(f"held-out routing: {len(art_ddpm)} ArtiFact ddpm rows -> test")
     l_tr, l_va, l_te = split(read("data/manifests/canon_lsun.csv"),
                              (0.6, 0.1), args.seed + 1)
     outs = {"train": tr + a_tr + l_tr, "val": va + a_va + l_va,

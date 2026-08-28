@@ -41,6 +41,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--limit", type=int, default=3000)
+    ap.add_argument("--strict", action="store_true",
+                    help="exit 1 if the audit FAILs, so a Slurm --dependency="
+                         "afterok chain cannot start training on a leaky manifest")
+    ap.add_argument("--max-auroc", type=float, default=0.65)
     args = ap.parse_args()
     s = load_manifest(args.manifest)
     random.Random(0).shuffle(s)
@@ -66,7 +70,9 @@ def main():
                "MILD LEAK — caveat results" if a <= 0.65 else
                "FAIL — do not report model results from this manifest")
     print(f"metadata-only AUROC: {a:.4f}  [{verdict}]  "
-          f"({len(y)} rows, {args.manifest})")
+          f"({len(y)} rows, {args.manifest})", flush=True)
+    if args.strict and a > args.max_auroc:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

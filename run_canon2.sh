@@ -14,6 +14,11 @@ run() {
   return 1
 }
 
+# train.py resumes from <out>.state if present. This script is a CLEAN
+# retrain, so drop any stale checkpoint first -- otherwise a rerun silently
+# skips training and evaluates the PREVIOUS corpus's model (happened job 30).
+rm -f outputs/resnet_ft/canon2.pt outputs/resnet_ft/canon2.pt.state
+
 run python -m src.approaches.resnet_ft.train \
   --train data/manifests/canon2_train.csv --val data/manifests/canon2_val.csv \
   --epochs 6 --augment --crop 160 --batch 32 \
@@ -21,10 +26,10 @@ run python -m src.approaches.resnet_ft.train \
 
 run python -m src.evaluate --manifest data/manifests/canon2_test.csv \
   --model resnet_ft:outputs/resnet_ft/canon2.pt \
-  --out outputs/resnet_ft/eval_canon2_test --limit 1500
+  --out outputs/resnet_ft/eval_canon2_test --limit 10000
 
 run python -m src.evaluate --manifest data/manifests/canon_official.csv \
-  --model resnet_ft:outputs/resnet_ft/canon2.pt \
+  --model vote+resnet_ft:outputs/resnet_ft/canon2.pt \
   --out outputs/resnet_ft/eval_canon2_official --limit 1200
 
 run python -m src.evaluate --manifest data/manifests/canon2_test.csv \
