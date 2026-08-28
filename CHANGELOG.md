@@ -3,6 +3,11 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (late night — dev environment moves to the server)
+- Git topology reversed (Thinh): server clone is now primary and pushes; Mac clone becomes the
+  read-only mirror. CLAUDE.md rule rewritten, rationale in docs/DECISIONS.md.
+- CLAUDE.md itself committed (was untracked) so agents starting on the server get the briefing.
+
 ## 2026-08-28 (late night — data expansion approved)
 - Thinh approved the balanced corpus: ArtiFact subset (150K real + 150K fake @200, 25 generators
   incl. TOKEN family; size+JPEG randomized by its authors) + LSUN Church 45K reals @256 (pairs
