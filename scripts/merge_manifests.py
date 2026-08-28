@@ -36,12 +36,15 @@ def split(rows, fracs, seed):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-prefix", default="data/manifests/canon2")
+    ap.add_argument("--canon-suffix", default="",
+                    help="read canon<suffix>_*.csv inputs (e.g. _eq for the "
+                         "JPEG-history-equalized build)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
-    tr = read("data/manifests/canon_wf_train.csv")
-    va = read("data/manifests/canon_wf_val.csv")
-    te = read("data/manifests/canon_wf_test.csv")
+    tr = read(f"data/manifests/canon{args.canon_suffix}_wf_train.csv")
+    va = read(f"data/manifests/canon{args.canon_suffix}_wf_val.csv")
+    te = read(f"data/manifests/canon{args.canon_suffix}_wf_test.csv")
     # ddpm is the designated held-out generator (WildFake's 20K ddpm is
     # test-only). ArtiFact ships its own small ddpm folder; an 80/10/10 split
     # would put it in TRAIN and silently contaminate the one number we quote
@@ -50,7 +53,7 @@ def main():
     # Canonical protocol (PROGRESS 2026-08-28): tampered is EXCLUDED from
     # training -- a random crop can land on the untouched part and carry a
     # "fake" label, which is label noise. They stay in test as a stress-test.
-    art = read("data/manifests/canon_artifact.csv")
+    art = read(f"data/manifests/canon{args.canon_suffix}_artifact.csv")
     art_hold = [r for r in art if r.get("generator") == "ddpm" or tampered(r)]
     art_rest = [r for r in art if not (r.get("generator") == "ddpm" or tampered(r))]
     a_tr, a_va, a_te = split(art_rest, (0.8, 0.1), args.seed)
@@ -63,9 +66,9 @@ def main():
     # Fake bedrooms: train 12.2K / val 1.5K / test 8.6K -> reals 55/7/38.
     # Fake churches: test-only 8.7K (ddpm held out) -> reals 30/10/60, so
     # train no longer holds 27K always-real churches ("church = real").
-    c_tr, c_va, c_te = split(read("data/manifests/canon_lsun.csv"),
+    c_tr, c_va, c_te = split(read(f"data/manifests/canon{args.canon_suffix}_lsun.csv"),
                              (0.3, 0.1), args.seed + 1)
-    b_tr, b_va, b_te = split(read("data/manifests/canon_lsun_bedroom.csv"),
+    b_tr, b_va, b_te = split(read(f"data/manifests/canon{args.canon_suffix}_lsun_bedroom.csv"),
                              (0.55, 0.07), args.seed + 2)
     outs = {"train": tr + a_tr + c_tr + b_tr, "val": va + a_va + c_va + b_va,
             "test": te + a_te + c_te + b_te}

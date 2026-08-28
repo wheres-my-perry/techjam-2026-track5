@@ -96,6 +96,9 @@ with mechanism:
 5. **Nameable-object failure** (ddpm): regions no label fits. → per-region classification entropy.
 6. **Material-texture mismatch** (furry pillows). → semantic-relational; CLIP features carry implicitly.
 7. **Noise-field inconsistency**: reals have uniform grain; fakes mix sterile and textured regions.
+   [2026-08-29 test: as score-spread across crops (mean + a*std of the 19 vote views, resnet_ft on
+   canon2_val) it carries NO signal — a=0 best, a=2 costs 0.04. The cue, if real, is not visible
+   in classifier-score disagreement; would need explicit per-patch noise estimates.]
    → per-patch noise estimation + uniformity test (classic forensics; JPEG-fragile, ensemble-only).
 8. **Compositional intentionality prior**: reals are often pointless; generations look composed.
    Weak global semantic cue; CLIP-space likely encodes it.

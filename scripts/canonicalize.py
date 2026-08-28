@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import os
 import random
 import time
@@ -40,6 +41,11 @@ def main():
                     metavar=("MIN", "MAX"),
                     help="optional downscale-only pre-band for oversized images")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--jpeg-fakes", action="store_true",
+                    help="give every FAKE one JPEG pass (q 75-95, seeded per path) "
+                         "before cropping. Equalizes compression history: reals "
+                         "arrive with >=1 generation (camera/web), diffusion fakes "
+                         "with 0 (born PNG) -- found label-predictive 2026-08-29.")
     ap.add_argument("--limit", type=int, default=0,
                     help="optional cap (seeded subsample) for quick runs")
     args = ap.parse_args()
@@ -60,6 +66,11 @@ def main():
                 print(f"skip {s.path}: {e}", flush=True)
                 continue
             rng = random.Random(f"{args.seed}|{s.path}")
+            if args.jpeg_fakes and s.label == 1:
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=rng.randint(75, 95), subsampling=0)
+                buf.seek(0)
+                img = Image.open(buf).convert("RGB")
             w, hgt = img.size
             if args.band and min(w, hgt) > args.band[1]:
                 target = rng.randint(args.band[0], args.band[1])
