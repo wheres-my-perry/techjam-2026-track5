@@ -126,7 +126,15 @@ If you add a source, check it for the held-out family before merging.
    faces. Their >=0.99 per-generator rows are therefore NOT evidence of
    detection — never quote them. Real faces vs fake faces overall is fine
    (canary 0.556 colour, 0.528 histogram); it is those three sources.
-4. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
+4. **Compression history is label-correlated (found 2026-08-29, PE hunt).** Every
+   real in canon2 was JPEG at least once before we touched it; WildFake's
+   ddim/ddpm are born PNG, and ArtiFact JPEGs both classes once more — so
+   reals are double-compressed and fakes single/never, everywhere, official
+   included. There is not one JPEG-free real photo in the corpus. Stress
+   sets `data/manifests/stress_{fakejpeg,realjpeg,bothjpeg}.csv`
+   (scripts/make_jpeg_stress.py) equalize history; a model that collapses on
+   `fakejpeg` is reading compression, not generation.
+5. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
    `stylegan1/2/3` are the same family under different names; same for
    `biggan`/`big_gan` and `stargan`/`star_gan`. A "held-out" experiment must
    exclude the family, not just the string.
