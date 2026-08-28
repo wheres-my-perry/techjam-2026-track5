@@ -1,5 +1,9 @@
 # Generator-Family Prediction Matrix
 
+> ⚠️ 2026-08-28: every OFFICIAL-benchmark cell below is measured on the confounded
+> official_val (200x200 reals vs 1024+ fakes — size = label) and is inflated to an unknown
+> degree. Trust wf_test cells; official_v2 re-measurement running (run_fix.sbatch).
+
 Convention (Thinh, 2026-08-27): for every (approach x generator family) cell, register a PREDICTION
 with reasoning BEFORE measuring; replace with the measured verdict when data arrives. Predictions
 are falsifiable claims, not vibes. ✓ = measured, P = prediction pending measurement.

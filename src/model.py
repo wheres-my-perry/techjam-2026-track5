@@ -107,6 +107,28 @@ class CropVoteModel(BaseModel):
         return out
 
 
+class StandardizeWrapModel(BaseModel):
+    """Anti-shortcut wrapper: resize EVERY input's short side to a fixed value
+    (both classes, up- and down-scaling alike) so image size — and the
+    tiny-image upscale path — can never act as a class cue. Made necessary by
+    the 2026-08-28 finding that official-benchmark reals were all 200x200
+    thumbnails vs 1024+ fakes (size alone separated the classes)."""
+
+    def __init__(self, inner: BaseModel, short=512):
+        self.inner = inner
+        self.short = short
+        self.name = f"std+{inner.name}"
+
+    def predict(self, images):
+        outs = []
+        for im in images:
+            w, h = im.size
+            sc = self.short / min(w, h)
+            outs.append(im.resize((max(1, round(w * sc)), max(1, round(h * sc))),
+                                  Image.LANCZOS))
+        return self.inner.predict(outs)
+
+
 class NoiseWrapModel(BaseModel):
     """Observation #12 kill-test: the eval grid's heaviest-noise rows scored a
     paradoxical AUROC ~1.0, so try noise as a deliberate inference-time
@@ -135,6 +157,8 @@ def load_model(name: str = "random") -> BaseModel:
         return CropVoteModel(load_model(name[len("vote+"):]))
     if name.startswith("noise+"):
         return NoiseWrapModel(load_model(name[len("noise+"):]))
+    if name.startswith("std+"):
+        return StandardizeWrapModel(load_model(name[len("std+"):]))
     base, _, path = name.partition(":")
     if base in _APPROACHES:
         import importlib

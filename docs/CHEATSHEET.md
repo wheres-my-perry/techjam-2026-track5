@@ -48,10 +48,13 @@ grep -c "Saved to" slurm_night_JOBID.log   how many of the evals finished
 Slurm job: `scancel JOBID` (find JOBID with `squeue -u chim`).
 tmux run: attach (`tmux attach -t NAME`), press Ctrl-C.
 
-## Update code from GitHub
+## Update code from GitHub (ON THE SERVER — never plain `git pull` there)
 ```
-git pull
+git fetch origin
+git reset --hard origin/main
 ```
+The server never makes its own commits, so hard-reset to GitHub is always safe there and
+never aborts on untracked result files. On the Mac (where commits are made), plain `git pull`.
 
 ## Run an evaluation (template)
 ```

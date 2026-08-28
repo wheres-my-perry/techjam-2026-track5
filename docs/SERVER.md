@@ -32,6 +32,8 @@ and docs/PROGRESS.md (current status).
   retry loops — see run_night.sbatch for the template.
 - torch.load needs `weights_only=False` for our checkpoints (new-torch default trap).
 - Eval `--limit N` takes a seeded random subsample (never head-truncation).
+- Updating code: `git fetch origin && git reset --hard origin/main` (NOT `git pull` — the server
+  is a read-only mirror; results committed from the Mac collide with its untracked copies).
 - CPU-only work (real_manifold, scripts) can run in tmux directly, no GPU pinning needed.
 
 ## Reproducing anything

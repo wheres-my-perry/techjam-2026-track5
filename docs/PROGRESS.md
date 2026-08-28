@@ -2,14 +2,19 @@
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 
-## Status: 🟢 patch_relation is the new champion
+## Status: 🔴 BENCHMARK CONFOUND FOUND — official numbers suspect
 
-**Now:** Thinh's attention idea (patch_relation) leads the official benchmark: clean 0.958 / mean-transformed 0.935 / worst 0.817 — beats vote+resnet on every number. Blur-boost resnet also improved official (0.952/0.932/0.826) at an in-domain cost. Spectral killed (vqvae 0.58; blur inverts it). vqvae wall (~0.66) and ddpm-blur hole (~0.6) remain.
-**Next:** rerun 3 failed vote evals (wrong weight filenames), full-benchmark freeze run for patch_relation, then build weekend: ensemble (07), patch_relation upgrades, vqvae diagnostic. Also: invite teammates.
+**Now:** official_val reals are ALL 200x200 (WildFake ships downsized COCO) vs 1024+ fakes — size alone separates the classes, so EVERY official-benchmark number so far is inflated to an unknown degree (incl. patch_relation 0.958; explains noise+patch_relation "1.0000" and vote+cnn "0.996": tiny-image upscale path + duplicate-crop padding acted as a label giveaway; also explains the crop_80 inversion). Caught by Thinh's overfitting question + the too-good-to-be-true rule. wf_test per-generator numbers remain the compass (mixed real sizes) pending audit.
+**Next:** run_fix.sbatch = size audits + official_v2 (original-res COCO val2017 reals) + re-measure {patch_relation, std+patch_relation, noise+patch_relation, std+vote+resnet} on honest data. std+ wrapper (short side -> 512, both classes) makes models size-blind.
 
 ---
 
 ## Log
+
+### 2026-08-28 (afternoon — benchmark confound)
+- **CONFOUND:** official_val reals 200x200 thumbnails vs 1024+ DALL-E fakes → size = label. All official AUROCs inflated; "perfect" noise results and crop_80 inversion fully explained by the <224px upscale/duplicate-crop path. wf_test remains trustworthy pending audit (mixed real sizes).
+- Fixes built: std+ size-blind wrapper (resize short side 512 for every input), scripts/size_audit.py (per-class size distributions), scripts/rebuild_official.py (official_v2 = original-res COCO val2017 reals + same DALL-E fakes). run_fix.sbatch re-measures on honest data.
+- Stack-job partials (pre-confound numbers, official rows now suspect): vote+clip modest (+0.02 clean official), stacker holdout 0.830 (LR beat HGB).
 
 ### 2026-08-28 (morning — night shift 2 verdict)
 - **patch_relation (attention over 9 patches, Thinh's idea): NEW CHAMPION.** Official 0.958 clean / 0.935 mean TF / 0.817 worst; wf_test 0.952 clean. Beats vote+resnet everywhere measured; crop_80 rows much stronger (0.969 official).

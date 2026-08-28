@@ -3,6 +3,12 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (afternoon — confound response)
+- Found official_val size confound (200x200 reals vs 1024+ fakes). Added std+ wrapper
+  (src/model.py), scripts/size_audit.py, scripts/rebuild_official.py (-> official_v2.csv with
+  original-resolution COCO val2017 reals), run_fix.{sh,sbatch}. All prior official-benchmark
+  numbers are marked suspect in docs until re-measured on official_v2.
+
 ## 2026-08-28 (day shift)
 - Stacked ensemble built (src/approaches/stacked/, model name `stacked`): tiny classifier over
   member scores, fit on augmented val only. noise+ wrapper added to src/model.py (obs #12
