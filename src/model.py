@@ -80,7 +80,7 @@ class CropVoteModel(BaseModel):
     """
 
     def __init__(self, inner: BaseModel, cmin=None, cmax=None,
-                 grid=3, topk=0, n_sizes=3):
+                 grid=3, topk=0, n_sizes=3, alpha=0.0):
         # topk=0 -> MEAN over all views. Chosen on canon2_val 2026-08-29 (job 36):
         # mean beat top-3 by +0.02 clean / +0.03 worst; max (k=1) was worst.
         self.inner = inner
@@ -91,6 +91,10 @@ class CropVoteModel(BaseModel):
         self.cmax = cmax if cmax is not None else getattr(inner, "CROP_MAX", CROP_MAX)
         self.step = getattr(inner, "CROP_STEP", 1)
         self.grid, self.topk, self.n_sizes = grid, topk, n_sizes
+        # IDEAS.md cue #7 / family #5 (Thinh): fakes mix sterile and textured
+        # regions, so their crop scores should DISAGREE more than reals'.
+        # score = aggregate + alpha * std(view scores); alpha chosen on val.
+        self.alpha = alpha
 
     def _views(self, im):
         """Grid crops at several sizes spanning the TRAINING crop range.
@@ -130,7 +134,7 @@ class CropVoteModel(BaseModel):
         for i in range(len(images)):
             s = np.sort(vscores[owners == i])[::-1]
             k = len(s) if self.topk <= 0 else min(self.topk, len(s))
-            out[i] = float(s[:k].mean())
+            out[i] = float(s[:k].mean()) + self.alpha * float(s.std())
         return out
 
 
@@ -189,7 +193,8 @@ def load_model(name: str = "random") -> BaseModel:
         kw = {}
         for kv in filter(None, (m.group(1) or "").split(",")):
             k, v = kv.split("=")
-            kw[{"k": "topk", "g": "grid", "n": "n_sizes"}[k.strip()]] = int(v)
+            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha"}[k.strip()]
+            kw[key] = float(v) if key == "alpha" else int(v)
         return CropVoteModel(load_model(m.group(2)), **kw)
     if name.startswith("noise+"):
         return NoiseWrapModel(load_model(name[len("noise+"):]))
