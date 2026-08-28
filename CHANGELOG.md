@@ -3,6 +3,14 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (late night — data expansion approved)
+- Thinh approved the balanced corpus: ArtiFact subset (150K real + 150K fake @200, 25 generators
+  incl. TOKEN family; size+JPEG randomized by its authors) + LSUN Church 45K reals @256 (pairs
+  with ddim/ddpm) + existing WildFake. ~430K images total, ~34GB new.
+- New: scripts/{get_lsun,build_artifact_manifest,merge_manifests}.py; run_data.{sh,sbatch} (cpu:
+  download->canonicalize->merge->audit gates) chained via Slurm dependency to run_canon2.{sh,sbatch}
+  (gpu: retrain resnet on canon2 -> evals). Verification evidence in docs/DATA_CANDIDATES.md.
+
 ## 2026-08-28 (night — canonical protocol)
 - scripts/canonicalize.py: seeded-random per-image resize into overlapping band, one filter/one
   format both classes; verified to produce CLEAN shortcut audits. run_canon.{sh,sbatch}:
