@@ -133,7 +133,11 @@ If you add a source, check it for the held-out family before merging.
    included. There is not one JPEG-free real photo in the corpus. Stress
    sets `data/manifests/stress_{fakejpeg,realjpeg,bothjpeg}.csv`
    (scripts/make_jpeg_stress.py) equalize history; a model that collapses on
-   `fakejpeg` is reading compression, not generation.
+   `fakejpeg` is reading compression, not generation. **Tested 2026-08-29:
+   neither pe_ft (0.985 -> 0.986) nor resnet_ft (0.817 -> 0.817) moves, so
+   the correlation exists in the data but no model of ours exploits it.**
+   `scripts/canonicalize.py --jpeg-fakes` + `merge_manifests --canon-suffix`
+   rebuild an equalized corpus if a future model does.
 5. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
    `stylegan1/2/3` are the same family under different names; same for
    `biggan`/`big_gan` and `stargan`/`star_gan`. A "held-out" experiment must
