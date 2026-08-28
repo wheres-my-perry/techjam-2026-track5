@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=night2
+#SBATCH --job-name=stack
 #SBATCH --mem=40G
 #SBATCH --cpus-per-task=16
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --output=slurm_night2_%j.log
-bash run_night2.sh
+#SBATCH --output=slurm_stack_%j.log
+bash run_stack.sh

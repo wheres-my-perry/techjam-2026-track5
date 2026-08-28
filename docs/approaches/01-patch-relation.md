@@ -37,3 +37,13 @@ backbone → patch grid → [local head: top-k patch scores] + [relation head: a
   only ties, the relation signal at 3x3/224 granularity is too coarse -> weekend variant with
   finer grids / mid-layer features.
 - Job: run_attn.sbatch (second GPU) = extract + train head + eval wf_test/official 1200.
+
+## Verdict 2026-08-28 (morning): CHAMPION
+- Official benchmark: clean 0.958 / mean transformed 0.935 / worst 0.817 (blur1) — beats
+  vote+resnet_ft (0.938/0.913/0.763) on every summary number. wf_test clean 0.952.
+- Attention aggregation ≥ top-k voting in every measured cell; crop_80 rows notably better
+  (official crop 0.969). Head val 0.8378 (epoch 1 best — head overfits fast, 30 epochs
+  unnecessary).
+- Remaining holes (shared with all approaches): ddpm blur/resize 0.56-0.63, vqvae 0.66.
+- Weekend upgrades: finer grid (4x4/5x5), mid-layer trunk features, blur-boosted trunk
+  (wf_blur.pt) as feature source, train head longer on more augmented views.

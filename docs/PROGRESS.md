@@ -2,14 +2,20 @@
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 
-## Status: 🟢 Baselines measured, champion identified
+## Status: 🟢 patch_relation is the new champion
 
-**Now:** vote+resnet_ft is the pre-build-weekend champion: official benchmark (DALL-E vs COCO) clean 0.938 / mean-transformed 0.913; wf_test clean 0.954. Crop voting (Thinh's idea) flipped full-image resnet from INVERTED 0.207 to 0.938 on official.
-**Next:** night shift 2 running (blur-hardened resnet + spectral kill-test + vote+everything). Build weekend (Aug 29): approach 01 patch+relation (flagship), 07 ensemble. Also: invite teammates, webinar Aug 28 5pm SGT.
+**Now:** Thinh's attention idea (patch_relation) leads the official benchmark: clean 0.958 / mean-transformed 0.935 / worst 0.817 — beats vote+resnet on every number. Blur-boost resnet also improved official (0.952/0.932/0.826) at an in-domain cost. Spectral killed (vqvae 0.58; blur inverts it). vqvae wall (~0.66) and ddpm-blur hole (~0.6) remain.
+**Next:** rerun 3 failed vote evals (wrong weight filenames), full-benchmark freeze run for patch_relation, then build weekend: ensemble (07), patch_relation upgrades, vqvae diagnostic. Also: invite teammates.
 
 ---
 
 ## Log
+
+### 2026-08-28 (morning — night shift 2 verdict)
+- **patch_relation (attention over 9 patches, Thinh's idea): NEW CHAMPION.** Official 0.958 clean / 0.935 mean TF / 0.817 worst; wf_test 0.952 clean. Beats vote+resnet everywhere measured; crop_80 rows much stronger (0.969 official).
+- **blur-boost resnet**: official up across the board (0.952/0.932, worst blur1 0.763→0.826); ddpm blur1 0.62→0.72. Cost: in-domain clean drops (wf_test 0.954→0.881, ddpm crop 0.54). Verdict: better official model, worse generalist — feed it to the ensemble, keep both checkpoints.
+- **spectral: killed as standalone** (vqvae 0.58 = kill criterion; blur inverts it to 0.06; official ~chance). Insight: clean-diffusion HF specialist; vqvae has no grid periodicity at 256px. Predictions were wrong both directions — recorded in matrix.
+- Failed steps: vote+clip/vote+cnn evals (guessed weight filenames wrong — rerun pending), vote+real_manifold (NaN features on flat crops — known fixable bug, low priority).
 
 ### 2026-08-28 (night shift 2 — agent-directed, launched)
 - GPU job (run_night2.sbatch): resnet_ft retrain with --blur-boost (new flag: 60% of samples get extra blur s0.5-2.5 or 0.25-0.6x downscale cycle — attacks the measured ddpm blur/resize hole 0.57-0.62) -> vote-wrapped evals; PLUS Thinh's generalize-the-vote idea: vote+clip_linear (wf_test + official) and vote+cnn (official).

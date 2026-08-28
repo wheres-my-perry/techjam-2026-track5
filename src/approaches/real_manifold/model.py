@@ -65,7 +65,10 @@ def features(img: Image.Image) -> np.ndarray:
     for lo, hi in zip(edges[:-1], edges[1:]):
         feats.append(float(f[(rr >= lo) & (rr < hi)].sum() / total))
 
-    return np.asarray(feats, dtype=np.float64)
+    # flat/saturated crops make kurtosis NaN (constant residual); neutralize so
+    # crop-level use (voting, stacking) never crashes downstream sklearn.
+    return np.nan_to_num(np.asarray(feats, dtype=np.float64),
+                         nan=0.0, posinf=1e6, neginf=-1e6)
 
 
 class RealManifoldModel(BaseModel):

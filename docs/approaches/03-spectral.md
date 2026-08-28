@@ -29,3 +29,12 @@ collapses under transforms → downgrade.
   TOKEN (vqvae) mid-strong <- THE kill-test question (everything else is 0.53-0.68 there),
   DIFF weak-mid. Kill criterion: if vqvae AUROC < 0.70, spectral (alone) dies too.
 - Jobs: run_spec.sbatch (cpu partition) = train 20K subsample + eval wf_test/official 1200.
+
+## Verdict 2026-08-28 (morning): KILLED as standalone
+- vqvae 0.580 clean (kill criterion <0.70 met). GANs 0.68-0.73 (prediction of STRONG was wrong).
+- Surprise: near-perfect on CLEAN diffusion (ddim 1.000, ddpm 0.998) but blur_s1.0 INVERTS it
+  (0.06-0.09) and official is ~chance (0.56 clean). It reads the fragile high-frequency
+  diffusion residue — exactly the cue the contest transforms destroy.
+- Insight banked: vqvae shows NO detectable grid periodicity at 256px granularity; the TOKEN
+  wall is not a frequency-domain problem at this scale. Ensemble value: ~none (clean-diffusion
+  signal redundant with resnet). Keep the code; do not invest further.

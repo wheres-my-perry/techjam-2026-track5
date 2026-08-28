@@ -16,8 +16,10 @@ EDIT = partial/inpainting (tampered; parked).
 | vote+resnet_ft | ✓ 0.94-0.99 (dalle 0.94/0.91 tf!) | ✓ 0.66 vqvae | ✓ 0.93 all three | CHAMPION. Crop voting fixes resolution shift (0.21→0.94 official); weakness: blur/resize on ddpm (0.57-0.62) |
 | vote+cnn | ✓ 0.93-0.99 clean | ✓ 0.65 vqvae | ✓ 0.86-0.90 | voting rescues even the scratch CNN (0.71→0.93 clean wf_test) |
 | real_manifold | ✓ 0.82 ddim, fakes-blind (DALL-E check pending) | ✓ 0.48 vqvae — inverted | ✓ 0.43-0.47 — inverted | measures missing camera grain; diffusion = grain-eraser (natural enemy); GAN/VQ counterfeit dust that blends |
-| spectral (unbuilt) | P: weak-mid (denoisers kill HF peaks) | P: mid (token grid periodicity!) | P: STRONG (upsampler checkerboard) | FFT sees periodic decoder artifacts |
-| patch+relation (unbuilt) | P: strong | P: strong | P: strong | spatial-evidence based, statistics-agnostic → family-agnostic by design |
+| spectral | ✓ clean DIFF 1.00/0.998 but blur1 INVERTS to 0.06-0.09; official 0.56 | ✓ 0.58 vqvae — KILL criterion met | ✓ 0.68-0.73 (weaker than predicted) | PREDICTION WRONG both ways: it is a clean-diffusion specialist, not a GAN detector; catastrophically transform-fragile -> DEAD standalone, redundant for ensemble |
+| patch_relation (BUILT) | ✓ official 0.958/0.935 TF — NEW CHAMPION; ddim 0.999, ddpm 0.986 | ✓ 0.66 vqvae (same wall) | ✓ 0.91-0.92, best crop_80 rows | attention over patches ≥ voting everywhere measured; blur-on-ddpm hole persists (0.56-0.63) |
+| stacked (BUILT) | P: >=0.95 (inherits patch_relation) | P: 0.68-0.72 (manifold inversion may add a little) | P: ~0.92-0.93 | complementary-failure coverage; fit on augmented val only |
+| noise+ wrapper (BUILT) | P: uncertain — blur rows +0.1 if noise canonicalizes; clean rows drop if the paradox was train-noise matching | P: ~unchanged | P: ~unchanged | observation #12 kill-test: deliberately add sigma-0.10 noise at inference |
 | DIRE (shelved) | P: strong | P: weak | P: weak | reconstruction manifold is diffusion-school-only |
 | consistency (unbuilt) | P: mid, family-agnostic | P: mid | P: mid | score-stability meta-signal |
 

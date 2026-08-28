@@ -62,6 +62,7 @@ _APPROACHES = {
     "real_manifold": ("src.approaches.real_manifold.model", "RealManifoldModel", "outputs/real_manifold/baseline.npz"),
     "spectral": ("src.approaches.spectral.model", "SpectralModel", "outputs/spectral/baseline.npz"),
     "patch_relation": ("src.approaches.patch_relation.model", "PatchRelationModel", "outputs/patch_relation/baseline.pt"),
+    "stacked": ("src.approaches.stacked.model", "StackedModel", "outputs/stacked/baseline.npz"),
 }
 
 
@@ -106,11 +107,34 @@ class CropVoteModel(BaseModel):
         return out
 
 
+class NoiseWrapModel(BaseModel):
+    """Observation #12 kill-test: the eval grid's heaviest-noise rows scored a
+    paradoxical AUROC ~1.0, so try noise as a deliberate inference-time
+    canonicalizer: add fixed Gaussian noise to every input before scoring.
+    Deterministic (fixed RandomState) so evals are reproducible."""
+
+    def __init__(self, inner: BaseModel, sigma=0.10):
+        self.inner = inner
+        self.sigma = sigma
+        self.name = f"noise+{inner.name}"
+
+    def predict(self, images):
+        rng = np.random.RandomState(0)
+        noisy = []
+        for im in images:
+            a = np.asarray(im.convert("RGB"), dtype=np.float32) / 255.0
+            a = np.clip(a + rng.normal(0.0, self.sigma, a.shape), 0.0, 1.0)
+            noisy.append(Image.fromarray((a * 255).astype(np.uint8)))
+        return self.inner.predict(noisy)
+
+
 def load_model(name: str = "random") -> BaseModel:
     """Load by name. 'name:path.pt' picks weights; 'vote+name:path.pt' wraps any
     model in inference-time crop voting (grid crops, top-k aggregation)."""
     if name.startswith("vote+"):
         return CropVoteModel(load_model(name[len("vote+"):]))
+    if name.startswith("noise+"):
+        return NoiseWrapModel(load_model(name[len("noise+"):]))
     base, _, path = name.partition(":")
     if base in _APPROACHES:
         import importlib

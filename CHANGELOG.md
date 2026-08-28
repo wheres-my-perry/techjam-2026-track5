@@ -3,6 +3,18 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-28 (day shift)
+- Stacked ensemble built (src/approaches/stacked/, model name `stacked`): tiny classifier over
+  member scores, fit on augmented val only. noise+ wrapper added to src/model.py (obs #12
+  kill-test). real_manifold features NaN-proofed (flat crops). run_stack.{sh,sbatch} runs
+  reruns + noise tests + stacker train/eval; weights auto-detected by newest-file glob.
+
+## 2026-08-28 (morning)
+- Night shift 2 verdict: patch_relation champion (official 0.958/0.935/0.817), blur-boost resnet
+  second (0.952/0.932/0.826), spectral killed. Details: docs/PROGRESS.md, docs/approaches/01+03,
+  GENERATOR_MATRIX actuals. Known reruns: vote+clip_linear, vote+cnn (weight filename fix),
+  vote+real_manifold (NaN on flat crops).
+
 ## 2026-08-28 (night shift 2b — attention)
 - New approach: src/approaches/patch_relation/ (01 stage 2) — frozen resnet_ft trunk + 2-layer
   transformer relation head over 3x3 native-res patch grid; registered as `patch_relation`.
