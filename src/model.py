@@ -6,6 +6,7 @@ score = P(image is AI-generated). Swap implementations behind load_model().
 from __future__ import annotations
 
 import hashlib
+import re
 
 import numpy as np
 from PIL import Image
@@ -126,7 +127,7 @@ class CropVoteModel(BaseModel):
         owners = np.asarray(owners)
         for i in range(len(images)):
             s = np.sort(vscores[owners == i])[::-1]
-            k = min(self.topk, len(s))
+            k = len(s) if self.topk <= 0 else min(self.topk, len(s))
             out[i] = float(s[:k].mean())
         return out
 
@@ -177,8 +178,17 @@ class NoiseWrapModel(BaseModel):
 def load_model(name: str = "random") -> BaseModel:
     """Load by name. 'name:path.pt' picks weights; 'vote+name:path.pt' wraps any
     model in inference-time crop voting (grid crops, top-k aggregation)."""
-    if name.startswith("vote+"):
-        return CropVoteModel(load_model(name[len("vote+"):]))
+    if name.startswith("vote"):
+        # vote+inner            defaults (grid 3, top-k 3, 3 sizes)
+        # vote(k=9,g=3,n=3)+inner   explicit; k=0 -> mean over all views
+        m = re.match(r"vote(?:\(([^)]*)\))?\+(.*)$", name)
+        if not m:
+            raise ValueError(f"bad vote spec '{name}'")
+        kw = {}
+        for kv in filter(None, (m.group(1) or "").split(",")):
+            k, v = kv.split("=")
+            kw[{"k": "topk", "g": "grid", "n": "n_sizes"}[k.strip()]] = int(v)
+        return CropVoteModel(load_model(m.group(2)), **kw)
     if name.startswith("noise+"):
         return NoiseWrapModel(load_model(name[len("noise+"):]))
     if name.startswith("std+"):
