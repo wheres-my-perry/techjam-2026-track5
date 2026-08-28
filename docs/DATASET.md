@@ -6,9 +6,9 @@ The corpus everyone should train and evaluate on. Built by `run_data.sbatch`
 ## TL;DR for teammates
 
 ```
-train:  data/manifests/canon2_train.csv   346,280 rows   47% real   1:1.12
-val:    data/manifests/canon2_val.csv      44,409 rows   49% real   1:1.06
-test:   data/manifests/canon2_test.csv     74,306 rows   41% real   1:1.44
+train:  data/manifests/canon2_train.csv   315,444 rows   49% real   1:1.04
+val:    data/manifests/canon2_val.csv      40,398 rows   50% real   1:1.01
+test:   data/manifests/canon2_test.csv    104,153 rows   34% real   1:1.93  (ddpm 21K + tampered 27.6K are test-only)
 ```
 
 Every image is a **176x176 PNG**. Columns: `path,label,generator,source`
@@ -88,8 +88,8 @@ FAIL (do not report).
 
 | gate | train | test |
 |---|---|---|
-| metadata-only | 0.583 | 0.568 |
-| worst canary | — | 0.626 |
+| metadata-only | 0.578 | **0.501 CLEAN** |
+| worst canary | 0.563 | 0.601 |
 
 The old corpus scored **0.746** on the canary; adding ArtiFact's own reals
 (same subject matter as its fakes) is what brought it down. Both are in the
@@ -114,26 +114,54 @@ If you add a source, check it for the held-out family before merging.
 
 ## Known issues (read before quoting a result)
 
-1. **LSUN Church is 44% of test reals**, while every other real source is
-   ~6%. This is the main remaining content skew, and it shows up as the
-   ddpm-vs-real colour canary at 0.69 — expect the ddpm row to be flattered.
-2. **Class balance is good but not exact**: 1:1.12 train, 1:1.06 val,
-   1:1.44 test. Use `class_weight`/balanced sampling if your model is
+1. **LSUN church was 44% of test reals** (fixed 2026-08-29: church 15K test-weighted,
+   bedroom 25K added; see the 256px section). Re-run content_audit after any source change.
+2. **Class balance**: 1:1.04 train, 1:1.01 val; test is 1:1.93 because the
+   held-out ddpm (21K) and the tampered stress-test (27.6K) are test-only. Use `class_weight`/balanced sampling if your model is
    sensitive.
-3. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
+3. **Face generators that a dumb model can separate (2026-08-29 shortcut hunt).**
+   On the faces subset alone (real celebahq/ffhq/metfaces vs fake faces),
+   file size predicts the label at 0.677 (FAIL) and mean colour separates
+   `face_synthetics` (0.846), `star_gan` (0.761) and `sfhq` (0.739) from real
+   faces. Their >=0.99 per-generator rows are therefore NOT evidence of
+   detection — never quote them. Real faces vs fake faces overall is fine
+   (canary 0.556 colour, 0.528 histogram); it is those three sources.
+4. **Family overlap across sources.** WildFake `stylegan` and ArtiFact
    `stylegan1/2/3` are the same family under different names; same for
    `biggan`/`big_gan` and `stargan`/`star_gan`. A "held-out" experiment must
    exclude the family, not just the string.
 
-## Crops: what to use at train and at inference
+## Crops: random size, identical at train and inference (Thinh 2026-08-29)
 
-Training already random-crops: `--crop 160` from the 176x176 images, a fresh
-random position every epoch (`ManifestDataset._random_crop`). Keep it.
+The files on disk are 176x176 (that is the size confound fix and it stays).
+What the MODEL sees is a random-SIZE crop of that file, and the same crop
+procedure is used at train and at inference so there is no mismatch.
+`src/crops.py` is the single implementation both sides import:
 
-Inference must match. The `vote+` wrapper (`CropVoteModel`) defaults to
-`crop=224`, which is **larger than a canon2 image** — it would upscale 176 to
-224 and reintroduce exactly the resampling signature canonicalization
-removed. On canon2 use the bare model, or a vote crop of 160.
+- training: one size drawn per batch from the approach's range (resnet_ft
+  112-176; pe_ft 112-168 in steps of 14 because ViT-L/14 needs sides
+  divisible by 14), random position, no resampling;
+- inference (`vote+` wrapper): a fixed ladder over the same range on a 3x3
+  grid, top-k mean -- reproducible, and covers what training saw;
+- never crop larger than the image. The old wrapper cropped at 224 and
+  upscaled 176px inputs to reach it, reintroducing the resampling signature
+  canonicalization removes. `src.crops.clamp_size` makes that impossible.
 
 Full-image inference is disqualified: resnet_ft scored an inverted 0.207 on
 full-resolution official (GAP dilution). Score crops, not whole images.
+
+## 256px reals must mirror the 256px fakes (2026-08-29)
+
+WildFake's ddim/ddpm fakes are LSUN church and bedroom pictures (that is
+what DDPM was trained on) plus a general-photo set (CC9K). The reals that
+pair with them must be the same subjects at the same native size: LSUN
+church (15K, weighted to test because the fake churches are ddpm = test-only)
+and LSUN bedroom (25K, split to mirror the fake bedrooms per split). Before
+this, train held 27K always-real churches and 21K always-fake bedrooms.
+
+Tampered/inpainting generators (lama, mat, generative_inpainting, palette,
+glide-in) are test-only: a random crop of a locally edited photo is usually
+an unedited crop carrying a "fake" label.
+
+Run `python -m scripts.content_audit --manifests <csv...>` to see the
+real-vs-fake table per subject; a ONE-SIDED flag means fix the data.

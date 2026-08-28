@@ -3,6 +3,27 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-29 (night — data audit, content matching, random-size crops, pe_ft)
+- ArtiFact labels were WRONG: builder labelled by folder name but the tree is ArtiFact/{Real,Fake}/
+  <source>/, so all 2.5M files went in as fake — 36.8% of the sampled "fakes" were real photos
+  (32K LSUN, 10K COCO...). Labels now come from metadata.csv `target`; reproduces the published
+  964,989/1,531,749 exactly. Corpus 47% real (was 19%). All job-28/30 numbers void.
+- ddpm held-out contamination: ArtiFact's own ddpm folder was split 80/10/10 → 710 in train.
+  merge_manifests routes it (and tampered: lama/mat/generative_inpainting/palette/glide-in) to test.
+- Content matching (new standing rule): ddpm fakes are LSUN church+bedroom; train had 27K always-
+  real churches and 21K always-fake bedrooms. LSUN church 45K→15K (test-weighted) + LSUN bedroom
+  25K added (mirrors fake bedrooms per split). scripts/content_audit.py flags one-sided subjects.
+- New gate scripts/canary_audit.py (deliberately dumb pixel models must score ~0.5); both audits
+  gained --strict so an afterok chain cannot train on a FAILed manifest (before: print-only).
+  Official benchmark FAILS the canary (colour 0.755/hist 0.764) — recorded as a standing caveat.
+- run_data.sh guards the 31.7GB re-download; run_canon2.sh deletes the stale .state (job 30
+  silently resumed from epoch 7 and trained ZERO epochs — the tell was val 0.9307 twice).
+- Random-size crops (Thinh): src/crops.py shared by training (size per batch in collate) and the
+  vote+ wrapper (ladder over the same range); never upscale (old wrapper upscaled 176→224).
+- New approach src/approaches/pe_ft: facebook/PE-Core-L14-336 (316M) full fine-tune at 112-168px
+  via pos-embed interpolation, sides snap to 14. Predictions in GENERATOR_MATRIX. docs/DATASET.md
+  written for teammates.
+
 ## 2026-08-28 (late night — dev environment moves to the server)
 - Git topology reversed (Thinh): server clone is now primary and pushes; Mac clone becomes the
   read-only mirror. CLAUDE.md rule rewritten, rationale in docs/DECISIONS.md.

@@ -2,14 +2,24 @@
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 
-## Status: 🔴🔴 SIZE CONFOUND IS EVERYWHERE — full protocol rebuild needed
+## Status: 🟡 canon2 corpus rebuilt honest (labels, balance, ddpm holdout, content matching); trunks retraining
 
-**Now (2026-08-28 evening):** wf_test is ALSO size-structured: reals 200x200, GAN+vqvae fakes 200x200 (size-MATCHED = honest cells), diffusion fakes 256x256 (leaky cells). Honest picture: GANs ~0.91-0.93, vqvae 0.66-0.70 (stacked 0.703 = best), diffusion rows INFLATED everywhere, all clean/meanTF aggregates inflated. On honest official_v2: raw patch_relation INVERTED (0.272 — model is size-poisoned by training data); std+patch_relation 0.886/0.871; std+vote+resnet 0.889/0.878 (attention ≈ voting once the artifact is gone). noise+ trick DEAD (0.335 on honest data — observation #12 was 100% artifact). std+ on wf_test collapses (0.50) because class-dependent upscale factors leak — wrappers cannot launder a size-biased dataset.
+**Now (2026-08-29 ~01:00):** Data job 32 rebuilding canon2 with content matching (church 15K test-weighted + bedroom 25K; tampered → test only). Chained on both GPUs: job 33 pe_ft (PE-Core-L14-336, random-size crop 112-168) and job 34 resnet_ft (random-size crop 112-176) — same data, clean trunk comparison. Agent runs the audit→train→analyze loop autonomously until 10:00 SGT (Thinh).
+**First honest resnet numbers (job 31, fixed-160 crop, pre-content-fix data):** canon2_test clean 0.844 / mean TF 0.828 / worst 0.797; official (vote) 0.841 / 0.801 / 0.777; ddpm HOLDOUT 0.734 (n=2843); vqvae 0.849; GANs 0.93-0.94; sfhq 0.998 and ddim 0.989 → shortcut-hunt before quoting. Caveat: canon2 metadata 0.58/canary 0.63 (mild); official canary FAILS (colour) — contest data, can't fix, must caveat.
+
+**Previous (2026-08-28 evening):** wf_test is ALSO size-structured: reals 200x200, GAN+vqvae fakes 200x200 (size-MATCHED = honest cells), diffusion fakes 256x256 (leaky cells). Honest picture: GANs ~0.91-0.93, vqvae 0.66-0.70 (stacked 0.703 = best), diffusion rows INFLATED everywhere, all clean/meanTF aggregates inflated. On honest official_v2: raw patch_relation INVERTED (0.272 — model is size-poisoned by training data); std+patch_relation 0.886/0.871; std+vote+resnet 0.889/0.878 (attention ≈ voting once the artifact is gone). noise+ trick DEAD (0.335 on honest data — observation #12 was 100% artifact). std+ on wf_test collapses (0.50) because class-dependent upscale factors leak — wrappers cannot launder a size-biased dataset.
 **Next:** canonical protocol v2 (Thinh-approved design): seeded-random CROP at native resolution (wildfake: crop 176, zero resampling — nothing to learn from; official: downscale-only band 375-640 then crop 320; downscale traces only in eval-only sets, deflationary at worst) so size/resample factor is statistically independent of label; purely-generated + purely-real only (tampered excluded from training — localized fakeness breaks region labels; tampered becomes a later stress-test). run_canon.sbatch: canonicalize 4 datasets -> audit gates -> retrain resnet (crop 160) -> honest evals (canon wf_test, canon official, clip baseline). Patch/vote/attention v2 on clean data = weekend. Deadline Sep 1 noon SGT.
 
 ---
 
 ## Log
+
+### 2026-08-29 (night — data audit loop, agent-driven)
+- ArtiFact builder labelled the whole tree fake (36.8% of "fakes" were real photos); fixed via metadata `target`. ddpm leaked into train (710) via ArtiFact's ddpm folder; routed to test. Tampered generators → test only (protocol rule finally enforced).
+- New canary_audit (dumb pixel models) exposed content skew 0.746 → 0.626 after ArtiFact reals; then content_audit showed the mechanism: ddpm fakes are church+bedroom, train had church=real (27K/0) and bedroom=fake (0/21K). Fix: church 15K test-weighted + LSUN bedroom 25K mirrored per split (job 32).
+- Job 30 was a phantom: resumed from stale .state, trained 0 epochs (val 0.9307 identical twice). run scripts now delete .state.
+- Job 31 (real retrain, fixed 160): see Now block. Official canary FAILS (colour 0.755) — DALL·E palette ≠ COCO; standing caveat.
+- Built: shared random-size crops (train==inference, never upscale), pe_ft (PE-Core-L14-336), docs/DATASET.md, content-matching rule in conventions.
 
 ### 2026-08-28 (evening — the full honest verdict)
 - wf_test size audit: reals 200, biggan/stargan/stylegan/vqvae 200 (matched->honest), ddim/ddpm 256 (leaky). The vqvae "wall" was the only fair fight all along; the stellar diffusion numbers (0.986-0.999) were partly the duplicate-crop token giveaway.

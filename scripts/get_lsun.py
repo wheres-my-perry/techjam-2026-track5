@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import sys
 import time
 
 
@@ -58,7 +59,13 @@ def main():
         w = csv.DictWriter(fh, fieldnames=["path", "label", "generator", "source"])
         w.writeheader()
         w.writerows(rows)
-    print(f"{len(rows)} rows -> {args.manifest}")
+    print(f"{len(rows)} rows -> {args.manifest}", flush=True)
+    # Breaking out of a streaming HF dataset early leaves its prefetch thread
+    # alive; interpreter finalization then aborts with "PyGILState_Release:
+    # thread state must be current" (seen 2026-08-29, job 32) AFTER all work is
+    # done. Exit without finalization so the exit code reflects the work.
+    sys.stdout.flush()
+    os._exit(0)
 
 
 if __name__ == "__main__":

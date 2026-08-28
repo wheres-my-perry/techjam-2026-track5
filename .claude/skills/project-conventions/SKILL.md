@@ -66,6 +66,9 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
 - Tampered/inpainted images (lama, mat, generative_inpainting, palette, glide-in) never enter
   train — a random crop of a locally-edited photo is usually an unedited crop with a "fake"
   label. They live in test as the tampered stress-test.
+- Hunt every >=0.99 row with the audits restricted to that subject/generator vs reals. Found
+  2026-08-29: face_synthetics / star_gan / sfhq are separable from real faces by mean colour and
+  file size alone — their perfect rows are excluded from any claim.
 - The official benchmark FAILS the canary (colour 0.755, histogram 0.764: DALL·E palette vs
   COCO photos). We cannot change it; every official number carries that caveat, and a model
   that leans on colour will look better there than it deserves.

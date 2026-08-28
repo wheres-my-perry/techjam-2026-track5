@@ -26,12 +26,12 @@ RULES = [
     (r"bedroom|lsun-bed|/bed/", "bedroom"),
     (r"church|churces", "church"),
     (r"landscape", "landscape"),
-    (r"monet|art_painting|painting", "painting"),
+    (r"monet|art_painting|(?<!in)painting", "painting"),
     (r"ffhq|celeb|metfaces|sfhq|face|star_gan|stargan|blond|black_hair|brown_hair|"
      r"/male|/female|/young", "faces"),
     (r"afhq|/cat/|/dog/|/wild/|imgs_cat|imgs_dog|imgs_wild|horse2zebra|/horse/|/cat$|/dog$|/wild$", "animals"),
     (r"/car/|cityscapes|car-part", "vehicles/street"),
-    (r"coco|cc9k|imagenet|places|ade|/images/|/n0\d+|glide|latentdiff|stable_diffusion|t2i|tt-cc",
+    (r"coco|cc9k|imagenet|big_gan|places|ade|/images/|/n0\d+|glide|latentdiff|stable_diffusion|t2i|tt-cc",
      "general scenes"),
     (r"pro_gan|/pro/", "voc objects"),
 ]
