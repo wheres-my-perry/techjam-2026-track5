@@ -98,6 +98,18 @@ class CropVoteModel(BaseModel):
         used a flat crop=224 and upscaled any smaller image to reach it,
         which put the resampling signature back into canon2's 176px inputs.
         """
+        # Inputs smaller than the training range (the grid's resize_0.25x turns
+        # a 176px image into 44px) are upscaled to CROP_MIN. This is the ONE
+        # sanctioned upscale: it applies to every tiny input regardless of label,
+        # so it cannot encode the label -- unlike upscaling a dataset whose
+        # classes differ in native size. Below CROP_MIN the model is simply
+        # out of range; measured 2026-08-29: resize_0.25x was the worst cell
+        # (0.647 official) for exactly this reason.
+        w, h = im.size
+        if min(w, h) < self.cmin:
+            sc = self.cmin / min(w, h)
+            im = im.resize((max(self.cmin, round(w * sc)), max(self.cmin, round(h * sc))),
+                           Image.BICUBIC)
         views = []
         for c in size_ladder(self.cmin, self.cmax, self.n_sizes, self.step):
             views += grid_views(im, c, self.grid, self.step)

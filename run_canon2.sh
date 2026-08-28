@@ -32,8 +32,4 @@ run python -m src.evaluate --manifest data/manifests/canon_official.csv \
   --model vote+resnet_ft:outputs/resnet_ft/canon2.pt \
   --out outputs/resnet_ft/eval_canon2_official --limit 1200
 
-run python -m src.evaluate --manifest data/manifests/canon2_test.csv \
-  --model clip_linear:outputs/clip_linear/wf_l14_aug.pt \
-  --out outputs/clip_linear/eval_canon2_test --limit 1200
-
 echo CANON2 DONE
