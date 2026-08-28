@@ -10,6 +10,8 @@ import hashlib
 import numpy as np
 from PIL import Image
 
+from src.crops import CROP_MAX, CROP_MIN, grid_views, size_ladder
+
 
 class BaseModel:
     name = "base"
@@ -59,6 +61,7 @@ _APPROACHES = {
     "cnn": ("src.approaches.cnn.model", "CNNModel", "outputs/cnn/baseline.pt"),
     "clip_linear": ("src.approaches.clip_linear.model", "CLIPLinearModel", "outputs/clip_linear/baseline.pt"),
     "resnet_ft": ("src.approaches.resnet_ft.model", "ResNetFTModel", "outputs/resnet_ft/baseline.pt"),
+    "pe_ft": ("src.approaches.pe_ft.model", "PEFTModel", "outputs/pe_ft/baseline.pt"),
     "real_manifold": ("src.approaches.real_manifold.model", "RealManifoldModel", "outputs/real_manifold/baseline.npz"),
     "spectral": ("src.approaches.spectral.model", "SpectralModel", "outputs/spectral/baseline.npz"),
     "patch_relation": ("src.approaches.patch_relation.model", "PatchRelationModel", "outputs/patch_relation/baseline.pt"),
@@ -75,21 +78,30 @@ class CropVoteModel(BaseModel):
     All crops share one size -> inner model batches them efficiently.
     """
 
-    def __init__(self, inner: BaseModel, crop=224, grid=3, topk=3):
+    def __init__(self, inner: BaseModel, cmin=None, cmax=None,
+                 grid=3, topk=3, n_sizes=3):
         self.inner = inner
         self.name = f"vote+{inner.name}"
-        self.crop, self.grid, self.topk = crop, grid, topk
+        # an approach may declare its own crop range/step (a ViT-L/14 needs
+        # sides divisible by 14); default to the shared range otherwise
+        self.cmin = cmin if cmin is not None else getattr(inner, "CROP_MIN", CROP_MIN)
+        self.cmax = cmax if cmax is not None else getattr(inner, "CROP_MAX", CROP_MAX)
+        self.step = getattr(inner, "CROP_STEP", 1)
+        self.grid, self.topk, self.n_sizes = grid, topk, n_sizes
 
     def _views(self, im):
-        c = self.crop
-        w, h = im.size
-        if min(w, h) < c:  # tiny image: upscale short side, single center view
-            s = c / min(w, h)
-            im = im.resize((max(c, round(w * s)), max(c, round(h * s))))
-            w, h = im.size
-        xs = sorted({round(t * (w - c) / max(1, self.grid - 1)) for t in range(self.grid)})
-        ys = sorted({round(t * (h - c) / max(1, self.grid - 1)) for t in range(self.grid)})
-        return [im.crop((x, y, x + c, y + c)) for y in ys for x in xs]
+        """Grid crops at several sizes spanning the TRAINING crop range.
+
+        Training draws a random size per batch from [cmin, cmax]; inference
+        sweeps the same range on a fixed ladder, so the two match while
+        scores stay reproducible. src.crops never upscales -- the old code
+        used a flat crop=224 and upscaled any smaller image to reach it,
+        which put the resampling signature back into canon2's 176px inputs.
+        """
+        views = []
+        for c in size_ladder(self.cmin, self.cmax, self.n_sizes, self.step):
+            views += grid_views(im, c, self.grid, self.step)
+        return views
 
     def predict(self, images):
         views, owners = [], []

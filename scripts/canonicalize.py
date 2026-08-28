@@ -77,7 +77,7 @@ def main():
             tmp = out_path + ".tmp.png"
             img.save(tmp, format="PNG")
             os.replace(tmp, out_path)
-        rows.append({"path": out_path, "label": s.label,
+        rows.append({"path": out_path, "orig": s.path, "label": s.label,
                      "generator": s.generator, "source": s.source})
         if (i + 1) % 2000 == 0:
             rate = (i + 1) / (time.time() - t0)
@@ -87,7 +87,7 @@ def main():
 
     os.makedirs(os.path.dirname(args.out_manifest) or ".", exist_ok=True)
     with open(args.out_manifest, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["path", "label", "generator", "source"])
+        w = csv.DictWriter(fh, fieldnames=["path", "orig", "label", "generator", "source"])
         w.writeheader()
         w.writerows(rows)
     print(f"{len(rows)} rows -> {args.out_manifest}")

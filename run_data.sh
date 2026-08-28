@@ -26,13 +26,10 @@ fi
 
 run python -m scripts.build_artifact_manifest --root data/artifact --cap-real 150000 --cap-fake 150000
 
-if [ -d data/lsun_church ]; then
-  echo "== LSUN already present, skipping download =="
-else
-  run python -m scripts.get_lsun --count 45000
-fi
+run python -m scripts.get_lsun --count 15000
+run python -m scripts.get_lsun --dataset pcuenq/lsun-bedrooms --count 25000 \
+  --out data/lsun_bedroom --manifest data/manifests/lsun_bedroom_raw.csv --source lsun_bedroom
 
-rm -rf data/canon/artifact
 
 run python -m scripts.canonicalize --manifest data/manifests/wildfake_train.csv \
   --out-dir data/canon/wf_train --out-manifest data/manifests/canon_wf_train.csv --crop 176
@@ -44,6 +41,8 @@ run python -m scripts.canonicalize --manifest data/manifests/artifact_raw.csv \
   --out-dir data/canon/artifact --out-manifest data/manifests/canon_artifact.csv --crop 176
 run python -m scripts.canonicalize --manifest data/manifests/lsun_raw.csv \
   --out-dir data/canon/lsun --out-manifest data/manifests/canon_lsun.csv --crop 176
+run python -m scripts.canonicalize --manifest data/manifests/lsun_bedroom_raw.csv \
+  --out-dir data/canon/lsun_bedroom --out-manifest data/manifests/canon_lsun_bedroom.csv --crop 176
 
 run python -m scripts.canonicalize --manifest data/manifests/official_v2.csv \
   --out-dir data/canon/official --out-manifest data/manifests/canon_official.csv --band 375 640 --crop 320

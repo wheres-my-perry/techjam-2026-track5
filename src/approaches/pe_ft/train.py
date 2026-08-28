@@ -1,11 +1,12 @@
-"""Fine-tune pretrained ResNet-50 on manifest data. Kill-resumable (epoch state).
+"""Fine-tune PE-Core-L14-336 (ViT-L/14) on manifest data. Kill-resumable.
 
-    python -m src.approaches.resnet_ft.train --train data/manifests/wildfake_train.csv \
-        --val data/manifests/wildfake_val.csv --epochs 5 --augment --crop 224 --batch 24 \
-        --out outputs/resnet_ft/wf_aug.pt
+    python -m src.approaches.pe_ft.train --train data/manifests/canon2_train.csv \
+        --val data/manifests/canon2_val.csv --epochs 4 --augment \
+        --crop-min 112 --crop-max 168 --batch 48 --out outputs/pe_ft/canon2.pt
 
-Self-contained by design (approaches never import each other); the dataset code
-mirrors approaches/cnn/train.py with ImageNet normalization.
+Mirrors resnet_ft/train.py (approaches never import each other). Differences:
+crop sides snap to multiples of 14 (patch size); bf16 autocast; the trunk
+gets a small lr (1e-5) and the fresh head a large one (1e-3); grad clip 1.0.
 """
 
 from __future__ import annotations
@@ -21,11 +22,13 @@ import torch.nn as nn
 from PIL import ImageFilter
 from torch.utils.data import DataLoader, Dataset
 
-from src.crops import CROP_MAX, CROP_MIN, clamp_size, random_crop, sample_size
+from src.crops import clamp_size, random_crop, sample_size
 from src.data import load_image, load_manifest
 from src.metrics import auroc
 from src.transforms import random_train_transform
 from .model import build_net, pick_device, to_tensor
+
+CROP_MIN, CROP_MAX, CROP_STEP = 112, 168, 14
 
 
 class ManifestDataset(Dataset):
@@ -68,9 +71,10 @@ def make_collate(cmin, cmax, fixed=None):
     """
     def collate(batch):
         rng = random.Random()
-        size = fixed if fixed is not None else sample_size(rng, cmin, cmax)
+        size = fixed if fixed is not None else sample_size(rng, cmin, cmax, CROP_STEP)
         # one size for the batch: clamp to the smallest image so nothing upscales
         c = min(clamp_size(size, *im.size) for im, _ in batch)
+        c = max(CROP_STEP, (c // CROP_STEP) * CROP_STEP)
         imgs = [random_crop(im, c, rng) for im, _ in batch]
         ys = torch.tensor([y for _, y in batch], dtype=torch.float32)
         return to_tensor(imgs), ys
@@ -82,7 +86,8 @@ def evaluate_auroc(net, loader, device):
     net.eval()
     ys, ss = [], []
     for x, y in loader:
-        logits = net(x.to(device)).squeeze(1)
+        with torch.autocast(device, dtype=torch.bfloat16, enabled=device == "cuda"):
+            logits = net(x.to(device)).squeeze(1).float()
         ss.extend(torch.sigmoid(logits).float().cpu().numpy().tolist())
         ys.extend(y.numpy().tolist())
     return auroc(ys, ss)
@@ -92,15 +97,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--train", required=True)
     ap.add_argument("--val", required=True)
-    ap.add_argument("--epochs", type=int, default=5)
-    ap.add_argument("--batch", type=int, default=24)
-    ap.add_argument("--lr", type=float, default=1e-4, help="low LR: fine-tuning")
+    ap.add_argument("--epochs", type=int, default=4)
+    ap.add_argument("--batch", type=int, default=48)
+    ap.add_argument("--lr", type=float, default=1e-5, help="trunk LR (pretrained ViT-L)")
+    ap.add_argument("--head-lr", type=float, default=1e-3, help="fresh linear head LR")
+    ap.add_argument("--max-steps", type=int, default=0,
+                    help="debug: stop each epoch after N steps")
     ap.add_argument("--augment", action="store_true")
     ap.add_argument("--blur-boost", action="store_true",
                     help="extra blur/downscale aug on top of --augment (60%% of "
                          "samples get heavy low-pass; targets the measured "
                          "blur/resize weakness)")
-    ap.add_argument("--crop", type=int, default=224,
+    ap.add_argument("--crop", type=int, default=168,
                     help="fixed crop size; ignored when --crop-min/--crop-max "
                          "are given")
     ap.add_argument("--crop-min", type=int, default=None,
@@ -108,7 +116,7 @@ def main():
     ap.add_argument("--crop-max", type=int, default=None,
                     help=f"random-size crop range high end (e.g. {CROP_MAX})")
     ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--out", default="outputs/resnet_ft/baseline.pt")
+    ap.add_argument("--out", default="outputs/pe_ft/baseline.pt")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -121,6 +129,7 @@ def main():
     cmax = args.crop_max if args.crop_max is not None else args.crop
     # val uses a FIXED mid size so val AUROC is comparable across epochs
     vfixed = (cmin + cmax) // 2 if rand_size else args.crop
+    vfixed = max(CROP_STEP, (vfixed // CROP_STEP) * CROP_STEP)
     print(f"device={device} augment={args.augment} blur_boost={args.blur_boost} "
           f"crop={f'random {cmin}-{cmax}' if rand_size else args.crop} "
           f"(val fixed {vfixed})", flush=True)
@@ -135,7 +144,11 @@ def main():
 
     net = build_net(pretrained=True).to(device)
     print(f"params: {sum(p.numel() for p in net.parameters()):,}", flush=True)
-    opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=1e-4)
+    opt = torch.optim.AdamW(
+        [{"params": net.trunk.parameters(), "lr": args.lr},
+         {"params": net.head.parameters(), "lr": args.head_lr}],
+        weight_decay=0.05)
+    amp = device == "cuda"
     loss_fn = nn.BCEWithLogitsLoss()
 
     best, start_epoch = -1.0, 1
@@ -152,11 +165,16 @@ def main():
     for epoch in range(start_epoch, args.epochs + 1):
         net.train()
         t0, running, seen = time.time(), 0.0, 0
-        for x, y in train_dl:
+        for step, (x, y) in enumerate(train_dl):
+            if args.max_steps and step >= args.max_steps:
+                break
             x, y = x.to(device), y.to(device)
             opt.zero_grad()
-            loss = loss_fn(net(x).squeeze(1), y)
+            with torch.autocast(device, dtype=torch.bfloat16, enabled=amp):
+                logits = net(x).squeeze(1)
+            loss = loss_fn(logits.float(), y)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             opt.step()
             running += loss.item() * len(y)
             seen += len(y)

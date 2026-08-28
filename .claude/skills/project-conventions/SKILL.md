@@ -48,6 +48,28 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
   FIRST, celebration never. The 2026-08-28 lesson: official_val reals were 200x200 thumbnails
   vs 1024+ fakes; metadata alone scored ~1.0; three "miracles" were this one artifact.
 
+## Content matching (standing rule, Thinh 2026-08-29 — after the church/bedroom skew)
+- Size was the first dumb variable; CONTENT is the second. If a subject appears on only one
+  side of the label (real bedrooms 0, fake bedrooms 21K), the model learns "bedroom = fake"
+  and the score is subject recognition, not detection. Every content bucket that appears in
+  the fakes must have reals in the SAME split, and vice versa — matched per split, not per corpus.
+- Know what each generator was trained on before adding it; that IS its content. DDPM =
+  LSUN church + bedroom, so its reals must be church + bedroom at the same native size.
+- Gate: `python -m scripts.canary_audit --manifest <csv> --strict` on every new/changed
+  manifest, alongside shortcut_audit. Canaries are models too weak to detect AI (mean colour,
+  histogram, 8x8 thumbnail, sigma-8 blur); they must score ~0.5. Same bands as shortcut_audit.
+  `python -m scripts.content_audit` gives the structural real-vs-fake table per subject.
+- No source may dominate one side: cap any single real source so it is not >~20% of a split's
+  reals (LSUN church was 44% of test reals; "church = real").
+- Labels come from the dataset's own per-image label field, never folder names (ArtiFact:
+  `Fake/afhq` is real photos; `pro_gan` holds both classes; `sfhq` is fake).
+- Tampered/inpainted images (lama, mat, generative_inpainting, palette, glide-in) never enter
+  train — a random crop of a locally-edited photo is usually an unedited crop with a "fake"
+  label. They live in test as the tampered stress-test.
+- The official benchmark FAILS the canary (colour 0.755, histogram 0.764: DALL·E palette vs
+  COCO photos). We cannot change it; every official number carries that caveat, and a model
+  that leans on colour will look better there than it deserves.
+
 ## Size-canonicalization tiers (Thinh 2026-08-28: transforms cannot fix disjoint size classes)
 - Measure class size distributions first (size_audit). Near-overlap (ratio <~1.5x): seeded
   random-band resize (scripts/canonicalize.py) is adequate; verify empirically after training.

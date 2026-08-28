@@ -15,6 +15,7 @@ EDIT = partial/inpainting (tampered; parked).
 | approach | DIFF | TOKEN | GAN | reasoning anchor |
 |---|---|---|---|---|
 | cnn (scratch) | ✓ 0.73-0.76 (ddim/ddpm) | ✓ 0.53 vqvae — near chance | ✓ 0.63-0.67 | learns fingerprints of seen schools; transfer only within family (ddim→ddpm) |
+| pe_ft (PE-Core-L14-336 full fine-tune, Thinh 2026-08-29) | P ddpm HOLDOUT 0.80-0.88 (vs resnet_ft 0.73 on canon2); official >= 0.88 | P vqvae 0.85-0.90 | P 0.95+ | PREDICTION: CLIP-family semantics (clip_linear was family-agnostic) + full fine-tune of a 316M ViT-L should beat ResNet-50 on the unseen school and decay LESS under blur/resize (lower-frequency reliance). Risk: pos-embed interpolation 336->112-168px costs some accuracy; if ddpm < 0.75 the trunk is not the bottleneck, the DATA is. |
 | clip_linear | ✓ 0.87-0.94 (ddpm HOLDOUT 0.87, dalle 0.86) — flattest transform decay | ✓ 0.64 vqvae | ✓ 0.91-0.92 | PREDICTION CONFIRMED: family-agnostic, moderate ceiling; best worst-case robustness |
 | resnet_ft (full-img) | ✓ 0.95 ddpm but INVERTED 0.21 on dalle full-res | ✓ 0.53 vqvae | ✓ 0.74-0.77 | GAP dilution at unseen resolution flips the score — full-image eval is disqualified |
 | vote+resnet_ft | ✓ 0.94-0.99 (dalle 0.94/0.91 tf!) | ✓ 0.66 vqvae | ✓ 0.93 all three | CHAMPION. Crop voting fixes resolution shift (0.21→0.94 official); weakness: blur/resize on ddpm (0.57-0.62) |
