@@ -3,6 +3,12 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-29 (afternoon — leave-one-school-out verdict)
+- Job 43 (run_lofo.sbatch diffusion pe_ft): PE with every diffusion generator removed from
+  train+val scores GENERAL 0.716 (ddpm 0.811 mean-TF, official 0.620) vs 0.964 when sibling
+  diffusion models are in training. Within-family transfer is strong (0.96), cross-family is
+  weak (0.72). The 0.964 must be reported as "unseen generator, seen family".
+
 ## 2026-08-29 (night — data audit, content matching, random-size crops, pe_ft)
 - ArtiFact labels were WRONG: builder labelled by folder name but the tree is ArtiFact/{Real,Fake}/
   <source>/, so all 2.5M files went in as fake — 36.8% of the sampled "fakes" were real photos

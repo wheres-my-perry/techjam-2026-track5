@@ -32,3 +32,10 @@ resnet_ft on ddpm, the trunk isn't the bottleneck — look at the data.
 patch_relation (approach 01 stage 2: attention over a 3x3 patch grid)
 currently consumes a resnet_ft trunk (EMB=2048). Swap to the pe_ft trunk
 (EMB=1024) once pe_ft has a measured checkpoint.
+
+## LOFO-diffusion (job 43, 2026-08-29)
+Train/val with the whole diffusion school dropped (train 315K -> 272K rows, 117.7K fake; metadata audit 0.531 CLEAN), 4 epochs, val 0.9716 (seen schools only).
+Unseen school per generator (clean / mean-TF): ddim 0.825/0.805, ddpm 0.845/0.811, denoising_diffusion_gan 0.895/0.861, diffusion_gan 0.994/0.982, glide 0.751/0.695, latent_diffusion 0.929/0.885, palette 0.867/0.853, stable_diffusion 0.650/0.586, vq_diffusion 0.995/0.977. Seen-school mean clean 0.960.
+Official (DALL·E) 0.661/0.620/worst 0.561. GENERAL 0.716.
+Reading: diffusion_gan and vq_diffusion still ~0.99 because they are GAN/token hybrids (decoder is a GAN / VQ codebook) — the "school" label is by name, the detector follows the decoder. Pixel-space diffusion with no adversarial decoder (glide, stable_diffusion, ddpm) is the actually-new thing and lands 0.59-0.81.
+Consequence: cross-family generalization is the weak spot; the tell is decoder-type, not "diffusion". Any future lever should be judged on this LOFO harness, not on ddpm-holdout.
