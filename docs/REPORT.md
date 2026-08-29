@@ -228,23 +228,30 @@ Rapidata/GenAI-Bench/parti-prompts/MJHQ/open-image-preferences) pooled against 9
 photos (COCO-640, Open Images, FFHQ, SID), scored at native size through the app policy. One score
 scale, one cut-off (`scripts/random_gen_test.py`, per-image scores in `outputs/random_gen/`).
 
-| all 44 sources pooled | canon3 | canon4 |
+| all sources pooled (64 generator tags, 16,164 fakes, 900 unseen reals) | canon3 | canon4 |
 |---|---|---|
-| AUROC (fake ranked above real) | 0.982 | **0.994** |
-| caught at a 1-in-100 false-alarm budget | 83% (cut-off 0.46), worst GPT-4o 36% | **94%** (cut-off 0.14), worst Ideogram 53% |
-| caught at a 5-in-100 false-alarm budget | 93% (cut-off 0.22), worst GPT-4o 58% | **97%** (cut-off 0.04), worst Ideogram 79% |
+| AUROC (fake ranked above real) | 0.980 | **0.992** |
+| caught at a 1-in-100 false-alarm budget | 84% (cut-off 0.46) | **91%** (cut-off 0.14) |
+| caught at a 5-in-100 false-alarm budget | 92% (cut-off 0.22) | **96%** (cut-off 0.04) |
 
-Per source, canon4 ranks ≥ canon3 on 35 of 39 (most at 0.999–1.000; GPT-4o 0.90 → 0.98,
-Midjourney 5.2 0.94 → 1.00, SD3 0.95 → 1.00). Its fake scores are spread lower, so at the old 0.5
-cut-off it *loses* Ideogram (79% → 10%) and Reve (86% → 43%) while still ranking them above every
-real — a threshold effect, not a detection effect. The app cut-off is therefore chosen on this
-test, not on the contest set: **0.15 ≈ 1% false alarms on unseen reals**, 94% of unseen fakes
-caught, 5/5 Gemini images (0.19–0.78) and 0/5 phone photos (max 0.04) on the wild set.
+(The first 44-source pass gave 0.982 / 83% / 93% for canon3 and 0.994 / 94% / 97% for canon4; the
+extra 20 sources added the hardest generators, which is why both numbers moved down.)
+
+Per source at the same 1% false-alarm budget, canon4 ≥ canon3 on 55 of 64 tags — 40 of them at
+98–100% (Midjourney 5.2 56% → 99%, SD3 59% → 100%, HiDream 67% → 100%, GPT-4o 26% → 71%,
+Imagen 3 76% → 99%). Gemini's own generator (Nano-Banana, 300 images): 94% for both models.
+Where canon4 is *worse*: Ideogram 76% → 51%, Hunyuan-Image 2.1 79% → 54%, Seedream 3 87% → 60%,
+Reve Halfmoon 88% → 68%, Runway Frames 86% → 73%, ADM 87% → 78% — the newest proprietary
+generators, where canon4's tighter real/fake margin spreads the fakes low. **FLUX-2 Pro is a hole
+for both models: 10% caught.** The app cut-off is chosen on this test, not on the contest set:
+**0.15 ≈ 1% false alarms on unseen reals**, 5/5 Gemini images (0.19–0.78) and 0/5 phone photos
+(max 0.04) on the wild set.
 
 Honest reading: on generators it has never seen, the model catches about 9 in 10 AI images while
-accusing about 1 in 100 real photos. The hardest current generators are Ideogram, Reve Halfmoon and
-GPT-4o image; a source's file handling matters too (Midjourney v5 from MJHQ 90% vs the same
-generator's re-saved Rapidata copy 53% under canon3).
+accusing about 1 in 100 real photos. The hardest current generators are FLUX-2 Pro (missed by
+both models), Ideogram, Hunyuan-Image 2.1 and Seedream 3; a source's file handling matters too
+(Midjourney v5 from MJHQ 91% vs the same generator's re-saved Rapidata copy 56% under canon3).
+Per-image scores for every run are in `outputs/random_gen/`.
 
 ## 6. Error analysis (initial)
 - **Unseen generator family (Gemini):** scored 0.08 median while FLUX/DALL·E/SD score 0.84–1.00.
