@@ -64,11 +64,15 @@ def main():
     ap.add_argument("--out-prefix", default="data/manifests/canon3")
     ap.add_argument("--only-sources", default="", help="comma list; default all in canon_ext")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--raw", default="data/manifests/raw_ext.csv")
+    ap.add_argument("--ext", default="data/manifests/canon_ext.csv")
+    ap.add_argument("--test-only", default="", help="comma list of extra sources routed to test")
     args = ap.parse_args()
+    test_only = TAMPERED | set(filter(None, args.test_only.split(",")))
 
-    raw = {r["path"].removeprefix("./"): r for r in read("data/manifests/raw_ext.csv")}
+    raw = {r["path"].removeprefix("./"): r for r in read(args.raw)}
     ext = []
-    for r in read("data/manifests/canon_ext.csv"):
+    for r in read(args.ext):
         m = raw[r["orig"].removeprefix("./")]
         r["long"] = str(max(int(m["w"]), int(m["h"]))); r["bucket"] = bucket(int(r["long"]))
         ext.append(r)
@@ -86,8 +90,8 @@ def main():
     for r in ext: by_src[r["source"]].append(r)
     e_tr, e_va, e_te = [], [], []
     for i, (src, rs) in enumerate(sorted(by_src.items())):
-        if src in TAMPERED:
-            e_te += rs; print(f"  {src:16s} n={len(rs):6d} -> TEST ONLY (tampered)"); continue
+        if src in test_only:
+            e_te += rs; print(f"  {src:16s} n={len(rs):6d} -> TEST ONLY"); continue
         a, b, c = split(rs, (0.8, 0.1), args.seed + i)
         e_tr += a; e_va += b; e_te += c
         print(f"  {src:16s} n={len(rs):6d} label={rs[0]['label']} long={sorted({r['long'] for r in rs})[:3]} -> {len(a)}/{len(b)}/{len(c)}")

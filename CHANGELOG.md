@@ -7,6 +7,8 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
 - Job 67 canon3 (328K rows, 4 ep): GENERAL 0.970; DALL·E 0.996/0.985/0.964 raw, 0.997/0.988/0.969
   dedup, 0.995/0.986/0.967 style-matched; WILD 10/10 at 0.5. REPORT §5.1b.
 - app.py + scripts/score_dir.py default -> vote(L=320)+pe_ft:outputs/pe_ft/canon3.pt, threshold 0.5.
+- canon4 manifests (iteration B): merge_ext.py --raw/--ext/--test-only; run_canon3.sh evaluates ${P}_test;
+  all ext sources extracted (raw_ext_all.csv) + COCO train2017 12K originals for the 640 bucket. Job 76.
 
 ## 2026-08-29 (evening — small-trial verdict, pe_seg, report)
 - Job 64 (canon3s small trial): wild set flips from inverted to ranked (0.96/1.00); DALL-E 0.974 mean.

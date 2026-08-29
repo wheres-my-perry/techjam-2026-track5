@@ -27,7 +27,7 @@ done
 python -m scripts.wild_eval --model "vote(L=320)+${APP}:$CK"
 echo "== BENCHMARK"
 SPEC="vote(L=320)+${APP}:$CK"
-python -m src.evaluate --manifest data/manifests/canon3_test.csv --model "$SPEC" \
+python -m src.evaluate --manifest ${P}_test.csv --model "$SPEC" \
   --out outputs/$APP/eval_${NAME}_test --limit $TEST_LIMIT || exit 1
 python -m src.evaluate --manifest data/manifests/canon_official.csv --model "$SPEC" \
   --out outputs/$APP/eval_${NAME}_official --limit 1200 || exit 1
