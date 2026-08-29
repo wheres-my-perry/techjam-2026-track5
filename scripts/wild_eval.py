@@ -17,7 +17,7 @@ from src.data import load_image
 from src.model import load_model
 
 GROUPS = {"real": 0, "gemini": 1}          # data/hack/<group>/*
-LOOSE = {"cifake_val.jpeg": 1, "Gemini_Generated_Image_77bnzl77bnzl77bn.jpeg": 1}
+LOOSE = {}  # the two loose files are duplicates of gemini_1/gemini_2 (identical scores 2026-08-29)
 
 
 def files():
