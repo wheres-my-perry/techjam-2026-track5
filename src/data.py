@@ -12,6 +12,11 @@ import csv
 import os
 from dataclasses import dataclass
 
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except ImportError:  # HEIC (iPhone) support is optional
+    pass
 from PIL import Image, ImageOps
 
 

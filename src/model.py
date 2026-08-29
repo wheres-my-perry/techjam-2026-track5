@@ -80,7 +80,7 @@ class CropVoteModel(BaseModel):
     """
 
     def __init__(self, inner: BaseModel, cmin=None, cmax=None,
-                 grid=3, topk=0, n_sizes=3, alpha=0.0):
+                 grid=3, topk=0, n_sizes=3, alpha=0.0, long=0):
         # topk=0 -> MEAN over all views. Chosen on canon2_val 2026-08-29 (job 36):
         # mean beat top-3 by +0.02 clean / +0.03 worst; max (k=1) was worst.
         self.inner = inner
@@ -95,6 +95,9 @@ class CropVoteModel(BaseModel):
         # regions, so their crop scores should DISAGREE more than reals'.
         # score = aggregate + alpha * std(view scores); alpha chosen on val.
         self.alpha = alpha
+        # long: shrink so the LONG side == long before cropping (never upscale).
+        # Mirrors canonicalize.py --long so inference == training preprocessing.
+        self.long = long
 
     def _views(self, im):
         """Grid crops at several sizes spanning the TRAINING crop range.
@@ -113,6 +116,10 @@ class CropVoteModel(BaseModel):
         # out of range; measured 2026-08-29: resize_0.25x was the worst cell
         # (0.647 official) for exactly this reason.
         w, h = im.size
+        if self.long and max(w, h) > self.long:
+            sc = self.long / max(w, h)
+            im = im.resize((max(1, round(w * sc)), max(1, round(h * sc))), Image.LANCZOS)
+            w, h = im.size
         if min(w, h) < self.cmin:
             sc = self.cmin / min(w, h)
             im = im.resize((max(self.cmin, round(w * sc)), max(self.cmin, round(h * sc))),
@@ -193,7 +200,7 @@ def load_model(name: str = "random") -> BaseModel:
         kw = {}
         for kv in filter(None, (m.group(1) or "").split(",")):
             k, v = kv.split("=")
-            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha"}[k.strip()]
+            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha", "L": "long"}[k.strip()]
             kw[key] = float(v) if key == "alpha" else int(v)
         return CropVoteModel(load_model(m.group(2)), **kw)
     if name.startswith("noise+"):

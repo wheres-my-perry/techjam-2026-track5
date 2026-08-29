@@ -19,6 +19,11 @@ import math
 import time
 
 import numpy as np
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
 from PIL import Image, ImageDraw
 
 from src.crops import grid_boxes, size_ladder
@@ -48,9 +53,11 @@ def pick_grid(w: int, h: int, dense: bool) -> int:
     return int(min(7, max(3, math.ceil(min(w, h) / 224))))
 
 
-def score_image(img: Image.Image, transform: str, dense: bool):
+def score_image(img, transform: str, dense: bool):
     if img is None:
         return None, "Upload an image first."
+    if isinstance(img, str):
+        img = load_image(img)
     m = get_model()
     img = img.convert("RGB")
     if transform != "clean":
@@ -112,7 +119,7 @@ def build_ui():
                     "contest's post-processing transforms first to see how the score holds up.")
         with gr.Row():
             with gr.Column():
-                inp = gr.Image(type="pil", label="image")
+                inp = gr.Image(type="filepath", label="image (jpg/png/heic)")
                 tf = gr.Dropdown(list(TRANSFORMS), value="clean", label="apply transform before scoring")
                 dense = gr.Checkbox(value=True, label="dense grid for large images (>640 px)")
                 btn = gr.Button("Detect", variant="primary")

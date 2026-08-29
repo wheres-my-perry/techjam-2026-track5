@@ -3,6 +3,16 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-29 (afternoon — wild test, large-image expansion)
+- app.py: gradio prototype (drop image -> P(AI) + per-crop map + transform picker); HEIC support
+  (iPhone .jpeg files are HEIF) in src/data.load_image via pillow-heif.
+- scripts/wild_eval.py: frozen data/hack held-out set (phone photos + Gemini). canon2 model: 0/10.
+- Large-image expansion: scripts/build_ext_manifest.py (SID_Set, CelebA-HQ, AFHQv2, Open Images,
+  FFHQ, Midjourney v6, ELSA_D3; original bytes kept), canonicalize.py --long (shrink by long side,
+  worker pool), scripts/merge_ext.py (canon3; per-bucket class balance, excess -> test, tampered ->
+  test), scripts/bucket_audit.py (gate). CropVoteModel vote(L=320) mirrors --long at inference.
+- run_canon3.sh/.sbatch: gates (strict) -> pe_ft train -> canon3_test/official/GENERAL/WILD.
+
 ## 2026-08-29 (afternoon — leave-one-school-out verdict)
 - Job 43 (run_lofo.sbatch diffusion pe_ft): PE with every diffusion generator removed from
   train+val scores GENERAL 0.716 (ddpm 0.811 mean-TF, official 0.620) vs 0.964 when sibling
