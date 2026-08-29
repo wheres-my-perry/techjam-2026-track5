@@ -61,10 +61,15 @@ def size_ladder(cmin: int = CROP_MIN, cmax: int = CROP_MAX, n: int = 3,
     return sorted({snap(int(round(cmin + i * inc)), step) for i in range(n)})
 
 
-def grid_views(img, size: int, grid: int = 3, step: int = 1):
-    """All `grid`x`grid` evenly spaced crops of `size` (clamped, no upscale)."""
-    w, h = img.size
+def grid_boxes(w: int, h: int, size: int, grid: int = 3, step: int = 1):
+    """Boxes (x0, y0, x1, y1) of all `grid`x`grid` evenly spaced crops of
+    `size` (clamped, no upscale). Same order as grid_views."""
     c = snap(clamp_size(size, w, h), step)
     xs = sorted({round(t * (w - c) / max(1, grid - 1)) for t in range(grid)})
     ys = sorted({round(t * (h - c) / max(1, grid - 1)) for t in range(grid)})
-    return [img.crop((x, y, x + c, y + c)) for y in ys for x in xs]
+    return [(x, y, x + c, y + c) for y in ys for x in xs]
+
+
+def grid_views(img, size: int, grid: int = 3, step: int = 1):
+    """All `grid`x`grid` evenly spaced crops of `size` (clamped, no upscale)."""
+    return [img.crop(b) for b in grid_boxes(*img.size, size, grid, step)]
