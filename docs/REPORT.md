@@ -132,7 +132,11 @@ contest's reference; we do not tune on it.
 
 ### 5.1b Full retrain on canon3 (job 67, 4 epochs)
 Wild set: **10/10 at the 0.5 cut-off** — phone photos 0.13–0.34, Gemini 0.68–0.97 — with no Gemini
-images in training. De-duplicated and style-matched DALL·E numbers: pending (§9).
+images in training. De-duplicated and style-matched DALL·E numbers for canon3: pending (§9).
+
+**Style-matched check (canon3s):** raw de-duplicated set 0.985 clean / 0.974 mean-TF / 0.938 worst →
+style-matched subset **0.988 / 0.981 / 0.960**. Equalising style does not lower the score, so the DALL·E
+detection is not carried by aesthetic statistics (§2.1); the raw number stands.
 
 ### 5.2 Generalisation
 - Leave-one-family-out (whole diffusion family removed from training): GENERAL 0.716 (DALL·E
