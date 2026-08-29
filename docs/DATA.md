@@ -86,3 +86,7 @@ Every current dataset has class-correlated image sizes ("metadata leak"):
 The WildFake DALL·E-Advanced slice (8,843 files) holds only 3,719 unique images by md5: 1,808 files are
 repeated 4x byte-identically across date folders. `data/manifests/canon_official_dedup.csv` is the
 de-duplicated evaluation manifest (4,998 real / 3,719 fake); use it for all official numbers from now on.
+
+`data/manifests/canon_official_matched.csv` (2026-08-29): style-matched subset of the deduped reference set —
+1,107 DALL·E/COCO pairs nearest in a 12-d style space (caliper 1.0 z-units); style-only AUROC 0.77 -> 0.60.
+Report every official number on both the dedup and the matched manifest.

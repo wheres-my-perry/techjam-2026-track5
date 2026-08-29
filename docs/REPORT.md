@@ -34,6 +34,39 @@ before any result is reported (`scripts/shortcut_audit.py`, `canary_audit.py`, `
 
 Three of these (size, content, duplicates) are in datasets the community uses every day.
 
+
+### 2.1 Finding: real and generated images differ in *style statistics* — partly intrinsic, partly aesthetic
+
+A 12-number "style-only" model (brightness percentiles, contrast, saturation, grain, sharpness,
+vignette, grey fraction — no layout, no palette) separates real from generated at **0.67 on our
+training corpus and 0.77 on the contest reference set**. Where the classes differ (effect size):
+
+```
+property          training set: real  fake   effect     benchmark: real  fake   effect
+brightness (95%)           0.808  0.769  -0.29                0.805  0.850  +0.38
+contrast                   0.677  0.629  -0.31                0.691  0.740  +0.35
+grain                      0.034  0.026  -0.47                0.035  0.034  -0.05
+sharpness                  0.089  0.066  -0.49                0.110  0.093  -0.25
+sharpness spread           0.119  0.088  -0.60                0.153  0.134  -0.28
+grey fraction              0.272  0.277  +0.02                0.319  0.228  -0.40
+```
+
+Interpretation (Thinh, 2026-08-29): part of this is **intrinsic to generation** — generators have no
+sensor, so no camera grain, and decoders are smooth — and a detector is entitled to use it. Part is
+**aesthetic bias** (DALL·E outputs are brighter, more contrasty and more colourful than COCO photos
+because of what people prompt for), which a detector should not rely on exclusively: the worst
+cases in §6.1 are exactly a model leaning on it (flash-lit grainy DALL·E → "real"; polished real
+photo → "AI"). We report it as a general property of AIGC data rather than a flaw of one dataset.
+
+How we handle it in this prototype: (1) every DALL·E number is reported twice — on the
+de-duplicated reference set and on a **style-matched subset** of it (each DALL·E image paired with
+the COCO photo closest to it in the 12 style numbers; 1,107 pairs; style-only separability drops
+0.77 → 0.60) — so the reader sees how much detection survives when style is equalised;
+(2) full style neutralisation (label-neutral style randomisation on both classes, `--style-aug`,
+and style-bucket balancing gated by the new `style` canary) is **built but out of scope** for the
+submission, because the reference validation already scores high; it is the first item of future
+work.
+
 ## 3. Data recipe: shrink first, balance every size bucket (Thinh, 2026-08-29)
 
 Training on native-resolution crops looked principled but hid an assumption: that all images
@@ -96,6 +129,10 @@ Mask-aware training crops; one crop size and one shrink factor for both classes.
 Standing caveat: the reference set fails our colour canary (DALL·E palette ≠ COCO palette, 0.755
 from a 48-d colour model), so part of any score on it is palette. We report it because it is the
 contest's reference; we do not tune on it.
+
+### 5.1b Full retrain on canon3 (job 67, 4 epochs)
+Wild set: **10/10 at the 0.5 cut-off** — phone photos 0.13–0.34, Gemini 0.68–0.97 — with no Gemini
+images in training. De-duplicated and style-matched DALL·E numbers: pending (§9).
 
 ### 5.2 Generalisation
 - Leave-one-family-out (whole diffusion family removed from training): GENERAL 0.716 (DALL·E
@@ -185,6 +222,7 @@ but not confidently; pe_seg is trained on one tampering source (SID) and does no
 generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on an RTX 5090.
 
 ## 9. Additions log
+- 2026-08-29 (night): §2.1 style finding + matched benchmark; job 67 wild 10/10.
 - 2026-08-29 (evening): §6.1 worst-case analysis on 3,000 reference originals.
 - 2026-08-29: created; §2–§7 from the day's audits, small-trial retrain (job 64), LOFO (job 43),
   pe_seg first run (job 65). Full canon3 retrain (job 67) pending.
