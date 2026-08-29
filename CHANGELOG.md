@@ -3,6 +3,12 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-30 (night — canon4 result, random unseen-generator test)
+- Job 76 canon4: GENERAL 0.977, DALL·E 0.996 mean-TF, DeepFloyd (test-only) 0.942, MJ-v6 held-out 0.999.
+- scripts/random_gen_test.py: 39 (then ~50) never-trained generator sources x 300 images vs 900 never-trained
+  reals at native size; per-generator + POOLED AUROC and catch at fixed false-alarm rates; --save scores.
+- Disk hit 100%: removed COCO train zip and already-extracted parquet shards (re-downloadable).
+
 ## 2026-08-30 (early — canon3 final numbers, app on canon3)
 - Job 67 canon3 (328K rows, 4 ep): GENERAL 0.970; DALL·E 0.996/0.985/0.964 raw, 0.997/0.988/0.969
   dedup, 0.995/0.986/0.967 style-matched; WILD 10/10 at 0.5. REPORT §5.1b.
