@@ -17,7 +17,7 @@ from src.data import load_image
 from src.model import load_model
 from src.predict import iter_image_paths
 
-DEFAULT = "vote(L=320)+pe_ft:outputs/pe_ft/canon3s.pt"
+DEFAULT = "vote(L=320)+pe_ft:outputs/pe_ft/canon3.pt"
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     ap.add_argument("folder")
     ap.add_argument("--label", choices=["real", "fake"], default=None)
     ap.add_argument("--model", default=DEFAULT)
-    ap.add_argument("--threshold", type=float, default=0.2)
+    ap.add_argument("--threshold", type=float, default=0.5)
     args = ap.parse_args()
     paths = list(iter_image_paths(args.folder))
     if not paths:

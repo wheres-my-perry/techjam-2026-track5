@@ -130,13 +130,36 @@ Standing caveat: the reference set fails our colour canary (DALL·E palette ≠ 
 from a 48-d colour model), so part of any score on it is palette. We report it because it is the
 contest's reference; we do not tune on it.
 
-### 5.1b Full retrain on canon3 (job 67, 4 epochs)
-Wild set: **10/10 at the 0.5 cut-off** — phone photos 0.13–0.34, Gemini 0.68–0.97 — with no Gemini
-images in training. De-duplicated and style-matched DALL·E numbers for canon3: pending (§9).
+### 5.1b Full retrain on canon3 (job 67, 4 epochs, 328K rows) — current model
+Three views of the same DALL·E-3 reference benchmark, same checkpoint (`vote(L=320)+pe_ft:canon3.pt`):
 
-**Style-matched check (canon3s):** raw de-duplicated set 0.985 clean / 0.974 mean-TF / 0.938 worst →
-style-matched subset **0.988 / 0.981 / 0.960**. Equalising style does not lower the score, so the DALL·E
-detection is not carried by aesthetic statistics (§2.1); the raw number stands.
+| DALL·E-3 vs COCO set | n | clean | mean-TF (15 conditions) | worst |
+|---|---|---|---|---|
+| raw folder (contest files, 58% exact duplicates in the fake class) | 1,200 | 0.996 | 0.985 | 0.964 (resize 0.25x) |
+| de-duplicated (md5) | 1,200 | 0.997 | 0.988 | 0.969 (resize 0.25x) |
+| style-matched pairs (§2.1; 1,107 real/fake pairs) | 2,214 | 0.995 | 0.986 | 0.967 (resize 0.25x) |
+
+Removing duplicates and equalising style change the number by < 0.01 in either direction, so the
+score is not carried by repeated files or by aesthetic statistics. Every DALL·E number in this
+report is therefore quoted as **0.996 clean / 0.985 mean-TF / 0.964 worst** (raw), with the
+other two rows as the robustness check. Caveat that stays: the contest set fails the colour
+canary (0.755), so part of any number on it is palette; we cannot fix contest data, only report it.
+
+Other cells for the same checkpoint:
+- **Wild set: 10/10 at the 0.5 cut-off** — phone photos 0.13–0.34, Gemini 0.68–0.97 — with no
+  Gemini images in training. Without the shrink (`vote` at native size) the same weights score
+  0.04 AUROC on this set: the shrink-first rule (§3) is the mechanism, not the extra data alone.
+- **GENERAL 0.970** (mean of ddpm-holdout mean-TF and official mean-TF).
+- Cross-family test (canon3_test, 8,000-row seeded subsample, 32 generators): clean 0.890 /
+  mean-TF 0.861. The drag is entirely the tampering/inpainting generators that are test-only by
+  protocol (generative_inpainting 0.68, lama 0.83, mat 0.88, sid_tampered 0.58): a 176-px crop of
+  a partially edited image usually contains no edited pixels, which is exactly the case §5.3
+  (`pe_seg`) exists for. Whole-image generators: 26 of 28 ≥ 0.97 clean, ddpm holdout 0.972/0.956,
+  vqvae 0.905, glide 0.896.
+
+Compared with the 10-minute trial (§5.1a): DALL·E mean-TF 0.974 → 0.985, worst 0.938 → 0.964,
+wild real-photo scores 0.02–0.20 → 0.13–0.34 (still all below 0.5), Gemini 0.17 → 0.68–0.97.
+The app and `scripts/score_dir.py` now use this checkpoint with the 0.5 cut-off.
 
 ### 5.2 Generalisation
 - Leave-one-family-out (whole diffusion family removed from training): GENERAL 0.716 (DALL·E
@@ -226,6 +249,7 @@ but not confidently; pe_seg is trained on one tampering source (SID) and does no
 generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on an RTX 5090.
 
 ## 9. Additions log
+- 2026-08-30 (early): §5.1b final canon3 numbers (raw / dedup / style-matched DALL·E, wild, GENERAL 0.970, cross-family); app switched to canon3.
 - 2026-08-29 (night): §2.1 style finding + matched benchmark; job 67 wild 10/10.
 - 2026-08-29 (evening): §6.1 worst-case analysis on 3,000 reference originals.
 - 2026-08-29: created; §2–§7 from the day's audits, small-trial retrain (job 64), LOFO (job 43),

@@ -31,10 +31,10 @@ from src.data import load_image  # noqa: F401  (keeps EXIF handling identical)
 from src.model import load_model
 from src.transforms import EVAL_GRID
 
-CKPT = "outputs/pe_ft/canon3s.pt"
+CKPT = "outputs/pe_ft/canon3.pt"
 SPEC = f"vote(L=320)+pe_ft:{CKPT}"
 EVALUATED_MAX = 640          # largest short side any reported number used
-THRESHOLD = 0.2
+THRESHOLD = 0.5
 
 TRANSFORMS = dict(EVAL_GRID)
 model = None

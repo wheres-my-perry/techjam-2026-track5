@@ -3,6 +3,11 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-30 (early — canon3 final numbers, app on canon3)
+- Job 67 canon3 (328K rows, 4 ep): GENERAL 0.970; DALL·E 0.996/0.985/0.964 raw, 0.997/0.988/0.969
+  dedup, 0.995/0.986/0.967 style-matched; WILD 10/10 at 0.5. REPORT §5.1b.
+- app.py + scripts/score_dir.py default -> vote(L=320)+pe_ft:outputs/pe_ft/canon3.pt, threshold 0.5.
+
 ## 2026-08-29 (evening — small-trial verdict, pe_seg, report)
 - Job 64 (canon3s small trial): wild set flips from inverted to ranked (0.96/1.00); DALL-E 0.974 mean.
 - Job 65 pe_seg: per-patch localisation on SID masks, held-out patch AUROC 0.984; heat-maps in docs/figures.
