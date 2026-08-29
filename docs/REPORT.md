@@ -175,7 +175,26 @@ Other cells for the same checkpoint:
 
 Compared with the 10-minute trial (§5.1a): DALL·E mean-TF 0.974 → 0.985, worst 0.938 → 0.964,
 wild real-photo scores 0.02–0.20 → 0.13–0.34 (still all below 0.5), Gemini 0.17 → 0.68–0.97.
-The app and `scripts/score_dir.py` now use this checkpoint with the 0.5 cut-off.
+(Superseded by canon4, §5.1c.)
+
+### 5.1c Second expansion, `canon4` (job 76) — shipped model
+Added to training (bucket-balanced, §3): Midjourney v6 and FLUX (1024), SD 1.4/2.1/SDXL (512/640),
+with CelebA-HQ/FFHQ/Open Images/SID reals (1024), AFHQ (512) and COCO train2017 originals (640; the
+contest reals are COCO *val*2017, excluded everywhere). DeepFloyd-IF (256) and all tampered images
+stay test-only. Gates: bucket ratio 1.00 in every new bucket, metadata 0.586, worst canary 0.62 (style).
+
+| | canon3 | canon4 |
+|---|---|---|
+| DALL·E-3 vs COCO: clean / mean-TF / worst | 0.996 / 0.985 / 0.964 | **1.000 / 0.996 / 0.985** |
+| ddpm holdout mean-TF | 0.956 | 0.958 |
+| GENERAL | 0.970 | **0.977** |
+| DeepFloyd-IF, never trained (mean-TF) | — | 0.942 |
+| 2K real photos (DIV2K, n=100) false alarms at the app cut-off | 22% | 0% at 0.5, 9% at 0.15 |
+
+Shortcut hunt on the 1.000 (our rule: ≥0.99 → hunt): greyscale 0.996, channels swapped 0.998 (not
+palette); every never-trained real source (COCO-640, Open Images, FFHQ, SID) scores median 0.000, so
+the gain is a wider real/fake margin everywhere, not familiarity with COCO. See §5.4 for the reason
+the app cut-off moved from 0.5 to 0.15.
 
 ### 5.2 Generalisation
 - Leave-one-family-out (whole diffusion family removed from training): GENERAL 0.716 (DALL·E
@@ -198,6 +217,34 @@ Tampered and real are both JPEG in the held-out set, so the tampered number is n
 shortcut. Heat-maps on held-out images (left: image, middle: ground-truth mask, right: prediction):
 
 ![pe_seg heat-maps](figures/pe_seg_heatmaps_heldout.jpg)
+
+### 5.4 Random unseen-generator test — "how general is it, really?"
+Per-generator AUROC only says the model ranks *that* generator above reals; it does not say one
+cut-off works for all of them. So: 44 generator sources never used in training (Midjourney v5/5.2,
+Imagen 3/4, Ideogram, GPT-4o image, Aurora, Recraft, Reve, Runway Frames, HiDream, Hunyuan, Lumina,
+Kandinsky, Würstchen, Stable Cascade, SD3/3.5, PixArt α/Σ, Playground, Kolors, LCM, SDXL-Turbo/
+Lightning, FLUX Pro/1.1/schnell, Janus, AuraFlow, …; 300 images each, 10,570 fakes, from
+Rapidata/GenAI-Bench/parti-prompts/MJHQ/open-image-preferences) pooled against 900 never-trained real
+photos (COCO-640, Open Images, FFHQ, SID), scored at native size through the app policy. One score
+scale, one cut-off (`scripts/random_gen_test.py`, per-image scores in `outputs/random_gen/`).
+
+| all 44 sources pooled | canon3 | canon4 |
+|---|---|---|
+| AUROC (fake ranked above real) | 0.982 | **0.994** |
+| caught at a 1-in-100 false-alarm budget | 83% (cut-off 0.46), worst GPT-4o 36% | **94%** (cut-off 0.14), worst Ideogram 53% |
+| caught at a 5-in-100 false-alarm budget | 93% (cut-off 0.22), worst GPT-4o 58% | **97%** (cut-off 0.04), worst Ideogram 79% |
+
+Per source, canon4 ranks ≥ canon3 on 35 of 39 (most at 0.999–1.000; GPT-4o 0.90 → 0.98,
+Midjourney 5.2 0.94 → 1.00, SD3 0.95 → 1.00). Its fake scores are spread lower, so at the old 0.5
+cut-off it *loses* Ideogram (79% → 10%) and Reve (86% → 43%) while still ranking them above every
+real — a threshold effect, not a detection effect. The app cut-off is therefore chosen on this
+test, not on the contest set: **0.15 ≈ 1% false alarms on unseen reals**, 94% of unseen fakes
+caught, 5/5 Gemini images (0.19–0.78) and 0/5 phone photos (max 0.04) on the wild set.
+
+Honest reading: on generators it has never seen, the model catches about 9 in 10 AI images while
+accusing about 1 in 100 real photos. The hardest current generators are Ideogram, Reve Halfmoon and
+GPT-4o image; a source's file handling matters too (Midjourney v5 from MJHQ 90% vs the same
+generator's re-saved Rapidata copy 53% under canon3).
 
 ## 6. Error analysis (initial)
 - **Unseen generator family (Gemini):** scored 0.08 median while FLUX/DALL·E/SD score 0.84–1.00.
@@ -269,6 +316,7 @@ generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on a
   bucket in training is thin. Phone photos (5/5) are fine but n is small.
 
 ## 9. Additions log
+- 2026-08-30 (night): §5.1c canon4 (job 76) shipped; §5.4 random 44-source unseen-generator test with pooled metrics; app cut-off 0.15.
 - 2026-08-30 (early): §4 crop-vote ablation (1 vs 9 vs 27 crops).
 - 2026-08-30 (early): §2 two more shortcut checks (greyscale/channel-swap, train-vs-contest overlap), DIV2K limitation.
 - 2026-08-30 (early): §5.1b final canon3 numbers (raw / dedup / style-matched DALL·E, wild, GENERAL 0.970, cross-family); app switched to canon3.

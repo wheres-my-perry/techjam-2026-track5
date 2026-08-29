@@ -7,6 +7,7 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
 - Job 76 canon4: GENERAL 0.977, DALL·E 0.996 mean-TF, DeepFloyd (test-only) 0.942, MJ-v6 held-out 0.999.
 - scripts/random_gen_test.py: 39 (then ~50) never-trained generator sources x 300 images vs 900 never-trained
   reals at native size; per-generator + POOLED AUROC and catch at fixed false-alarm rates; --save scores.
+- app.py + score_dir.py -> canon4.pt, threshold 0.15 (pooled unseen-generator test: 94% caught at 1% FA vs 83% for canon3).
 - Disk hit 100%: removed COCO train zip and already-extracted parquet shards (re-downloadable).
 
 ## 2026-08-30 (early — canon3 final numbers, app on canon3)
