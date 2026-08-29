@@ -63,6 +63,7 @@ _APPROACHES = {
     "clip_linear": ("src.approaches.clip_linear.model", "CLIPLinearModel", "outputs/clip_linear/baseline.pt"),
     "resnet_ft": ("src.approaches.resnet_ft.model", "ResNetFTModel", "outputs/resnet_ft/baseline.pt"),
     "pe_ft": ("src.approaches.pe_ft.model", "PEFTModel", "outputs/pe_ft/baseline.pt"),
+    "pe_seg": ("src.approaches.pe_seg.model", "PESegModel", "outputs/pe_seg/baseline.pt"),
     "real_manifold": ("src.approaches.real_manifold.model", "RealManifoldModel", "outputs/real_manifold/baseline.npz"),
     "spectral": ("src.approaches.spectral.model", "SpectralModel", "outputs/spectral/baseline.npz"),
     "patch_relation": ("src.approaches.patch_relation.model", "PatchRelationModel", "outputs/patch_relation/baseline.pt"),

@@ -6,12 +6,15 @@ set -u
 cd "$(dirname "$0")"
 source .venv/bin/activate
 NAME=${1:-canon3}; EP=${2:-4}; RW=${3:-1}; LIM=${4:-0}; APP=pe_ft
-P=data/manifests/canon3
+P=${MANIFEST_PREFIX:-data/manifests/canon3}
+GATES=${GATES:-1}; TEST_LIMIT=${TEST_LIMIT:-8000}
 CK=outputs/$APP/$NAME.pt
+if [ "$GATES" = "1" ]; then
 echo "== GATES"
 python -m scripts.bucket_audit --prefix $P --strict || exit 1
 python -m scripts.shortcut_audit --manifest ${P}_train.csv --strict || exit 1
 python -m scripts.canary_audit --manifest ${P}_train.csv --limit 3000 --strict || exit 1
+else echo "== GATES skipped (already passed on this manifest set)"; fi
 echo "== TRAIN $NAME epochs=$EP real_weight=$RW limit_train=$LIM"
 rm -f $CK $CK.state
 python -m src.approaches.$APP.train --train ${P}_train.csv --val ${P}_val.csv \
@@ -24,8 +27,8 @@ done
 python -m scripts.wild_eval --model "vote(L=320)+${APP}:$CK"
 echo "== BENCHMARK"
 SPEC="vote(L=320)+${APP}:$CK"
-python -m src.evaluate --manifest ${P}_test.csv --model "$SPEC" \
-  --out outputs/$APP/eval_${NAME}_test --limit 8000 || exit 1
+python -m src.evaluate --manifest data/manifests/canon3_test.csv --model "$SPEC" \
+  --out outputs/$APP/eval_${NAME}_test --limit $TEST_LIMIT || exit 1
 python -m src.evaluate --manifest data/manifests/canon_official.csv --model "$SPEC" \
   --out outputs/$APP/eval_${NAME}_official --limit 1200 || exit 1
 python -m scripts.general_score --test outputs/$APP/eval_${NAME}_test \

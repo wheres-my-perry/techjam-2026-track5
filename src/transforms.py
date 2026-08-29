@@ -84,7 +84,8 @@ EVAL_GRID = [
 
 # ------------------------------------------------- random train-time version
 
-def random_train_transform(img: Image.Image, rng: random.Random) -> Image.Image:
+def random_train_transform(img: Image.Image, rng: random.Random,
+                           geometry: bool = True) -> Image.Image:
     """Apply 0-2 random transforms with parameters sampled from the eval ranges.
 
     Mirrors the eval distribution so the model trains on what it is tested on.
@@ -107,7 +108,7 @@ def random_train_transform(img: Image.Image, rng: random.Random) -> Image.Image:
     if rng.random() < 0.3:
         f = rng.uniform(-0.2, 0.2)
         ops.append(lambda im: color_jitter(im, f))
-    if rng.random() < 0.3:
+    if geometry and rng.random() < 0.3:   # geometry=False keeps size (mask-aligned training)
         frac = rng.uniform(0.8, 1.0)
         ops.append(lambda im: center_crop(im, frac))
     rng.shuffle(ops)
