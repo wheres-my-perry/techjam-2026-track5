@@ -86,6 +86,12 @@ def main():
                              (0.55, 0.07), args.seed + 2)
     outs = {"train": tr + a_tr + c_tr + b_tr, "val": va + a_va + c_va + b_va,
             "test": te + a_te + c_te + b_te}
+    try:  # optional hard-fake selfgen set: TRAIN ONLY (training medicine, not measurement)
+        sg = read(f"data/manifests/canon{args.canon_suffix}_selfgen.csv")
+        outs["train"] += sg
+        print(f"included {len(sg)} selfgen hard fakes in train")
+    except FileNotFoundError:
+        pass
     for name, rows in outs.items():
         random.Random(args.seed + hash(name) % 1000).shuffle(rows)
         p = f"{args.out_prefix}_{name}.csv"
