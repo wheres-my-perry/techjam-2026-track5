@@ -99,7 +99,9 @@ def score_image(img, transform: str, dense: bool):
     lines = [f"## {verdict}  —  P(AI) = {p:.3f}",
              f"input {w0}×{h0} px · transform `{transform}` · {len(views)} crops "
              f"({grid}×{grid} grid × {m.n_sizes} sizes) · {dt:.1f}s",
-             f"crop scores: min {vs.min():.2f} · median {np.median(vs):.2f} · max {vs.max():.2f}"]
+             f"crop scores: min {vs.min():.2f} · median {np.median(vs):.2f} · max {vs.max():.2f} · "
+             f"top-3 mean {np.sort(vs)[-3:].mean():.2f} · {int((vs >= 0.5).sum())}/{len(vs)} crops ≥0.5  "
+             f"(verdict uses the MEAN of all crops)"]
     if upscaled:
         lines.append(f"⚠ short side < {m.cmin} px: upscaled before scoring (worst-case regime, "
                      f"reported AUROC on the 0.25× cell ~0.91).")
