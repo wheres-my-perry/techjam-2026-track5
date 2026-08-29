@@ -128,6 +128,34 @@ shortcut. Heat-maps on held-out images (left: image, middle: ground-truth mask, 
 - **Partial edits** are missed by the global detector when the region is small (median altered
   area in SID is 8.8%); the localiser handles them (§5.3).
 
+
+### 6.1 Worst cases on the reference benchmark (canon3s, 1,500 COCO + 1,500 DALL·E-3 originals, app policy)
+Clean AUROC on originals 0.992; COCO reals: 1.2% score ≥ 0.2, 0.1% ≥ 0.5; DALL·E: 11.4% score < 0.2.
+Contact sheets and the files: `outputs/error_analysis/` (worst.csv, FP_real_called_AI/, FN_dalle_called_real/).
+
+**False positives (real photos called AI) — the model has partly learned "polished aesthetic = AI":**
+1. heavily post-processed photos: saturated colour (magenta scissors 0.38, orange umbrella 0.35),
+   HDR/painterly tone-mapping (sunset skyline 0.25, man in hat 0.23), black-and-white (elephants 0.48,
+   soccer 0.32);
+2. large flat, texture-less areas: jet in grey sky 0.32, foggy road 0.21, drawing on white paper 0.80
+   (the single FP above 0.5 — a photo *of an illustration*);
+3. studio lighting on dark backdrops (portrait with LED tie 0.25);
+4. semantically odd real photos (levitating skateboard shoes 0.43).
+
+**False negatives (DALL·E-3 called real, all < 0.02) — DALL·E imitating exactly the "real" cues:**
+1. **amateur flash / film aesthetic**: dark party scenes with on-camera flash, grain, motion blur and
+   drink splashes (8 of the 20 worst) — DALL·E's "candid phone photo" style is the hardest class;
+2. **painting / illustration / vintage-poster / blueprint styles** (6 of 20): our reals include
+   paintings (MetFaces, WikiArt-like content), so "AI in the style of an oil painting" reads as real;
+3. **clean product renders** on plain backgrounds (typewriter, chairs, toy figures).
+Also: the DALL·E set is structured as ~4 variants per prompt (same folder), so its worst cases come in
+clusters and the effective sample size is smaller than the image count.
+
+**Actionable:** (a) add flash/film/grain *reals* (phone photos at parties, film scans) and DALL·E-style
+flash *fakes* so the aesthetic stops being a label; (b) add AI paintings/illustrations as fakes to
+balance the painting reals; (c) style-balanced prompts in any self-generated set (the SDXL hard-fake
+prompt bank already targets the candid/amateur cues).
+
 ## 7. Observation list — status
 
 | observation / idea (docs/IDEAS.md) | status | evidence |
@@ -148,5 +176,6 @@ but not confidently; pe_seg is trained on one tampering source (SID) and does no
 generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on an RTX 5090.
 
 ## 9. Additions log
+- 2026-08-29 (evening): §6.1 worst-case analysis on 3,000 reference originals.
 - 2026-08-29: created; §2–§7 from the day's audits, small-trial retrain (job 64), LOFO (job 43),
   pe_seg first run (job 65). Full canon3 retrain (job 67) pending.
