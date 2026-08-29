@@ -80,3 +80,9 @@ Every current dataset has class-correlated image sizes ("metadata leak"):
   AUROC ~0.5) and be size-audited (`python -m scripts.size_audit`) BEFORE any result is reported.
   Data gap wanted: reals at native 256x256-ish and at 1024+; fakes at 200x200 and varied sizes;
   modern TOKEN/AR-family fakes. See docs/GENERATOR_MATRIX.md.
+
+
+## Reference benchmark duplicates (2026-08-29)
+The WildFake DALL·E-Advanced slice (8,843 files) holds only 3,719 unique images by md5: 1,808 files are
+repeated 4x byte-identically across date folders. `data/manifests/canon_official_dedup.csv` is the
+de-duplicated evaluation manifest (4,998 real / 3,719 fake); use it for all official numbers from now on.

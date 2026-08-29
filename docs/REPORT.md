@@ -29,9 +29,10 @@ before any result is reported (`scripts/shortcut_audit.py`, `canary_audit.py`, `
 | **Held-out generator leaked** into training (ddpm) | inflated "unseen generator" score | route to test only |
 | **Benchmark images inside training** (COCO val2017 in ArtiFact) | contamination | official-slice guard |
 | **Within-family transfer sold as generalisation** | 0.964 on an "unseen" diffusion model with its cousins in training | leave-one-*family*-out test: honest cross-family number is 0.72 |
+| **Duplicate files in the reference benchmark** (DALL·E class: 8,843 files, 3,719 unique) | worst cases appeared as identical pairs | md5 de-duplicated manifest |
 | **Every public training image is a small web thumbnail** (200–511 px) | model *inverted* on 5712-px phone photos (0/10 on a wild set) | shrink-first, per-size-bucket balanced data (§3) |
 
-Two of these (size, content) are in datasets the community uses every day.
+Three of these (size, content, duplicates) are in datasets the community uses every day.
 
 ## 3. Data recipe: shrink first, balance every size bucket (Thinh, 2026-08-29)
 
@@ -148,8 +149,15 @@ Contact sheets and the files: `outputs/error_analysis/` (worst.csv, FP_real_call
 2. **painting / illustration / vintage-poster / blueprint styles** (6 of 20): our reals include
    paintings (MetFaces, WikiArt-like content), so "AI in the style of an oil painting" reads as real;
 3. **clean product renders** on plain backgrounds (typewriter, chairs, toy figures).
-Also: the DALL·E set is structured as ~4 variants per prompt (same folder), so its worst cases come in
-clusters and the effective sample size is smaller than the image count.
+Also: the reference set's DALL·E class contains **exact duplicate files** — 8,843 files but only 3,719
+unique (1,808 images appear 4×, byte-identical, under different date folders). The worst cases above
+come in identical pairs for that reason. We now evaluate on a de-duplicated manifest
+(`canon_official_dedup.csv`: 4,998 real / 3,719 fake); it changes the effective sample size, not the direction.
+
+**Scope decision (Thinh, 2026-08-29):** AI images deliberately styled as paintings / illustrations /
+vintage posters are an accepted failure class — at the pixel scale we work at they are indistinguishable
+from a photo of a real painting, and they are not the misinformation case the brief targets. They stay in
+the benchmark score but are not a training target. The candid / flash / film class *is* the target.
 
 **Actionable:** (a) add flash/film/grain *reals* (phone photos at parties, film scans) and DALL·E-style
 flash *fakes* so the aesthetic stops being a label; (b) add AI paintings/illustrations as fakes to
@@ -170,7 +178,8 @@ prompt bank already targets the candid/amateur cues).
 | Consistency-under-transform as a cue (a patch counts only if its verdict survives mild JPEG/blur) | measured once: real-crop false alarms 16% → 4.7%, no training; **not integrated** | 2026-08-29 |
 
 ## 8. Limitations
-Reference benchmark has a palette confound we cannot remove; wild set is small (n=10) and
+Out of scope by decision: AI images styled as paintings/illustrations/posters (roughly a third of the
+11% of DALL·E-3 images scoring below 0.2). Reference benchmark has a palette confound we cannot remove; wild set is small (n=10) and
 grows only with user-supplied images; unseen generator families (Gemini) are ranked correctly
 but not confidently; pe_seg is trained on one tampering source (SID) and does not yet
 generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on an RTX 5090.
