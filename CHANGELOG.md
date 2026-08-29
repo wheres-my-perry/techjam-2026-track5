@@ -3,6 +3,12 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-29 (evening — small-trial verdict, pe_seg, report)
+- Job 64 (canon3s small trial): wild set flips from inverted to ranked (0.96/1.00); DALL-E 0.974 mean.
+- Job 65 pe_seg: per-patch localisation on SID masks, held-out patch AUROC 0.984; heat-maps in docs/figures.
+- docs/REPORT.md: living submission write-up (findings, recipe, results, observation-list status).
+- pe_ft --real-weight / --limit-train; generate_hard_fakes keeps native size by default.
+
 ## 2026-08-29 (afternoon — wild test, large-image expansion)
 - app.py: gradio prototype (drop image -> P(AI) + per-crop map + transform picker); HEIC support
   (iPhone .jpeg files are HEIF) in src/data.load_image via pillow-heif.

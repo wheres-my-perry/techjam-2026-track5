@@ -98,6 +98,8 @@ def main():
     ap.add_argument("--model", default="stabilityai/stable-diffusion-xl-base-1.0")
     ap.add_argument("--steps", type=int, default=30)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--keep-native", action="store_true", default=True,
+                    help="save at generator-native 1024 (default). Downscaling fakes only would make the shrink factor a label.")
     args = ap.parse_args()
 
     import torch
@@ -159,8 +161,9 @@ def main():
         except Exception as e:
             print(f"skip {i}: {e}", flush=True)
             continue
-        short = prng.randint(200, 256)
-        img = img.resize((short, short), Image.LANCZOS)
+        if not args.keep_native:   # fakes-only downscale = shrink-factor leak (Thinh's bucket rule); default off since 2026-08-29
+            short = prng.randint(200, 256)
+            img = img.resize((short, short), Image.LANCZOS)
         tmp = out_path + ".tmp.png"
         img.save(tmp, format="PNG")
         os.replace(tmp, out_path)
