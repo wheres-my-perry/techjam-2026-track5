@@ -108,6 +108,20 @@ Honest caveat: this is consistent with the relation hypothesis but is **not** a 
 architecture alone — the two backbones also differ in size (13×) and pre-training (ImageNet vs
 2B-image contrastive). A same-size CNN/ViT pair would be needed to isolate the attention effect.
 
+**Does crop-averaging actually help?** Ablation on the de-duplicated DALL·E set (500+500, canon3
+checkpoint, same weights, only the inference rule changes):
+
+| inference | clean | jpeg q30 | blur σ2 | resize ¼ | noise σ0.10 | crop 80% | mean |
+|---|---|---|---|---|---|---|---|
+| 1 centre crop, 1 size | 0.988 | 0.967 | 0.951 | 0.938 | 0.954 | 0.987 | 0.964 |
+| 9 crops (3×3 grid), 1 size | 0.996 | 0.985 | 0.978 | 0.974 | 0.979 | 0.993 | **0.984** |
+| 27 crops (3×3 grid × 3 sizes) — shipped | 0.995 | 0.982 | 0.975 | 0.967 | 0.976 | 0.993 | 0.981 |
+
+Averaging over a grid of crops is worth +0.02 on average and +0.03–0.04 on the hardest transforms
+(blur, down-up resize); the three-size ladder adds nothing over one size (within noise). The gain is
+in robustness, not in clean accuracy: a single crop can land on a blurred/flat region, the average
+cannot.
+
 **Localiser (`pe_seg`).** Same trunk, per-patch head (each 14×14 token predicts "altered"),
 supervised by SID_Set's pixel masks; image score = mean of the top 5% patch logits, i.e. the
 pooling is learned inside the transformer with full attention context instead of crop voting.
@@ -255,6 +269,7 @@ generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on a
   bucket in training is thin. Phone photos (5/5) are fine but n is small.
 
 ## 9. Additions log
+- 2026-08-30 (early): §4 crop-vote ablation (1 vs 9 vs 27 crops).
 - 2026-08-30 (early): §2 two more shortcut checks (greyscale/channel-swap, train-vs-contest overlap), DIV2K limitation.
 - 2026-08-30 (early): §5.1b final canon3 numbers (raw / dedup / style-matched DALL·E, wild, GENERAL 0.970, cross-family); app switched to canon3.
 - 2026-08-29 (night): §2.1 style finding + matched benchmark; job 67 wild 10/10.
