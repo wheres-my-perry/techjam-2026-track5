@@ -31,6 +31,8 @@ before any result is reported (`scripts/shortcut_audit.py`, `canary_audit.py`, `
 | **Within-family transfer sold as generalisation** | 0.964 on an "unseen" diffusion model with its cousins in training | leave-one-*family*-out test: honest cross-family number is 0.72 |
 | **Duplicate files in the reference benchmark** (DALL·E class: 8,843 files, 3,719 unique) | worst cases appeared as identical pairs | md5 de-duplicated manifest |
 | **Every public training image is a small web thumbnail** (200–511 px) | model *inverted* on 5712-px phone photos (0/10 on a wild set) | shrink-first, per-size-bucket balanced data (§3) |
+| **Colour/palette skew in the contest set** (colour-only model 0.78; the two classes are different photo collections, cannot be fixed by us) | would let a palette classifier look good | measured what our model reads instead: same images in **greyscale 0.979**, channels swapped 0.978, colour 0.995 — palette accounts for ≤0.016 of the score (canon3, 500+500 de-duplicated) |
+| **Training reals overlap the contest reals?** (ArtiFact ships COCO train/test 2017; contest reals are COCO val2017) | would be memorisation, not detection | val2017 excluded from every split; perceptual-hash check of all 4,877 contest reals against the 17,014 COCO training reals: 0 exact, 1 near match |
 
 Three of these (size, content, duplicates) are in datasets the community uses every day.
 
@@ -248,7 +250,12 @@ grows only with user-supplied images; unseen generator families (Gemini) are ran
 but not confidently; pe_seg is trained on one tampering source (SID) and does not yet
 generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on an RTX 5090.
 
+- Very large real photos are still the weak spot: 100 DIV2K 2K-px photos (never trained on) score
+  median 0.17 but 22% cross the 0.5 cut-off (was 91% before the shrink-first data); the >1024-px
+  bucket in training is thin. Phone photos (5/5) are fine but n is small.
+
 ## 9. Additions log
+- 2026-08-30 (early): §2 two more shortcut checks (greyscale/channel-swap, train-vs-contest overlap), DIV2K limitation.
 - 2026-08-30 (early): §5.1b final canon3 numbers (raw / dedup / style-matched DALL·E, wild, GENERAL 0.970, cross-family); app switched to canon3.
 - 2026-08-29 (night): §2.1 style finding + matched benchmark; job 67 wild 10/10.
 - 2026-08-29 (evening): §6.1 worst-case analysis on 3,000 reference originals.
