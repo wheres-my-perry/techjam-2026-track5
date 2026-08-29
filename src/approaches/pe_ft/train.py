@@ -117,6 +117,12 @@ def main():
                     help=f"random-size crop range high end (e.g. {CROP_MAX})")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--out", default="outputs/pe_ft/baseline.pt")
+    ap.add_argument("--real-weight", type=float, default=1.0,
+                    help="loss weight on REAL samples (label 0). >1 punishes false "
+                         "positives (calling a real photo AI) harder. Thinh 2026-08-29: "
+                         "per-crop verdicts must be conservative so an any-crop rule is safe.")
+    ap.add_argument("--limit-train", type=int, default=0,
+                    help="seeded subsample of the train manifest (small-dataset trials)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -134,8 +140,13 @@ def main():
           f"crop={f'random {cmin}-{cmax}' if rand_size else args.crop} "
           f"(val fixed {vfixed})", flush=True)
 
-    train_dl = DataLoader(ManifestDataset(args.train, args.augment, args.crop,
-                                          blur_boost=args.blur_boost),
+    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost)
+    if args.limit_train and args.limit_train < len(train_ds.samples):
+        rng = random.Random(args.seed)
+        rng.shuffle(train_ds.samples)
+        train_ds.samples = train_ds.samples[: args.limit_train]
+        print(f"limit-train: {len(train_ds.samples)} rows", flush=True)
+    train_dl = DataLoader(train_ds,
                           batch_size=args.batch, shuffle=True, num_workers=args.workers,
                           collate_fn=make_collate(cmin, cmax))
     val_dl = DataLoader(ManifestDataset(args.val, False, args.crop),
@@ -149,7 +160,13 @@ def main():
          {"params": net.head.parameters(), "lr": args.head_lr}],
         weight_decay=0.05)
     amp = device == "cuda"
-    loss_fn = nn.BCEWithLogitsLoss()
+    bce = nn.BCEWithLogitsLoss(reduction="none")
+
+    def loss_fn(logits, y):
+        # weight = real_weight on reals, 1 on fakes; mean over the batch
+        w = torch.where(y < 0.5, torch.full_like(y, args.real_weight), torch.ones_like(y))
+        return (bce(logits, y) * w).sum() / w.sum()
+    print(f"loss: BCE with real_weight={args.real_weight}", flush=True)
 
     best, start_epoch = -1.0, 1
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
