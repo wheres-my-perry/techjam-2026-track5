@@ -25,18 +25,19 @@ from torch.utils.data import DataLoader, Dataset
 from src.crops import clamp_size, random_crop, sample_size
 from src.data import load_image, load_manifest
 from src.metrics import auroc
-from src.transforms import random_train_transform
+from src.transforms import random_train_transform, style_aug
 from .model import build_net, pick_device, to_tensor
 
 CROP_MIN, CROP_MAX, CROP_STEP = 112, 168, 14
 
 
 class ManifestDataset(Dataset):
-    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False):
+    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False):
         self.samples = load_manifest(manifest_csv)
         self.augment = augment
         self.crop = crop
         self.blur_boost = blur_boost  # extra low-pass aug: forces blur-surviving cues
+        self.style = style            # label-neutral style randomisation (both classes)
 
     def __len__(self):
         return len(self.samples)
@@ -44,6 +45,8 @@ class ManifestDataset(Dataset):
     def __getitem__(self, i):
         s = self.samples[i]
         img = load_image(s.path)
+        if self.style:
+            img = style_aug(img, random.Random())
         if self.augment:
             img = random_train_transform(img, random.Random())
         if self.blur_boost:
@@ -117,6 +120,8 @@ def main():
                     help=f"random-size crop range high end (e.g. {CROP_MAX})")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--out", default="outputs/pe_ft/baseline.pt")
+    ap.add_argument("--style-aug", action="store_true",
+                    help="label-neutral style randomisation on both classes (greyscale, saturation, tone, grain, vignette, flash)")
     ap.add_argument("--real-weight", type=float, default=1.0,
                     help="loss weight on REAL samples (label 0). >1 punishes false "
                          "positives (calling a real photo AI) harder. Thinh 2026-08-29: "
@@ -140,7 +145,7 @@ def main():
           f"crop={f'random {cmin}-{cmax}' if rand_size else args.crop} "
           f"(val fixed {vfixed})", flush=True)
 
-    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost)
+    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost, style=args.style_aug)
     if args.limit_train and args.limit_train < len(train_ds.samples):
         rng = random.Random(args.seed)
         rng.shuffle(train_ds.samples)

@@ -115,3 +115,61 @@ def random_train_transform(img: Image.Image, rng: random.Random,
     for op in ops[:2]:  # at most 2 stacked, like real repost chains
         img = op(img)
     return img
+
+
+# ------------------------------------------------- style neutralisation (2026-08-29)
+
+def style_aug(img: Image.Image, rng: random.Random) -> Image.Image:
+    """Label-NEUTRAL style randomisation, applied identically to reals and fakes.
+
+    Error analysis on the reference benchmark showed the model reading aesthetic as
+    evidence: polished / HDR / B&W / flat real photos scored "AI", DALL-E images styled
+    as flash party snapshots scored "real". Style correlates with the label in every
+    dataset but is not caused by generation. Randomising it for BOTH classes removes
+    the information, the same cure that worked for size and content shortcuts.
+    0-2 of: greyscale, saturation, contrast/gamma, film grain, vignette, flash falloff.
+    """
+    from PIL import ImageEnhance
+    ops = []
+    if rng.random() < 0.15:
+        ops.append(lambda im: im.convert("L").convert("RGB"))
+    if rng.random() < 0.35:
+        f = rng.uniform(0.4, 1.8)
+        ops.append(lambda im, f=f: ImageEnhance.Color(im).enhance(f))
+    if rng.random() < 0.35:
+        c, g = rng.uniform(0.7, 1.5), rng.uniform(0.7, 1.4)
+        def _tone(im, c=c, g=g):
+            im = ImageEnhance.Contrast(im).enhance(c)
+            a = np.asarray(im, dtype=np.float32) / 255.0
+            return Image.fromarray((np.clip(a, 0, 1) ** g * 255 + 0.5).astype(np.uint8))
+        ops.append(_tone)
+    if rng.random() < 0.30:
+        sig = rng.uniform(0.02, 0.08)
+        def _grain(im, s=sig, r=rng):
+            a = np.asarray(im, dtype=np.float32) / 255.0
+            g = np.random.default_rng(r.randrange(2**32)).normal(0, s, a.shape[:2]).astype(np.float32)
+            return Image.fromarray((np.clip(a + g[..., None], 0, 1) * 255 + 0.5).astype(np.uint8))
+        ops.append(_grain)
+    if rng.random() < 0.25:
+        k = rng.uniform(0.3, 0.8)
+        def _vignette(im, k=k):
+            a = np.asarray(im, dtype=np.float32) / 255.0
+            h, w = a.shape[:2]
+            yy, xx = np.mgrid[0:h, 0:w]
+            d = np.sqrt(((xx - w / 2) / (w / 2)) ** 2 + ((yy - h / 2) / (h / 2)) ** 2) / np.sqrt(2)
+            return Image.fromarray((np.clip(a * (1 - k * d ** 2)[..., None], 0, 1) * 255 + 0.5).astype(np.uint8))
+        ops.append(_vignette)
+    if rng.random() < 0.15:
+        def _flash(im, r=rng):
+            a = np.asarray(im, dtype=np.float32) / 255.0
+            h, w = a.shape[:2]
+            cy, cx = r.uniform(0.3, 0.7) * h, r.uniform(0.3, 0.7) * w
+            yy, xx = np.mgrid[0:h, 0:w]
+            d = np.sqrt(((xx - cx) / w) ** 2 + ((yy - cy) / h) ** 2)
+            gain = 1.4 * np.exp(-(d / 0.35) ** 2) + 0.35
+            return Image.fromarray((np.clip(a * gain[..., None], 0, 1) * 255 + 0.5).astype(np.uint8))
+        ops.append(_flash)
+    rng.shuffle(ops)
+    for op in ops[:2]:
+        img = op(img)
+    return img

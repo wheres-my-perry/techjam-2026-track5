@@ -69,7 +69,27 @@ def f_blur(im: Image.Image) -> list[float]:
             for i in range(3) for j in range(3) for c in range(3)]
 
 
+def f_style(im: Image.Image) -> list[float]:
+    """12 dims: global STYLE statistics only -- luminance percentiles/contrast, saturation
+    mean/std, grain (high-pass energy), sharpness (Laplacian energy), vignette (centre vs
+    corner luminance). No layout, no palette. If this separates classes, the model can
+    read 'aesthetic' as the label (found 2026-08-29 in the reference benchmark)."""
+    a = np.asarray(im, dtype=np.float32) / 255.0
+    lum = a.mean(2)
+    p5, p50, p95 = np.percentile(lum, [5, 50, 95])
+    sat = a.max(2) - a.min(2)
+    blur = np.asarray(im.filter(ImageFilter.GaussianBlur(1.5)), dtype=np.float32).mean(2) / 255.0
+    grain = float(np.abs(lum - blur).mean())
+    lap = np.abs(4 * lum[1:-1, 1:-1] - lum[:-2, 1:-1] - lum[2:, 1:-1] - lum[1:-1, :-2] - lum[1:-1, 2:])
+    h, w = lum.shape
+    c = lum[h // 4: 3 * h // 4, w // 4: 3 * w // 4].mean()
+    corners = np.mean([lum[:h // 4, :w // 4].mean(), lum[:h // 4, -w // 4:].mean(), lum[-h // 4:, :w // 4].mean(), lum[-h // 4:, -w // 4:].mean()])
+    return [p5, p50, p95, p95 - p5, float(lum.std()), float(sat.mean()), float(sat.std()), grain,
+            float(lap.mean()), float(lap.std()), float(c - corners), float((sat < 0.05).mean())]
+
+
 CANARIES = {
+    "style": (f_style, "global style stats: tone, saturation, grain, sharpness, vignette"),
     "color": (f_color, "mean/std colour + brightness + saturation"),
     "hist": (f_hist, "16-bin colour histogram per channel"),
     "thumb8": (f_thumb8, "8x8 greyscale thumbnail (layout only)"),
