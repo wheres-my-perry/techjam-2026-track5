@@ -10,6 +10,13 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **B1 (real_weight 4) FAILS — it is option A in disguise (job 137, `scripts/model_card.py`).** A
+  retrained model has its own score scale, so every candidate is read at a cut-off chosen by ONE rule
+  (1% false alarms on the 900 unseen reals): canon4 → 0.139, B1 → 0.468. At its own line B1 flags
+  far fewer corrupted COCO reals (2.4% mean / 5.0% worst vs 11.1% / 28.3%) but catches fewer unseen
+  fakes (84.3% vs 90.8%) and DALL·E-corrupted fakes (96.8% vs 99.1%) — the same trade canon4 makes
+  by simply moving its line to 0.3 (85.9% / 3.3% / 8.8%). Unseen AUROC 0.9901 vs 0.9919: no
+  re-ranking. Comparison rule from now on: same false-alarm rule per model, never a shared raw number.
 - **[brief, verified from source] "A subset of the following augmentations" limits WHICH transforms,
   not how many per image (Thinh) — stacking is in scope; single application is only the minimum. No
   hidden scored test set, no contest-defined metric or threshold.** The judged artefacts are the deliverables (Devpost text,
