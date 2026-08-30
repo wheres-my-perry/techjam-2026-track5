@@ -148,6 +148,14 @@ def build_manifests(val_frac=0.1, test_frac=0.1, seed=0, cap_per_group=20000,
             if local is None:
                 missing += 1
                 continue
+            # BUG FIX 2026-08-30: filenames are NOT unique across WildFake (GAN images and the
+            # real AFHQ/FFHQ photos are both img000000.jpg...). Matching by basename alone turned
+            # every not-downloaded GAN row into a real photo labelled fake (24% of canon2..4
+            # "fakes"). Require the CSV's top-level folder to appear in the local path.
+            top = ip.lstrip("./").split("/")[0]
+            if top and f"/{top}/" not in local.replace("\\", "/"):
+                missing += 1
+                continue
             label = int(r.get("IsFake", "1"))
             rows.append({"path": local, "label": label,
                          "generator": gen if label == 1 else "",

@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 source .venv/bin/activate
 export PYTHONPATH=.
 NAME=$1; RW=$2; HA=$3; APP=pe_ft
-P=data/manifests/canon4
+P=${MANIFEST_PREFIX:-data/manifests/canon4}
 CK=outputs/$APP/$NAME.pt
 S=/tmp/claude-1006/-home-chim-techjam-2026-track5/217c8dee-cd23-4c85-b87a-c20ed3db7c0a/scratchpad
 echo "== TRAIN $NAME epochs=4 real_weight=$RW hard_aug=$HA  $(date)"
