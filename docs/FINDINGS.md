@@ -10,6 +10,13 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **B2 (hard corruption on 30% of samples, both classes) — small trade, not a fix (job 137).** At its own
+  rule cut-off (0.172): corrupted COCO reals flagged 8.5% mean / 19.0% worst (canon4 11.1% / 28.3%),
+  corrupted DALL·E caught 98.5% (99.1%), unseen generators 89.4% (90.8%), unseen AUROC 0.9889
+  (0.9919), corrupted-unseen probe 91.2% / 2.8% flagged (93.9% / 3.7%). Heavy-corruption exposure
+  shaves the worst case but does not teach "degraded ≠ AI"; the average barely moves and unseen
+  generalisation pays for it. Interpretation: a heavily degraded 112–168 px real crop carries
+  little evidence either way and the head leans "AI" — an evidence problem, not an exposure problem.
 - **B1 (real_weight 4) FAILS — it is option A in disguise (job 137, `scripts/model_card.py`).** A
   retrained model has its own score scale, so every candidate is read at a cut-off chosen by ONE rule
   (1% false alarms on the 900 unseen reals): canon4 → 0.139, B1 → 0.468. At its own line B1 flags
