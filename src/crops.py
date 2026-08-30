@@ -70,6 +70,24 @@ def grid_boxes(w: int, h: int, size: int, grid: int = 3, step: int = 1):
     return [(x, y, x + c, y + c) for y in ys for x in xs]
 
 
+def tile_boxes(w: int, h: int, size: int, m: int = 1, step: int = 1):
+    """Even-coverage tiling (Thinh, 2026-08-30): m*m shifted partitions of the image into
+    non-overlapping `size` squares. Partition (i, j) starts at (i*size/m, j*size/m); the last
+    tile on each axis is clamped to the far edge so nothing is left uncovered. Interior pixels
+    are covered exactly m*m times; deterministic. m=1 is a plain partition."""
+    c = snap(clamp_size(size, w, h), step)
+
+    def axis(L):
+        pos = set()
+        for o in range(m):
+            x = round(o * c / m)
+            while x + c <= L:
+                pos.add(x); x += c
+        pos.add(L - c)
+        return sorted(pos)
+    return [(x, y, x + c, y + c) for y in axis(h) for x in axis(w)]
+
+
 def grid_views(img, size: int, grid: int = 3, step: int = 1):
     """All `grid`x`grid` evenly spaced crops of `size` (clamped, no upscale)."""
     return [img.crop(b) for b in grid_boxes(*img.size, size, grid, step)]

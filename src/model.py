@@ -11,7 +11,7 @@ import re
 import numpy as np
 from PIL import Image
 
-from src.crops import CROP_MAX, CROP_MIN, grid_views, size_ladder
+from src.crops import CROP_MAX, CROP_MIN, grid_views, size_ladder, grid_boxes, tile_boxes
 
 
 class BaseModel:
@@ -81,7 +81,7 @@ class CropVoteModel(BaseModel):
     """
 
     def __init__(self, inner: BaseModel, cmin=None, cmax=None,
-                 grid=3, topk=0, n_sizes=3, alpha=0.0, long=0, rand=0, seed=0):
+                 grid=3, topk=0, n_sizes=3, alpha=0.0, long=0, rand=0, seed=0, tile=0):
         # topk=0 -> MEAN over all views. Chosen on canon2_val 2026-08-29 (job 36):
         # mean beat top-3 by +0.02 clean / +0.03 worst; max (k=1) was worst.
         self.inner = inner
@@ -94,6 +94,10 @@ class CropVoteModel(BaseModel):
         self.grid, self.topk, self.n_sizes = grid, topk, n_sizes
         self.rand = rand  # >0: this many seeded random crops (size uniform in [cmin,cmax]) instead of the grid
         self.seed = seed  # seed of those random crops (s= in the spec); used to measure crop-sampling noise
+        # tile=m (Thinh, 2026-08-30): m*m shifted PARTITIONS of the image into non-overlapping
+        # square tiles per size (offsets i*c/m, j*c/m), last tile clamped to the far edge, so every
+        # pixel is covered ~m*m times -- deterministic like the grid, even like a partition.
+        self.tile = tile
         # IDEAS.md cue #7 / family #5 (Thinh): fakes mix sterile and textured
         # regions, so their crop scores should DISAGREE more than reals'.
         # score = aggregate + alpha * std(view scores); alpha chosen on val.
@@ -102,7 +106,7 @@ class CropVoteModel(BaseModel):
         # Mirrors canonicalize.py --long so inference == training preprocessing.
         self.long = long
 
-    def _views(self, im):
+    def _boxes(self, im):
         """Grid crops at several sizes spanning the TRAINING crop range.
 
         Training draws a random size per batch from [cmin, cmax]; inference
@@ -127,18 +131,25 @@ class CropVoteModel(BaseModel):
             sc = self.cmin / min(w, h)
             im = im.resize((max(self.cmin, round(w * sc)), max(self.cmin, round(h * sc))),
                            Image.BICUBIC)
-        views = []
+        boxes = []  # (x0, y0, x1, y1) on the (possibly shrunk) image
         if self.rand:
             import random
             rng = random.Random(self.seed)
             for _ in range(self.rand):
                 c = rng.randint(self.cmin, min(self.cmax, w, h))
                 x, y = rng.randint(0, w - c), rng.randint(0, h - c)
-                views.append(im.crop((x, y, x + c, y + c)))
-            return views
+                boxes.append((x, y, x + c, y + c))
+            return im, boxes
         for c in size_ladder(self.cmin, self.cmax, self.n_sizes, self.step):
-            views += grid_views(im, c, self.grid, self.step)
-        return views
+            if self.tile:
+                boxes += tile_boxes(w, h, c, self.tile, self.step)
+            else:
+                boxes += grid_boxes(w, h, c, self.grid, self.step)
+        return im, boxes
+
+    def _views(self, im):
+        im, boxes = self._boxes(im)
+        return [im.crop(b) for b in boxes]
 
     def predict(self, images):
         views, owners = [], []
@@ -211,7 +222,7 @@ def load_model(name: str = "random") -> BaseModel:
         kw = {}
         for kv in filter(None, (m.group(1) or "").split(",")):
             k, v = kv.split("=")
-            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha", "L": "long", "r": "rand", "s": "seed"}[k.strip()]
+            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha", "L": "long", "r": "rand", "s": "seed", "t": "tile"}[k.strip()]
             kw[key] = float(v) if key == "alpha" else int(v)
         return CropVoteModel(load_model(m.group(2)), **kw)
     if name.startswith("noise+"):
