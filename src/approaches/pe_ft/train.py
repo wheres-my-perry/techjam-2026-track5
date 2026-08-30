@@ -196,6 +196,10 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     device = pick_device()
+    if device == "cuda":  # safe speed-ups (2026-08-30): TF32 matmul + cuDNN autotune; weights stay fp32, autocast bf16
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
     rand_size = args.crop_min is not None or args.crop_max is not None
     cmin = args.crop_min if args.crop_min is not None else args.crop
     cmax = args.crop_max if args.crop_max is not None else args.crop
