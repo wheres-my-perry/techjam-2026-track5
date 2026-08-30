@@ -28,7 +28,7 @@ def score_dir(m, d, n, seed=0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
-    ap.add_argument("--model", default="vote(L=320)+pe_ft:outputs/pe_ft/canon3.pt")
+    ap.add_argument("--model", default="vote(L=320)+pe_ft:outputs/pe_ft/canon4.pt")
     ap.add_argument("--n", type=int, default=300)
     ap.add_argument("--threshold", type=float, default=0.5)
     ap.add_argument("--save", default="", help="write per-image scores to this CSV")

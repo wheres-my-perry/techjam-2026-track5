@@ -1,9 +1,12 @@
 """Required contest deliverable: score a directory of images.
 
 Usage:
-    python -m src.predict --input <image_dir> --output preds.json [--model random]
+    python -m src.predict --input <image_dir> --output preds.json [--model SPEC] [--threshold 0.15]
 
-Output JSON: [{"image_path": "...", "pred": 0.87}, ...]   pred = P(AI-generated)
+Output JSON: [{"image_path": "...", "pred": 0.87, "label": 1}, ...]
+  pred  = P(AI-generated) from the shipped policy (shrink long side to 320, 27-crop grid, mean)
+  label = 1 if pred >= threshold (default 0.15 = 1% false alarms on never-trained real photos,
+          chosen on the 64-source unseen-generator test, docs/REPORT.md 5.4)
 """
 
 from __future__ import annotations
@@ -16,7 +19,9 @@ import sys
 from .data import load_image
 from .model import load_model
 
-IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff"}
+IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff", ".tif", ".heic", ".heif"}
+DEFAULT_MODEL = "vote(L=320)+pe_ft:outputs/pe_ft/canon4.pt"
+DEFAULT_THRESHOLD = 0.15
 BATCH = 32
 
 
@@ -31,7 +36,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True, help="directory of images")
     ap.add_argument("--output", required=True, help="output JSON path")
-    ap.add_argument("--model", default="random")
+    ap.add_argument("--model", default=DEFAULT_MODEL)
+    ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
     args = ap.parse_args(argv)
 
     model = load_model(args.model)
@@ -49,11 +55,11 @@ def main(argv=None):
                 kept.append(p)
             except Exception as e:  # corrupt file: score 0.5, keep going
                 print(f"WARN: failed to load {p}: {e}", file=sys.stderr)
-                results.append({"image_path": p, "pred": 0.5})
+                results.append({"image_path": p, "pred": 0.5, "label": int(0.5 >= args.threshold)})
         if images:
             scores = model.predict(images)
             results.extend(
-                {"image_path": p, "pred": round(float(s), 6)}
+                {"image_path": p, "pred": round(float(s), 6), "label": int(float(s) >= args.threshold)}
                 for p, s in zip(kept, scores)
             )
 
