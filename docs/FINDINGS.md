@@ -10,6 +10,13 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★ **Unseen generators UNDER corruption hold up (job 144 probe: 300 unseen reals + 15 per generator
+  × clean + 6 hardest corruptions, canon4 @0.15):** fakes caught 92.8% clean → 91.7–95.4% corrupted
+  (corruption even helps a little — it removes the "too clean" look the model reads as real); reals
+  flagged 1.0% clean → 3.2% mean, 6.3% worst (JPEG q30), noise 0.10 4.7%, resize ¼ 3.7%. Far milder
+  than COCO (10% mean / 27% worst). Why: these reals are large (1024 px) — shrinking to 320 wipes most
+  of the corruption before the model looks; COCO reals are 640 px and get shrunk less, WildFake reals
+  (200 px) not at all. The vulnerable real population is small images, whatever the corruption.
 - **Option C (log-odds mean) FAILS — no change (job 136 + offline):** at matched real-false-alarm
   rates on corrupted COCO reals (10% / 3% / 1%) it catches the same fakes as the plain mean on the
   DALL·E benchmark (99.1 vs 99.0%, 96.8 vs 96.6%, 92.5 vs 92.7%) and on the 64 unseen generators
