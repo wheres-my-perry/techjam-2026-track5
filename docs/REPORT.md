@@ -205,6 +205,14 @@ Mask-aware training crops; one crop size and one shrink factor for both classes.
 > partly rewarded for calling real animal/face photos fake. The DALL·E benchmark, the 64 unseen
 > generators, the wild set and DIV2K contain none of these files and stand. Corrected manifests
 > (`canon5`) and a clean retrain are in progress; see docs/FINDINGS.md.
+>
+> **Second correction (same evening, full audit — docs/DATA_AUDIT_2026-08-30.md).** The 64-source
+> unseen-generator set contained 31 % duplicate files (preference datasets reuse images across
+> rows); on unique images canon4 scores 0.9955 AUROC / 95.3 % caught / 1.0 % flagged, and the
+> "FLUX-2 Pro 10 %" figure was 1 image of 7 — withdrawn. The unseen manifest is also
+> metadata-separable (reals vs fakes differ in native size); the size-matched reading is in the
+> audit (§H). Sections 5.4 and 8 below still show the pre-audit numbers until the canon5 re-run
+> replaces them.
 
 ### 5.1 Reference benchmark (COCO val2017 vs DALL·E-3, never trained on; 1,200-image seeded subsample)
 

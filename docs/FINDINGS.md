@@ -10,6 +10,15 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★★★ **The unseen-64 set was 31% duplicate bytes; the hard-generator "holes" were duplicates of a
+  handful of images.** 17,064 rows → 11,729 unique files. Rapidata preference sets reuse one
+  generated image across many comparison rows and extraction capped rows, not unique images:
+  FLUX-2 Pro 7 unique images (the "10% hole" = 1 image of 7), Hunyuan 2.1 23, Seedream 3 33,
+  Halfmoon 31, Ideogram 54. On unique images canon4 reads **AUROC 0.9955, 95.3% caught @0.15,
+  95.5% @1% FA, 1.0% flagged** (vs 0.9919 / 90.4 / 90.8 reported before). New unseen set =
+  `randtest_unique`; per-source n always stated. Also: judges' 1,200 eval subsample = 1,137 unique
+  files (DALL·E repeats); 78 blank 170-byte canonical PNGs (corrupt originals) removed from canon5;
+  near-duplicate (dHash ≤2) rate benchmark→train 0.1–0.3%, listed. docs/DATA_AUDIT_2026-08-30.md §F.
 - ★★ **The unseen-64 benchmark manifest is metadata-separable (metadata-only AUROC 0.92 → FAIL
   under our own rule)**: reals are varied-size JPEGs, fakes fixed-size PNG/WEBP. Size-matched
   re-analysis (fakes vs reals of the same native size bucket): 342–1024 px pool, 46 sources,

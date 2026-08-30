@@ -76,7 +76,39 @@ toward real-photo style. Whether the trained model uses global style is tested o
 
 ## F. Byte-level and perceptual duplicates across everything (scripts/hash_audit.py)
 
-_pending — filled in when the run completes (outputs/audit/hash_audit.txt)_
+```
+PYTHONPATH=. .venv/bin/python -m scripts.hash_audit --unseen $S/randtest --workers 24 --out outputs/audit/hash_audit   (sha256 + dHash, 555,604 files, 5 unreadable)
+PYTHONPATH=. .venv/bin/python -m scripts.hash_analyze --csv outputs/audit/hash_audit.csv --maxd 4                      -> outputs/audit/hash_audit.txt
+PYTHONPATH=. .venv/bin/python -m scripts.hash_analyze --csv outputs/audit/hash_audit.csv --maxd 2 --exclude-trivial    -> outputs/audit/hash_audit_d2.txt
+```
+Exact bytes:
+- canon5 (before this step): 24 / 10 / 9 duplicate copies inside train / val / test; 9 files shared across
+  splits; 1 byte-level label conflict = a **170-byte blank PNG** produced by canonicalisation from
+  corrupt originals (78 flat images in total across canon5, dHash all-zero) that appeared under
+  both labels. **All 92 such rows dropped**; bucket audit and label provenance re-run: CLEAN / CLEAN.
+- **Judges' benchmark manifest: 13,720 rows but only 8,596 unique files** (DALL·E images repeated
+  under several paths — known since the 08-29 dedup check); the 1,200-image eval subsample has
+  **1,137 unique files (442/442 reals, 695/758 fakes)**. Effective n is 1,137, not 1,200.
+- **Unseen-64 set: 17,064 rows but only 11,729 unique files (10,829 fakes + 900 reals).** The
+  Rapidata preference sets reuse the same generated image across many comparison rows and my
+  extraction capped 300 rows per tag, not 300 unique images: FLUX-2 Pro = **7** unique images,
+  Hunyuan 2.1 = 23, Seedream 3 = 33, HiDream = 33, Imagen 4 = 40, Lumina = 51, Ideogram = 54,
+  Recraft v2 = 57, Halfmoon = 31, GPT-4o = 65. 41 of 64 tags have ≥100 unique images.
+  **Re-read on unique images, canon4: AUROC 0.9955, 95.3 % caught @0.15, 95.5 % @1 % FA, 1.0 %
+  flagged** (row-weighted figures were 0.9919 / 90.4 / 90.8 / 1.0 — the duplicated hard sources
+  had been over-weighted ~40×). The "FLUX-2 Pro hole (10 %)" was 1 image of 7: **not a finding**.
+  From now on the unseen set is `randtest_unique` (one file per byte-hash) and every source's n is
+  stated; sources with < 100 unique images are reported individually only with their n.
+Perceptual (dHash, flat images excluded):
+- official vs canon5_train: 45/13,720 at Hamming ≤4, **19 at ≤2** (13 DALL·E, 6 COCO) — 0.1 %.
+- unseen vs canon5_train: 260/17,064 at ≤4, **48 at ≤2** — 0.3 %.
+- wild vs train: 0/10.
+- canon5_val vs train: 287 at ≤4, **65 at ≤2**; canon5_test vs train: 1,669 at ≤4, **321 at ≤2**
+  (ArtiFact and WildFake multiple-version images). The ≤2 val/test rows are dropped from canon5
+  (list: outputs/audit/neardup_d2.csv); ≤4 kept — at that distance dHash matches unrelated
+  low-detail images.
+What this proves: no benchmark image is byte-identical to a training image; perceptual overlap is
+≤0.3 % at a strict threshold and listed. What it does not prove: re-crops / heavy re-encodes.
 
 ## H. Are the BENCHMARK manifests themselves separable by metadata / dumb style?
 
