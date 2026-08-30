@@ -10,6 +10,13 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★ **Stacked corruptions (job 148, canon4 @0.15): fakes hold, degraded reals climb — the single-
+  transform story amplified.** Judges' benchmark: fakes caught 96–99.5% on every stack; reals flagged
+  JPEG-twice 6.6%, crop80→resize½ 10.2%, blur1→JPEG70 17.6%, noise0.05→JPEG70 19.2%, random
+  2-stack 21.3%, repost chain (JPEG70→½→JPEG50) 25.8%, random 3-stack **29.2%** (single transforms:
+  10.2% mean, 26.7% worst). AUROC stays 0.96–0.99, so the ranking survives and a higher line recovers
+  most of it. Unseen probe (large 1024-px images): 93.6% caught / 7.6% flagged mean, worst 10.7% —
+  again much milder because shrink-to-320 erases most of the damage on large images.
 - **B2 (hard corruption on 30% of samples, both classes) — small trade, not a fix (job 137).** At its own
   rule cut-off (0.172): corrupted COCO reals flagged 8.5% mean / 19.0% worst (canon4 11.1% / 28.3%),
   corrupted DALL·E caught 98.5% (99.1%), unseen generators 89.4% (90.8%), unseen AUROC 0.9889
