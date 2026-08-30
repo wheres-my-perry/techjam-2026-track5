@@ -10,6 +10,17 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★ **canon4_test at the fixed 0.15 (job 135, 8,000 held-out images, 32 known generators):** fakes caught
+  74.5% clean / 73.7% mean over corruptions (dragged by tampering: SID-tampered 14%, inpainting 19%,
+  LaMa 49%; pure generators 90–100%), real photos flagged **5.8% clean / 10.6% mean / 17.2% worst**
+  (resize ¼). The real false alarms are concentrated by SOURCE: WildFake reals (200 px web images)
+  35.6%, ArtiFact reals 14.4%, versus large ext reals 1.3%, LSUN 0–1%. So the model's weak real side
+  is *small / low-detail* photos — the same failure as corrupted COCO reals (blur, ¼ resize, noise
+  all remove detail). One cause, two symptoms.
+- **Oversight (Thinh, 2026-08-30 ~17:00): the 64-source unseen test was never run under the
+  corruption grid**; only clean native-size images. Fixed as a small probe (300 reals + 15 per
+  generator, clean + 6 hardest corruptions, ~13 min/model; `--conditions` in src.evaluate), job 144
+  for canon4 mean + logit, and inside run_B.sh for every candidate.
 - **One ranking over everything (Thinh's "AUROC over the whole dataset"), canon4, cut-off 0.15
   (`scripts/pool_auroc.py`):** clean-only pool of 18,274 images — judges' benchmark 1,200 (6.6% of
   the pool), 64-source unseen 17,064 (93.4%), wild 10 (0.1%) — **pooled AUROC 0.990**, 90.8% caught,
