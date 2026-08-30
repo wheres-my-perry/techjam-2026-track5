@@ -104,9 +104,10 @@ Perceptual (dHash, flat images excluded):
 - unseen vs canon5_train: 260/17,064 at ≤4, **48 at ≤2** — 0.3 %.
 - wild vs train: 0/10.
 - canon5_val vs train: 287 at ≤4, **65 at ≤2**; canon5_test vs train: 1,669 at ≤4, **321 at ≤2**
-  (ArtiFact and WildFake multiple-version images). The ≤2 val/test rows are dropped from canon5
-  (list: outputs/audit/neardup_d2.csv); ≤4 kept — at that distance dHash matches unrelated
-  low-detail images.
+  (ArtiFact and WildFake multiple-version images). The ≤2 val/test rows ARE dropped from canon5
+  (65 + 321, list: outputs/audit/neardup_d2.csv); ≤4 kept — at that distance dHash matches
+  unrelated low-detail images. **Final canon5: train 296,092 / val 36,488 / test 191,759 rows;
+  bucket audit CLEAN, label provenance CLEAN (re-run after every drop).**
 What this proves: no benchmark image is byte-identical to a training image; perceptual overlap is
 ≤0.3 % at a strict threshold and listed. What it does not prove: re-crops / heavy re-encodes.
 
