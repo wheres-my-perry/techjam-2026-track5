@@ -10,6 +10,30 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★★ **At the fixed cut-off 0.15 the judges' benchmark has a REAL-side problem under corruption
+  (job 135, canon4, DALL·E-3 vs COCO val, 1,200):** fakes caught 100% clean / 99.0% mean over
+  corruptions / 97.0% worst, but real photos wrongly flagged 2.9% clean / **10.2% mean / 26.7%
+  worst** (resize ¼ 26.7%, noise σ0.10 24.7%, blur σ2 20.8%, noise σ0.05 12.7%, resize ½ 11.1%).
+  Heavily blurred/downscaled/noisy reals drift up toward the line; DALL·E fakes sit near 1 and
+  never come down. AUROC hid this completely (0.9855 worst). Cut-off sweep (all sets at once):
+  0.15 → unseen-gen 90.4% / COCO reals mean-TF 10.2% flagged / wild 5/5; 0.30 → 85.9% / 3.3%
+  (worst 8.8%) / 3/5, DALL·E mean-TF 96.7%; 0.50 → 81.0% / 0.9% / 2/5. One line cannot serve both
+  "unseen family scores 0.2–0.35" and "corrupted real scores 0.15–0.3": those two populations
+  overlap in score. Fix must come from the model's real side (train on more corrupted reals) or
+  from choosing the line for the judged benchmark (~0.3) and accepting the unseen-family loss.
+- ★ **"Boost blatant AI-ness" aggregations (Thinh's f(a_i) idea) make it WORSE, measured on the
+  saved per-crop scores (17,064 images):** power mean p=2/3/5: 89.9/89.5/88.2% @1% FA (mean:
+  90.8%); softmax-weighted β=5/10: 86.1/81.5%; max 85.0%; tempered noisy-OR 89.9%; quantile-90
+  88.9%. They are also LESS stable under crop resampling (verdict flips: softmax 1.80%, max 1.45%
+  vs mean 1.18%). Why: reals also have occasional loud crops (5% of Open Images reals have a crop
+  > 0.9) so any rule that listens to the loudest crop buys false alarms; and the hard fakes have no
+  loud crops to boost (FLUX-2 Pro: 4% of crops > 0.5, only 10% of images have any crop > 0.9;
+  Hunyuan/Ideogram/Seedream ~45–54%). The one f that helps is the log-odds mean (average logit,
+  then sigmoid): AUROC 0.9936 (best), 97.4% @5% FA (best), 90.3% @1% FA (tie), and the most stable
+  rule (0.90% flips, reals 0.13%). But it does not rescue near-line unseen fakes — it pushes them
+  down (Gemini 0.19 → 0.04) because most of their crops look real; it stretches the scale around
+  the reals. Closeness to the line for unseen families is a model-knowledge limit, not an
+  aggregation problem.
 - **[process, Thinh] A product has ONE cut-off; every number must be read at it.** Until now the
   robustness tables (DALL·E benchmark, canon4_test) reported AUROC plus accuracy at a threshold the
   harness picked by Youden's J on *that set's own clean scores* (0.268 on DALL·E, 0.113 on
