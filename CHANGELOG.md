@@ -3,6 +3,13 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-30 (morning — crop-count / aggregation study)
+- src/model.py CropVoteModel: `r=N` (N seeded random crops instead of the grid) and `s=seed` spec keys.
+- Same 64-source unseen set, canon4: 27-grid 0.992 / 90.8% @1%FA; 100 random 0.993 / 88.0%; 200 random
+  0.993 / 88.6%; 1 centre crop 0.988 / 88.6%; whole image 168px 0.985 / 82.0%, 240px 0.987 / 87.8%.
+  100 vs 200 crops agree on 99.8% of verdicts -> more crops is converged; grid-vs-random is a tie
+  (paired bootstrap +1.8 [-1.3,+5.5]). Kept the 27 grid. REPORT §4.
+
 ## 2026-08-30 (night — canon4 result, random unseen-generator test)
 - Job 76 canon4: GENERAL 0.977, DALL·E 0.996 mean-TF, DeepFloyd (test-only) 0.942, MJ-v6 held-out 0.999.
 - scripts/random_gen_test.py: 39 (then ~50) never-trained generator sources x 300 images vs 900 never-trained

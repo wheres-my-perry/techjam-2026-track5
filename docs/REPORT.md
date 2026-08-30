@@ -122,6 +122,42 @@ Averaging over a grid of crops is worth +0.02 on average and +0.03–0.04 on the
 in robustness, not in clean accuracy: a single crop can land on a blurred/flat region, the average
 cannot.
 
+**How many crops, and grid or random? (Thinh's challenge, 2026-08-30.)** Thinh argued that 27 crops
+is too small a sample for a stable average, that a fixed 3×3 grid covers the image unevenly, and that
+random crops (many more of them) or simply the whole image might be better. We tested every variant on
+the *identical* 64-source unseen-generator set (16,164 never-trained fakes vs 900 never-trained reals,
+§5.4), canon4 weights, only the inference rule changed. "Caught at 1 % / 5 % false alarms" = share of
+fakes flagged when the cut-off is set so that 1 % (5 %) of the real photos are wrongly flagged.
+
+| inference rule | crops | AUROC | caught @1 % FA | caught @5 % FA |
+|---|---|---|---|---|
+| 3×3 grid × 3 sizes, mean — **shipped** | 27 | 0.992 | **90.8 %** | 95.9 % |
+| random crops (seeded), mean | 100 | **0.993** | 88.0 % | 96.6 % |
+| random crops (seeded), mean | 200 | **0.993** | 88.6 % | **96.7 %** |
+| 1 centre crop, no voting | 1 | 0.988 | 88.6 % | 94.7 % |
+| whole image shrunk to 168 px, no crop | 1 | 0.985 | 82.0 % | 94.5 % |
+| whole image shrunk to 240 px (short side ≈168) | 1 | 0.987 | 87.8 % | 94.5 % |
+
+Findings, in order of confidence:
+1. *More crops do not help.* 100 and 200 random crops give the same scores to within 0.03 for 95 %
+   of images and change the verdict (cut-off 0.15) on 0.2 % of them — the random-crop average is
+   already converged at 100. Their AUROC (0.993) equals the grid's; at a 1 % false-alarm budget the
+   grid is +1.8 points, but a paired bootstrap puts the 95 % interval at [−1.3, +5.5] — a tie.
+2. *The grid's 27 crops are not "noise".* The grid disagrees with the 200-crop average more (95th
+   percentile |Δ| 0.13) than sampling noise could explain (≈0.06 for 27 random crops); the difference
+   is systematic — the grid always includes the corners and edges, random crops mostly do not — and it
+   goes in the grid's favour on the sources that matter (Hunyuan 2.1: 54 % caught vs 25 %; Recraft v3
+   74 % vs 59 %; FLUX-2 Pro 10 % vs 0 %).
+3. *Whole-image (no crop) is worse*, and worse the more it is shrunk: shrinking to 168 px throws away
+   the fine texture the detector reads (82 %); at 240 px it recovers to 88 %, still below the grid.
+   The model was trained on 112–168-px crops of 320-px-long images, so feeding it a whole image is a
+   train/test mismatch, not "more information".
+4. Any of crops-vs-none is worth far less than the data recipe (§3): the difference between the best
+   and worst rule here is 9 points at 1 % FA; canon3 → canon4 (data only) moved the same number 84 → 91.
+
+Decision: keep the 27-crop grid (deterministic, fastest, best at the tight false-alarm budget the app
+runs at). Direct measurement of the 27-crop sampling noise (27 *random* crops, two seeds) in progress.
+
 **Localiser (`pe_seg`).** Same trunk, per-patch head (each 14×14 token predicts "altered"),
 supervised by SID_Set's pixel masks; image score = mean of the top 5% patch logits, i.e. the
 pooling is learned inside the transformer with full attention context instead of crop voting.
