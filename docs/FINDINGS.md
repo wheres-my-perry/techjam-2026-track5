@@ -10,6 +10,12 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **Option C (log-odds mean) FAILS — no change (job 136 + offline):** at matched real-false-alarm
+  rates on corrupted COCO reals (10% / 3% / 1%) it catches the same fakes as the plain mean on the
+  DALL·E benchmark (99.1 vs 99.0%, 96.8 vs 96.6%, 92.5 vs 92.7%) and on the 64 unseen generators
+  (90.1 vs 90.3%, 85.3 vs 85.4%, 81.3 vs 81.5%); worst-corruption real flags slightly worse (33 vs
+  27% at the loose line). It rescales, it does not re-rank. Rest of the job cancelled to save GPU.
+  Next: B (retrain).
 - ★ **canon4_test at the fixed 0.15 (job 135, 8,000 held-out images, 32 known generators):** fakes caught
   74.5% clean / 73.7% mean over corruptions (dragged by tampering: SID-tampered 14%, inpainting 19%,
   LaMa 49%; pure generators 90–100%), real photos flagged **5.8% clean / 10.6% mean / 17.2% worst**
