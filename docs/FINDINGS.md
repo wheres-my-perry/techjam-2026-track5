@@ -10,6 +10,14 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★★ **The unseen-64 benchmark manifest is metadata-separable (metadata-only AUROC 0.92 → FAIL
+  under our own rule)**: reals are varied-size JPEGs, fakes fixed-size PNG/WEBP. Size-matched
+  re-analysis (fakes vs reals of the same native size bucket): 342–1024 px pool, 46 sources,
+  10,758 fakes vs 893 reals → AUROC 0.9955, 93.6% caught @0.15, 1.0% flagged (93.8% @1% FA). The
+  5,406 fakes at ≤341 px (93.7% caught) and >1024 px (**64.7%**: Hunyuan 2.1 46%, Ideogram 51%,
+  Seedream 3 60%, Halfmoon 67%, Frames 73%) have no same-size unseen reals and are NOT scorable
+  until ≥300 reals per bucket are added (DIV2K 2K reals: 9% flagged). Full audit:
+  docs/DATA_AUDIT_2026-08-30.md.
 - ★★★ **DATA BUG (found by the teammate's audit, verified in our manifests): every WildFake "GAN" row
   — stylegan, vqvae, biggan, stargan — is a REAL AFHQ/FFHQ photograph labelled fake.** Train 47,981
   rows (24.5% of all claimed fakes), val 5,968, test 6,046; 21,564 distinct real files, most listed

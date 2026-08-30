@@ -78,6 +78,38 @@ toward real-photo style. Whether the trained model uses global style is tested o
 
 _pending — filled in when the run completes (outputs/audit/hash_audit.txt)_
 
+## H. Are the BENCHMARK manifests themselves separable by metadata / dumb style?
+
+```
+scripts/shortcut_audit.py --manifest data/manifests/canon_official.csv --limit 1200 -> metadata-only AUROC 0.5426 [CLEAN]
+scripts/canary_audit.py  --manifest data/manifests/canon_official.csv --limit 1200 -> style 0.765 / color 0.750 / hist 0.760 FAIL; thumb8 0.567, blur 0.610 mild
+scripts/shortcut_audit.py --manifest data/manifests/unseen64_tf.csv  --limit 1260 -> metadata-only AUROC 0.9197 [FAIL — do not report model results from this manifest]
+scripts/canary_audit.py  --manifest data/manifests/unseen64_tf.csv  --limit 1260 -> style 0.790 FAIL, thumb8 0.678 FAIL, blur 0.663 FAIL, color 0.614, hist 0.621 mild
+```
+- Judges' benchmark: metadata CLEAN after canonicalisation; the colour/style canaries fail — a
+  property of the contest data (DALL·E palette ≠ COCO), documented since 08-29; the model's
+  greyscale (0.996) and channel-swap (0.998) scores are the check that it does not rely on it.
+- **Unseen-64 manifest: metadata-only AUROC 0.92 — FAIL under our own rule.** Reals are varied-size
+  JPEGs (COCO 640, Open Images/FFHQ/SID 1024); fakes are fixed-size PNG/WEBP (256 / 512 / 1024 /
+  >1024). File format never reaches the model (pixels only), but native SIZE sets the shrink
+  factor. The honest reading is size-matched — fakes vs reals of the same native long-side bucket:
+
+| native long side | fakes | reals | AUROC | caught @0.15 | reals flagged @0.15 |
+|---|---|---|---|---|---|
+| ≤341 (GenImage×4, scraper×2, parti-prompts×6) | 3,600 | 6 | — | 93.7 % | no same-size reals: **not scorable** |
+| 342–640 | 3,160 | 294 | 1.000 | 99.8 % | 0.0 % |
+| 641–1024 | 7,598 | 599 | 0.992 | 91.1 % | 1.5 % |
+| >1024 (Frames, Seedream 3, Ideogram, Hunyuan 2.1, Halfmoon, bm-aura, Leonardo, Imagen 4 Ultra) | 1,806 | 1 | — | **64.7 %** | no same-size reals: **not scorable** |
+| **size-matched pool (342–1024, 46 sources)** | **10,758** | **893** | **0.9955** | **93.6 %** | **1.0 %** (93.8 % @1 % FA) |
+
+So the reportable unseen-generator number for canon4 is **93.6 % caught / 1.0 % flagged on 46
+sources at matched size (0.996 AUROC)** — not the 90.4 % / 64-source figure, which mixed in 5,406
+fakes that have no same-size reals. The >1024-px fakes are the hard modern generators (Hunyuan
+2.1 46 %, Ideogram 51 %, Seedream 3 60 %, Halfmoon 67 %, Frames 73 %) and we have **no >1024-px
+unseen reals** to set a false-alarm rate against (DIV2K 2K reals: 9 % flagged at 0.15) — an open
+gap, stated as such. Action: add ≥300 real photos >1024 px (and ≤341 px) to the unseen set before
+any number from those buckets is quoted.
+
 ## G. What this audit does NOT cover
 - Visual near-duplicates beyond dHash Hamming ≤ 4 (re-crops, heavy re-encodes).
 - Whether the ext HF datasets' own labels are right (we trust "this HF dataset is generator X").
