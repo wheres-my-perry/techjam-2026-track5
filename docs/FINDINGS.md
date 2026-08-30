@@ -10,6 +10,9 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **Wild set (5 iPhone photos + 5 Gemini images) at the shipped cut-off 0.15: 10/10.** Reals 0.000–0.041,
+  Gemini 0.191–0.776; nearest miss on each side: real 0.041 vs fake 0.191 (margin 0.15 around the
+  cut-off). At 0.5 it was 7/10 — the same scores, a different line.
 - ★ **Even-coverage tilings and per-pixel weighting (Thinh's proposal) do not beat the grid — the
   crop LAYOUT is saturated.** Same 64-source set, canon4, identical crops re-aggregated offline
   (job 80): every layout × every rule lands at 88–91% caught @1% FA and AUROC 0.991–0.993.
