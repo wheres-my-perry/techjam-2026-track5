@@ -15,8 +15,8 @@ if [ "$got" != "$GPU0" ]; then echo "ABORT: device 0 is not physical GPU 0"; exi
 CK=outputs/pe_ft/canon4.pt
 echo "== UNSEEN-64 under the 15-condition grid, canon4, plain mean, fixed 0.15  $(date)"
 .venv/bin/python -m src.evaluate --manifest data/manifests/unseen64_tf.csv --model "vote(L=320)+pe_ft:$CK" \
-  --threshold 0.15 --out outputs/pe_ft/eval_canon4_unseen_tf 2>&1 | grep -vE "Warning|warn" | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
+  --threshold 0.15 --conditions clean,jpeg_q30,blur_s2.0,resize_0.5x,resize_0.25x,noise_s0.05,noise_s0.10 --out outputs/pe_ft/eval_canon4_unseen_tf 2>&1 | grep -vE "Warning|warn" | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
 echo "== UNSEEN-64 under the grid, canon4, log-odds mean (option C), provisional 0.035  $(date)"
 .venv/bin/python -m src.evaluate --manifest data/manifests/unseen64_tf.csv --model "vote(f=1,L=320)+pe_ft:$CK" \
-  --threshold 0.035 --out outputs/pe_ft/eval_canon4_unseen_tf_logit 2>&1 | grep -vE "Warning|warn" | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
+  --threshold 0.035 --conditions clean,jpeg_q30,blur_s2.0,resize_0.5x,resize_0.25x,noise_s0.05,noise_s0.10 --out outputs/pe_ft/eval_canon4_unseen_tf_logit 2>&1 | grep -vE "Warning|warn" | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
 echo UNSEEN_TF_DONE

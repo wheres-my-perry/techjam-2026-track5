@@ -39,27 +39,30 @@ def _score_condition(model, samples, tf, batch=BATCH):
     return np.asarray(scores, dtype=np.float32)
 
 
-def evaluate(model, samples, topk=20, threshold=None):
+def evaluate(model, samples, topk=20, threshold=None, conditions=None):
     import sys
     import time
 
     y = np.asarray([s.label for s in samples])
     results, all_scores = {}, {}
+    grid = [(n, tf) for n, tf in EVAL_GRID if not conditions or n in conditions]
+    if conditions:
+        assert grid[0][0] == "clean", "--conditions must include clean"
 
     t0 = time.time()
-    for i, (name, tf) in enumerate(EVAL_GRID, 1):
+    for i, (name, tf) in enumerate(grid, 1):
         t = time.time()
         all_scores[name] = _score_condition(model, samples, tf)
         done, total = time.time() - t, time.time() - t0
-        eta = total / i * (len(EVAL_GRID) - i)
-        print(f"[{i:2d}/{len(EVAL_GRID)}] {name:14s} {done:5.1f}s  (eta ~{eta:4.0f}s)",
+        eta = total / i * (len(grid) - i)
+        print(f"[{i:2d}/{len(grid)}] {name:14s} {done:5.1f}s  (eta ~{eta:4.0f}s)",
               file=sys.stderr, flush=True)
 
     # threshold: the FIXED product cut-off when given (Thinh's rule: a finished product has one
     # line, and every number is read at that line); otherwise the legacy Youden pick on the
     # clean scores of this very set (threshold-free comparison only, never a product number).
     thr = float(threshold) if threshold is not None else pick_threshold(y, all_scores["clean"])
-    for name, _ in EVAL_GRID:
+    for name, _ in grid:
         r = condition_report(y, all_scores[name], thr)
         sc = all_scores[name]
         r["tpr@thr"] = float((sc[y == 1] >= thr).mean()) if (y == 1).any() else float("nan")
@@ -67,9 +70,9 @@ def evaluate(model, samples, topk=20, threshold=None):
         r["acc@thr"] = float(((sc >= thr) == (y == 1)).mean())
         results[name] = r
 
-    aurocs = [results[n]["auroc"] for n, _ in EVAL_GRID if n != "clean"]
-    tprs = [results[n]["tpr@thr"] for n, _ in EVAL_GRID if n != "clean"]
-    fprs = [results[n]["fpr@thr"] for n, _ in EVAL_GRID if n != "clean"]
+    aurocs = [results[n]["auroc"] for n, _ in grid if n != "clean"]
+    tprs = [results[n]["tpr@thr"] for n, _ in grid if n != "clean"]
+    fprs = [results[n]["fpr@thr"] for n, _ in grid if n != "clean"]
     summary = {
         "threshold_frozen_on_clean": thr,
         "threshold_source": "fixed" if threshold is not None else "youden_on_this_set",
@@ -83,7 +86,7 @@ def evaluate(model, samples, topk=20, threshold=None):
         "mean_transformed_auroc": float(np.nanmean(aurocs)),
         "worst_transformed_auroc": float(np.nanmin(aurocs)),
         "worst_condition": min(
-            (n for n, _ in EVAL_GRID if n != "clean"), key=lambda n: results[n]["auroc"]
+            (n for n, _ in grid if n != "clean"), key=lambda n: results[n]["auroc"]
         ),
     }
 
@@ -99,9 +102,9 @@ def evaluate(model, samples, topk=20, threshold=None):
                                 if s.label == 1 and s.generator == g])
             sel = np.concatenate([real_idx, g_idx])
             y_sel = y[sel]
-            aurocs_g = {name: _auroc(y_sel, all_scores[name][sel]) for name, _ in EVAL_GRID}
+            aurocs_g = {name: _auroc(y_sel, all_scores[name][sel]) for name, _ in grid}
             tf_vals = [v for k, v in aurocs_g.items() if k != "clean"]
-            catch_g = {name: float((all_scores[name][g_idx] >= thr).mean()) for name, _ in EVAL_GRID}
+            catch_g = {name: float((all_scores[name][g_idx] >= thr).mean()) for name, _ in grid}
             tf_catch = [v for k, v in catch_g.items() if k != "clean"]
             per_generator[g] = {
                 "n_fake": int(len(g_idx)),
@@ -122,7 +125,7 @@ def evaluate(model, samples, topk=20, threshold=None):
     errors = {"false_positives": fp, "false_negatives": fn}
     scores_dump = {"paths": np.array([s_.path for s_ in samples]), "labels": y,
                    "generators": np.array([s_.generator or "" for s_ in samples]),
-                   "threshold": thr, **{f"score_{n}": all_scores[n] for n, _ in EVAL_GRID}}
+                   "threshold": thr, **{f"score_{n}": all_scores[n] for n, _ in grid}}
 
     return results, summary, errors, per_generator, scores_dump
 
@@ -182,6 +185,8 @@ def main(argv=None):
                     help="evaluate only a seeded random subsample of N")
     ap.add_argument("--limit-seed", type=int, default=0)
     ap.add_argument("--topk", type=int, default=20)
+    ap.add_argument("--conditions", default="",
+                    help="comma list of grid conditions to run (must include clean); default all 15")
     ap.add_argument("--threshold", type=float, default=None,
                     help="FIXED product cut-off; every @thr number is read at this line. "
                          "Omitted -> legacy Youden pick on this set's clean scores (comparison only).")
@@ -197,7 +202,8 @@ def main(argv=None):
     model = load_model(args.model)
 
     results, summary, errors, per_generator, scores_dump = evaluate(
-        model, samples, topk=args.topk, threshold=args.threshold)
+        model, samples, topk=args.topk, threshold=args.threshold,
+        conditions=[c.strip() for c in args.conditions.split(",") if c.strip()] or None)
 
     os.makedirs(args.out, exist_ok=True)
     with open(os.path.join(args.out, "results.json"), "w") as f:
