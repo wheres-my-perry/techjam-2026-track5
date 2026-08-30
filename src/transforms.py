@@ -81,13 +81,36 @@ EVAL_GRID = [
     _named("crop_80", lambda im: center_crop(im, 0.80)),
 ]
 
-# Extra stress conditions (2026-08-30, Thinh: "did you apply the transformation repeatedly or once?").
-# The brief lists single transforms with single parameters and says nothing about stacking, so the
-# official grid above applies each ONCE. These chains mimic real repost histories; they are NOT in
-# EVAL_GRID (so no existing number changes) and are reachable via `src.evaluate --conditions`.
+# Stacked conditions (2026-08-30, Thinh: the brief says "a subset of the following augmentations" —
+# that limits WHICH transforms, not how many per image; repost chains are stacks). Reported alongside
+# the single-transform grid; not inside EVAL_GRID so earlier single-transform numbers stay comparable.
+def _seeded(im):
+    import hashlib
+    return random.Random(int(hashlib.md5(im.tobytes()[:4096]).hexdigest(), 16) & 0xFFFFFFFF)
+
+
+def _stack(im, k):
+    """k transforms drawn from the brief's grid, seeded by image content (deterministic)."""
+    rng = _seeded(im)
+    pool = [lambda i: jpeg_compress(i, rng.choice([90, 70, 50, 30])),
+            lambda i: gaussian_blur(i, rng.choice([0.5, 1.0, 2.0])),
+            lambda i: resize_down_up(i, rng.choice([0.5, 0.25])),
+            lambda i: gaussian_noise(i, rng.choice([0.02, 0.05, 0.10])),
+            lambda i: color_jitter(i, 0.20),
+            lambda i: center_crop(i, 0.80)]
+    for op in rng.sample(pool, k):
+        im = op(im)
+    return im
+
+
 EXTRA_GRID = [
     _named("chain_repost", lambda im: jpeg_compress(resize_down_up(jpeg_compress(im, 70), 0.5), 50)),
     _named("jpeg_twice", lambda im: jpeg_compress(jpeg_compress(im, 50), 50)),
+    _named("blur1_jpeg70", lambda im: jpeg_compress(gaussian_blur(im, 1.0), 70)),
+    _named("noise05_jpeg70", lambda im: jpeg_compress(gaussian_noise(im, 0.05), 70)),
+    _named("crop80_resize05", lambda im: resize_down_up(center_crop(im, 0.80), 0.5)),
+    _named("stack2_rand", lambda im: _stack(im, 2)),
+    _named("stack3_rand", lambda im: _stack(im, 3)),
 ]
 
 

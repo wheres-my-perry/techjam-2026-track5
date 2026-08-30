@@ -14,7 +14,7 @@ echo "CUDA device 0 = $got (physical GPU 0 = $GPU0)"
 if [ "$got" != "$GPU0" ]; then echo "ABORT: device 0 is not physical GPU 0"; exit 1; fi
 NAME=${1:-canon4}; THR=${2:-0.15}
 SPEC="vote(L=320)+pe_ft:outputs/pe_ft/$NAME.pt"
-COND=clean,chain_repost,jpeg_twice
+COND=clean,chain_repost,jpeg_twice,blur1_jpeg70,noise05_jpeg70,crop80_resize05,stack2_rand,stack3_rand
 echo "== CHAIN stress, $NAME @ $THR, judges' benchmark  $(date)"
 .venv/bin/python -m src.evaluate --manifest data/manifests/canon_official.csv --model "$SPEC" --threshold $THR --limit 1200 \
   --conditions $COND --out outputs/pe_ft/eval_${NAME}_official_chain 2>&1 | grep -vE "Warning|warn" | grep -E "^\||^At the|Saved|Traceback|Error"

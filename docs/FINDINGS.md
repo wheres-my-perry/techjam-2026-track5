@@ -10,10 +10,11 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
-- **[brief, verified from source] Transforms are applied ONCE each, singly; no hidden scored test set,
-  no contest-defined metric or threshold.** The judged artefacts are the deliverables (Devpost text,
+- **[brief, verified from source] "A subset of the following augmentations" limits WHICH transforms,
+  not how many per image (Thinh) — stacking is in scope; single application is only the minimum. No
+  hidden scored test set, no contest-defined metric or threshold.** The judged artefacts are the deliverables (Devpost text,
   README, YouTube demo, robustness summary table, error-analysis note) under five weighted criteria.
-  Our chain stress (`chain_repost`, `jpeg_twice`) is beyond the brief and will be labelled so.
+  Stacked conditions (5 fixed chains + seeded random 2-/3-stacks) now run beside the single grid.
 - ★ **Unseen generators UNDER corruption hold up (job 144 probe: 300 unseen reals + 15 per generator
   × clean + 6 hardest corruptions, canon4 @0.15):** fakes caught 92.8% clean → 91.7–95.4% corrupted
   (corruption even helps a little — it removes the "too clean" look the model reads as real); reals
