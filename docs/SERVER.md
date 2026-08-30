@@ -40,3 +40,12 @@ and docs/PROGRESS.md (current status).
 All commands are in ARCHITECTURE.md + CHANGELOG.md + docs/approaches/*.md; training entry points:
 `python -m src.approaches.<name>.train --help`. Evaluation:
 `python -m src.evaluate --manifest data/manifests/<x>.csv --model <name>:outputs/<name>/<w> --out outputs/<name>/eval_x --limit 1200`.
+
+## GPU numbering under Slurm (found 2026-08-30)
+Slurm's GRES index is the REVERSE of `nvidia-smi`'s: Slurm `IDX:0` = nvidia-smi GPU 1
+(PCI 81:00.0, GPU-3b677bf6…), Slurm `IDX:1` = nvidia-smi GPU 0 (PCI 41:00.0, GPU-9ed22abb…).
+A `--gres=gpu:1` job therefore lands on nvidia-smi GPU 1 first when both are free. Slurm also
+cannot see jobs started outside Slurm, so a bare process on a card does not stop Slurm from
+handing that card out. Rules: every GPU job goes through sbatch (Thinh, 2026-08-30); if a card
+must be avoided, reserve `--gres=gpu:2` and assert the UUID of CUDA device 0 at job start
+(see run_r27.sbatch) — never set CUDA_VISIBLE_DEVICES inside the job.
