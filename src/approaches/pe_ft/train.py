@@ -32,13 +32,14 @@ CROP_MIN, CROP_MAX, CROP_STEP = 112, 168, 14
 
 
 class ManifestDataset(Dataset):
-    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False, hard_aug=0.0):
+    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False, hard_aug=0.0, raw=False):
         self.samples = load_manifest(manifest_csv)
         self.augment = augment
         self.crop = crop
         self.blur_boost = blur_boost  # extra low-pass aug: forces blur-surviving cues
         self.style = style            # label-neutral style randomisation (both classes)
         self.hard_aug = hard_aug      # prob of ONE extreme corruption instead of the mild chain (both classes)
+        self.raw = raw                # consistency mode: return the un-augmented image; views are made in the collate
 
     def __len__(self):
         return len(self.samples)
@@ -48,6 +49,8 @@ class ManifestDataset(Dataset):
         img = load_image(s.path)
         if self.style:
             img = style_aug(img, random.Random())
+        if self.raw:
+            return img, float(s.label)
         if self.hard_aug and random.random() < self.hard_aug:
             img = hard_train_transform(img, random.Random())
         elif self.augment:
@@ -85,6 +88,49 @@ def make_collate(cmin, cmax, fixed=None):
         ys = torch.tensor([y for _, y in batch], dtype=torch.float32)
         return to_tensor(imgs), ys
     return collate
+
+
+def make_consist_collate(cmin, cmax, k, hard_aug):
+    """Consistency training (Thinh, 2026-08-30): ONE crop per image, K independently corrupted
+    views of that crop (no geometry change, so the views show the same content and their
+    embeddings should agree). Returns x of shape (K*B, C, H, W) ordered [view0 batch, view1 batch,
+    ...] and y repeated K times; the trainer pairs view v of image i with view v' of image i."""
+    def view_aug(im, rng):
+        if hard_aug and rng.random() < hard_aug:
+            return hard_train_transform(im, rng)
+        return random_train_transform(im, rng, geometry=False)
+
+    def collate(batch):
+        rng = random.Random()
+        size = sample_size(rng, cmin, cmax, CROP_STEP)
+        c = min(clamp_size(size, *im.size) for im, _ in batch)
+        c = max(CROP_STEP, (c // CROP_STEP) * CROP_STEP)
+        crops = [random_crop(im, c, rng) for im, _ in batch]
+        views = [[view_aug(cr, rng) for cr in crops] for _ in range(k)]
+        ys = torch.tensor([y for _, y in batch], dtype=torch.float32)
+        return to_tensor([im for v in views for im in v]), ys.repeat(k)
+    return collate
+
+
+def embedding_loss(e, kind, k, tau=0.1):
+    """Agreement loss between the K views of each image. e: (K*B, D), view-major order."""
+    z = torch.nn.functional.normalize(e.float(), dim=1)
+    b = z.shape[0] // k
+    zv = z.view(k, b, -1)
+    if kind == "cos":  # 1 - cosine over all view pairs of the same image
+        tot, n = 0.0, 0
+        for i in range(k):
+            for j in range(i + 1, k):
+                tot = tot + (1 - (zv[i] * zv[j]).sum(1)).mean(); n += 1
+        return tot / max(n, 1)
+    if kind == "nce":  # NT-Xent: positives = other views of the same image, negatives = everything else
+        sim = z @ z.t() / tau
+        sim.fill_diagonal_(float("-inf"))
+        img_id = torch.arange(b, device=z.device).repeat(k)
+        pos = (img_id[:, None] == img_id[None, :]) & ~torch.eye(len(z), dtype=torch.bool, device=z.device)
+        logp = sim - torch.logsumexp(sim, dim=1, keepdim=True)
+        return -(logp.masked_fill(~pos, 0.0)).sum(1).div(pos.sum(1)).mean()
+    raise ValueError(kind)
 
 
 @torch.no_grad()
@@ -127,6 +173,14 @@ def main():
                     help="probability that a sample gets ONE extreme corruption (blur 1.5-2.5, "
                          "resize 0.2-0.4, noise 0.07-0.12, jpeg 20-40) instead of the mild chain; "
                          "both classes alike (option B2, 2026-08-30)")
+    ap.add_argument("--consist", type=int, default=0,
+                    help="K>0: augmentation-consistency training (Thinh): K corrupted views of the same "
+                         "crop per image; loss = BCE(all views) + alpha * agreement loss")
+    ap.add_argument("--consist-loss", default="cos", choices=["cos", "nce", "out"],
+                    help="cos: 1-cosine between view embeddings; nce: NT-Xent contrastive on embeddings; "
+                         "out: MSE between view output probabilities (control)")
+    ap.add_argument("--alpha", type=float, default=1.0, help="weight of the agreement loss")
+    ap.add_argument("--tau", type=float, default=0.1, help="NT-Xent temperature")
     ap.add_argument("--style-aug", action="store_true",
                     help="label-neutral style randomisation on both classes (greyscale, saturation, tone, grain, vignette, flash)")
     ap.add_argument("--real-weight", type=float, default=1.0,
@@ -152,15 +206,18 @@ def main():
           f"crop={f'random {cmin}-{cmax}' if rand_size else args.crop} "
           f"(val fixed {vfixed})", flush=True)
 
-    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost, style=args.style_aug, hard_aug=args.hard_aug)
+    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost, style=args.style_aug,
+                               hard_aug=args.hard_aug, raw=args.consist > 0)
     if args.limit_train and args.limit_train < len(train_ds.samples):
         rng = random.Random(args.seed)
         rng.shuffle(train_ds.samples)
         train_ds.samples = train_ds.samples[: args.limit_train]
         print(f"limit-train: {len(train_ds.samples)} rows", flush=True)
+    train_collate = (make_consist_collate(cmin, cmax, args.consist, args.hard_aug) if args.consist > 0
+                     else make_collate(cmin, cmax))
     train_dl = DataLoader(train_ds,
                           batch_size=args.batch, shuffle=True, num_workers=args.workers,
-                          collate_fn=make_collate(cmin, cmax))
+                          collate_fn=train_collate)
     val_dl = DataLoader(ManifestDataset(args.val, False, args.crop),
                         batch_size=args.batch, shuffle=False, num_workers=args.workers,
                         collate_fn=make_collate(cmin, cmax, fixed=vfixed))
@@ -178,7 +235,8 @@ def main():
         # weight = real_weight on reals, 1 on fakes; mean over the batch
         w = torch.where(y < 0.5, torch.full_like(y, args.real_weight), torch.ones_like(y))
         return (bce(logits, y) * w).sum() / w.sum()
-    print(f"loss: BCE with real_weight={args.real_weight}", flush=True)
+    print(f"loss: BCE with real_weight={args.real_weight}" + (
+        f" + {args.alpha} * {args.consist_loss} agreement over {args.consist} views/image" if args.consist > 0 else ""), flush=True)
 
     best, start_epoch = -1.0, 1
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
@@ -193,22 +251,34 @@ def main():
 
     for epoch in range(start_epoch, args.epochs + 1):
         net.train()
-        t0, running, seen = time.time(), 0.0, 0
+        t0, running, seen, run_agree = time.time(), 0.0, 0, 0.0
         for step, (x, y) in enumerate(train_dl):
             if args.max_steps and step >= args.max_steps:
                 break
             x, y = x.to(device), y.to(device)
             opt.zero_grad()
             with torch.autocast(device, dtype=torch.bfloat16, enabled=amp):
-                logits = net(x).squeeze(1)
+                if args.consist > 0:
+                    emb, logits = net.forward_feat(x)
+                    logits = logits.squeeze(1)
+                else:
+                    logits = net(x).squeeze(1)
             loss = loss_fn(logits.float(), y)
+            if args.consist > 0:
+                if args.consist_loss == "out":
+                    pv = torch.sigmoid(logits.float()).view(args.consist, -1)
+                    agree = ((pv - pv.mean(0, keepdim=True)) ** 2).mean()
+                else:
+                    agree = embedding_loss(emb, args.consist_loss, args.consist, args.tau)
+                loss = loss + args.alpha * agree
+                run_agree += agree.item() * len(y)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             opt.step()
             running += loss.item() * len(y)
             seen += len(y)
         val_auc = evaluate_auroc(net, val_dl, device)
-        print(f"epoch {epoch}: loss={running/seen:.4f} val_auroc={val_auc:.4f} "
+        print(f"epoch {epoch}: loss={running/seen:.4f}" + (f" agree={run_agree/seen:.4f}" if args.consist > 0 else "") + f" val_auroc={val_auc:.4f} "
               f"({time.time()-t0:.0f}s)", flush=True)
         if val_auc > best:
             best = val_auc

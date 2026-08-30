@@ -47,6 +47,12 @@ class PENet(nn.Module):
     def forward(self, x):
         return self.head(self.trunk(x))
 
+    def forward_feat(self, x):
+        """(embedding, logit): the pooled 1024-d trunk output and the head's logit.
+        Used by the augmentation-consistency loss (Thinh, 2026-08-30)."""
+        e = self.trunk(x)
+        return e, self.head(e)
+
 
 def build_net(pretrained: bool = True) -> nn.Module:
     return PENet(pretrained=pretrained)
