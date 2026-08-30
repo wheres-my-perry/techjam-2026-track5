@@ -10,10 +10,10 @@ NAME=$1; RW=$2; HA=$3; APP=pe_ft
 P=${MANIFEST_PREFIX:-data/manifests/canon4}
 CK=outputs/$APP/$NAME.pt
 S=/tmp/claude-1006/-home-chim-techjam-2026-track5/217c8dee-cd23-4c85-b87a-c20ed3db7c0a/scratchpad
-echo "== TRAIN $NAME epochs=4 real_weight=$RW hard_aug=$HA  $(date)"
+echo "== TRAIN $NAME epochs=4 real_weight=$RW hard_aug=$HA stack_aug=${STACK_AUG:-0}  $(date)"
 rm -f $CK $CK.state
 python -m src.approaches.$APP.train --train ${P}_train.csv --val ${P}_val.csv \
-  --epochs 4 --augment --hard-aug $HA --crop-min 112 --crop-max 168 --batch 48 --workers 16 \
+  --epochs 4 --augment --hard-aug $HA --stack-aug ${STACK_AUG:-0} --crop-min 112 --crop-max 168 --batch 48 --workers 16 \
   --real-weight $RW --limit-train 0 --out $CK || exit 1
 SPEC="vote(L=320)+${APP}:$CK"
 echo "== WILD  $(date)"

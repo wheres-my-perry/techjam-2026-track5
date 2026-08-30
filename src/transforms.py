@@ -89,9 +89,10 @@ def _seeded(im):
     return random.Random(int(hashlib.md5(im.tobytes()[:4096]).hexdigest(), 16) & 0xFFFFFFFF)
 
 
-def _stack(im, k):
-    """k transforms drawn from the brief's grid, seeded by image content (deterministic)."""
-    rng = _seeded(im)
+def _stack(im, k, rng=None):
+    """k transforms drawn from the brief's grid. Evaluation: seeded by image content (deterministic).
+    Training (--stack-aug): pass a fresh random.Random() so every epoch draws a different stack."""
+    rng = rng if rng is not None else _seeded(im)
     pool = [lambda i: jpeg_compress(i, rng.choice([90, 70, 50, 30])),
             lambda i: gaussian_blur(i, rng.choice([0.5, 1.0, 2.0])),
             lambda i: resize_down_up(i, rng.choice([0.5, 0.25])),
