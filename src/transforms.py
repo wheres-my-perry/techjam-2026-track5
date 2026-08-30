@@ -81,6 +81,16 @@ EVAL_GRID = [
     _named("crop_80", lambda im: center_crop(im, 0.80)),
 ]
 
+# Extra stress conditions (2026-08-30, Thinh: "did you apply the transformation repeatedly or once?").
+# The brief lists single transforms with single parameters and says nothing about stacking, so the
+# official grid above applies each ONCE. These chains mimic real repost histories; they are NOT in
+# EVAL_GRID (so no existing number changes) and are reachable via `src.evaluate --conditions`.
+EXTRA_GRID = [
+    _named("chain_repost", lambda im: jpeg_compress(resize_down_up(jpeg_compress(im, 70), 0.5), 50)),
+    _named("jpeg_twice", lambda im: jpeg_compress(jpeg_compress(im, 50), 50)),
+]
+
+
 
 # ------------------------------------------------- random train-time version
 

@@ -25,7 +25,7 @@ import numpy as np
 from .data import load_image, load_manifest
 from .metrics import condition_report, pick_threshold
 from .model import load_model
-from .transforms import EVAL_GRID
+from .transforms import EVAL_GRID, EXTRA_GRID
 
 BATCH = 32
 
@@ -45,7 +45,7 @@ def evaluate(model, samples, topk=20, threshold=None, conditions=None):
 
     y = np.asarray([s.label for s in samples])
     results, all_scores = {}, {}
-    grid = [(n, tf) for n, tf in EVAL_GRID if not conditions or n in conditions]
+    grid = [(n, tf) for n, tf in EVAL_GRID + EXTRA_GRID if (n in conditions) if conditions] if conditions else list(EVAL_GRID)
     if conditions:
         assert grid[0][0] == "clean", "--conditions must include clean"
 
