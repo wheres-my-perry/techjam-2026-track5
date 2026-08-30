@@ -155,8 +155,15 @@ Findings, in order of confidence:
 4. Any of crops-vs-none is worth far less than the data recipe (§3): the difference between the best
    and worst rule here is 9 points at 1 % FA; canon3 → canon4 (data only) moved the same number 84 → 91.
 
+Direct measurement of 27-crop sampling noise (27 *random* crops, two seeds, same images): pooled
+numbers identical (AUROC 0.992, 87.5 % @1 % FA both seeds), but per image the two seeds differ by
+≥0.10 for 5 % of images and flip 1.0 % of verdicts at the 0.15 cut-off — so Thinh's concern is real
+at the per-image level even though the aggregate is saturated. 100 random crops remove it (0.2 %
+flips vs 200). The grid has no seed noise (deterministic) but differs from the converged average more
+than that noise (95th-pct |Δ| 0.13): its layout is a systematic bias, currently a helpful one.
+
 Decision: keep the 27-crop grid (deterministic, fastest, best at the tight false-alarm budget the app
-runs at). Direct measurement of the 27-crop sampling noise (27 *random* crops, two seeds) in progress.
+runs at); even-coverage tilings + per-pixel weighting (Thinh's proposal) are the next test (§4, job 80).
 
 **Localiser (`pe_seg`).** Same trunk, per-patch head (each 14×14 token predicts "altered"),
 supervised by SID_Set's pixel masks; image score = mean of the top 5% patch logits, i.e. the

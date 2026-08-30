@@ -10,6 +10,15 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★ **27 random crops DO carry real per-image noise (Thinh was right on this point):** the same
+  images scored with two different random seeds (27 crops each) differ by ≥0.10 for 5% of images
+  (99th pct 0.16) and 1.0% of verdicts at cut-off 0.15 flip on luck alone. The pooled metric does
+  not move (both seeds: AUROC 0.992, 87.5% caught @1% FA) — the aggregate is saturated, the
+  per-image verdict is not. At 100 crops the noise is gone (100 vs 200: 95th pct 0.03, 0.2% flips).
+  The shipped 27-crop GRID has zero seed noise (deterministic) but sits further from the converged
+  200-crop average (95th pct 0.13, 1.6% flips) than the noise itself — its layout is a systematic
+  bias relative to uniform sampling, one that currently helps slightly (+1.8 pts @1% FA, n.s.).
+  Rule of thumb: ~1 in 100 verdicts near the cut-off is decided by crop luck at 27 random crops.
 - **[hypothesis, Thinh] Why random crops can be worse than a grid even with 100–200 of them:** the
   randomiser can land on the same anomaly several times and on other regions never, so the average
   is weighted by luck, not by area. Fix: k shifted *partitions* of the image (deterministic, every
