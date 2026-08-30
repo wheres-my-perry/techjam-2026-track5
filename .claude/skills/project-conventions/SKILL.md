@@ -83,3 +83,10 @@ description: Working conventions for this repo, set by the team (Thinh). Apply i
   factor must correlate with the label. Fix the DATA: re-source the mismatched class at native
   resolution, subset to overlap, or report the limitation. Never launder with math.
 - Canonicalizer never upscales (target clamped to source size). Always audit after.
+
+## Label-provenance gate (MANDATORY, added 2026-08-30 after the WildFake GAN-label bug)
+Separability audits (shortcut_audit, canary_audit, bucket_audit) cannot see a wrong label. Before
+ANY manifest is trained on or reported: `python -m scripts.label_provenance_audit --prefix <P>
+--strict` must print LABEL PROVENANCE: CLEAN (every row's label re-derived from its source's
+authoritative label; no file with two labels; no file in two splits). Never match dataset label
+files to images by basename alone.

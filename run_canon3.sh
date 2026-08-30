@@ -11,6 +11,7 @@ GATES=${GATES:-1}; TEST_LIMIT=${TEST_LIMIT:-8000}
 CK=outputs/$APP/$NAME.pt
 if [ "$GATES" = "1" ]; then
 echo "== GATES"
+python -m scripts.label_provenance_audit --prefix $P --strict || exit 1
 python -m scripts.bucket_audit --prefix $P --strict || exit 1
 python -m scripts.shortcut_audit --manifest ${P}_train.csv --strict || exit 1
 python -m scripts.canary_audit --manifest ${P}_train.csv --limit 3000 --strict || exit 1

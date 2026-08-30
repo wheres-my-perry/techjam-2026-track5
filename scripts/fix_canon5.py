@@ -76,6 +76,14 @@ def main():
     leak = [r for r in va if r["orig"] in seen]; va = [r for r in va if r["orig"] not in seen]
     print(f"val rows whose source file is in train -> test: {len(leak)}"); te += leak
     tr, ex1 = balance(tr, rng, "train"); va, ex2 = balance(va, rng, "val"); te += ex1 + ex2
+    dev = {r["orig"] for r in tr} | {r["orig"] for r in va}
+    n = len(te); te = [r for r in te if r["orig"] not in dev]
+    print(f"test rows whose source file is in train/val dropped: {n - len(te)}")
+    seen_t, dd = set(), []
+    for r in te:
+        if r["orig"] in seen_t: continue
+        seen_t.add(r["orig"]); dd.append(r)
+    print(f"test duplicate rows removed: {len(te) - len(dd)}"); te = dd
     lab = defaultdict(set)
     for r in tr + va: lab[r["orig"]].add(r["label"])
     assert not any(len(v) > 1 for v in lab.values()), "label conflict remains"

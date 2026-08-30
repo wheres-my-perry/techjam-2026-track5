@@ -12,8 +12,10 @@ You are joining mid-project. Team lead: Thinh (GitHub natsupercell). Deadline: S
 ## Non-negotiable rules (full list in the skill)
 - ONE topic at a time. Correct Thinh when he is wrong. Explain simply when asked.
 - Command blocks must be zsh-paste-safe: no # comments inside blocks, include cd.
-- Benchmark integrity: every new/changed manifest passes scripts/shortcut_audit.py (metadata-only
-  AUROC ~0.5) + scripts/size_audit.py BEFORE any result is reported. Too-good results (>=0.99)
+- Benchmark integrity: every new/changed manifest passes scripts/label_provenance_audit.py --strict
+  (labels re-derived from source; added 2026-08-30 after 24% of "fakes" turned out to be real
+  photos), scripts/shortcut_audit.py (metadata-only AUROC ~0.5) + scripts/size_audit.py BEFORE
+  any result is reported. Too-good results (>=0.99)
   trigger a shortcut hunt, never celebration.
 - Git topology (CHANGED 2026-08-28, Thinh's call — server is now primary): the SERVER clone
   (~/techjam-2026-track5 on chim@157.66.47.161:2205) is the WORKING clone; commit and push from
