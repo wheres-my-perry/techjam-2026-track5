@@ -3,6 +3,14 @@
 Source: official TechJam 2026 Tracks & Problem Statements (Lark wiki, Early Bird, last updated Aug 26).
 Workshop webinar: **Aug 28, 5:00–5:45pm SGT**.
 
+**Verified against the full source text on 2026-08-30 (Thinh pasted it):** this condensation is
+faithful. Two things the source settles: (1) transforms are listed singly with single parameter
+lists — nothing about stacking or repeating, so the 15-condition grid (each applied once) is the
+literal reading; chained corruptions are an extra we report as "beyond the brief". (2) There is no
+hidden scored test set, metric or threshold: the COCO/DALL·E set is "for demonstration purposes
+only" and the final score is the five judging criteria. The script must output `pred` (a
+confidence); the fixed cut-off is our product decision, judged under "false positives / trade-offs".
+
 ## Background
 
 Generative AI makes highly realistic synthetic images easy to create at scale → misinformation, impersonation, fraud, loss of trust. Detection is hardest **after** images are compressed, cropped, reposted, or lightly edited — robustness matters more than lab-only accuracy.
