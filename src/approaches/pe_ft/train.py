@@ -231,7 +231,7 @@ def main():
     opt = torch.optim.AdamW(
         [{"params": net.trunk.parameters(), "lr": args.lr},
          {"params": net.head.parameters(), "lr": args.head_lr}],
-        weight_decay=0.05)
+        weight_decay=0.05, fused=(device == "cuda"))
     amp = device == "cuda"
     bce = nn.BCEWithLogitsLoss(reduction="none")
 
