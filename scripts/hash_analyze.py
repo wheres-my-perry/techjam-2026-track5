@@ -21,9 +21,12 @@ def main():
     ap.add_argument("--csv", default="outputs/audit/hash_audit.csv")
     ap.add_argument("--maxd", type=int, default=4)
     ap.add_argument("--out", default="outputs/audit/hash_audit.txt")
+    ap.add_argument("--exclude-trivial", action="store_true", help="ignore flat images (dHash all-0/all-1)")
+    ap.add_argument("--dump", default="", help="write the paths of near-duplicate query images (group,path) to this CSV")
     a = ap.parse_args()
     rows = [r for r in csv.DictReader(open(a.csv, newline=""))]
     ok = [r for r in rows if r["sha256"] != "ERR"]
+    if a.exclude_trivial: ok = [r for r in ok if r["dhash"] not in ("0000000000000000", "ffffffffffffffff")]
     out = [f"files hashed: {len(rows)}  (errors: {len(rows) - len(ok)})",
            "groups: " + ", ".join(f"{g}={n}" for g, n in Counter(r["group"] for r in ok).items())]
     by_sha = defaultdict(list)
@@ -48,6 +51,7 @@ def main():
     def near(group):
         q = [r for r in ok if r["group"] == group]
         hits, ex, n_hit = Counter(), [], 0
+        hitrows = []
         for r in q:
             h = int(r["dhash"], 16); best = None
             cand = set()
@@ -56,10 +60,12 @@ def main():
                 d = bin(h ^ int(train[i]["dhash"], 16)).count("1")
                 if d <= a.maxd and (best is None or d < best[0]): best = (d, i)
             if best is not None:
-                n_hit += 1; hits[r["src"]] += 1
+                n_hit += 1; hits[r["src"]] += 1; hitrows.append((group, r["path"]))
                 if len(ex) < 4:
                     t = train[best[1]]
                     ex.append(f"{os.path.basename(r['path'])} (label {r['label']}, {r['src']}) ~ train {os.path.basename(t['path'])} (label {t['label']}, {t['src']}) d={best[0]}")
+        if a.dump:
+            with open(a.dump, "a", newline="") as f: csv.writer(f).writerows(hitrows)
         return n_hit, len(q), hits, ex
     for g in ("official", "unseen", "wild", "canon5_val", "canon5_test"):
         n_hit, n, hits, ex = near(g)
