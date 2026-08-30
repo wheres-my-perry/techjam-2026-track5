@@ -10,6 +10,14 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **[process, Thinh] A product has ONE cut-off; every number must be read at it.** Until now the
+  robustness tables (DALL·E benchmark, canon4_test) reported AUROC plus accuracy at a threshold the
+  harness picked by Youden's J on *that set's own clean scores* (0.268 on DALL·E, 0.113 on
+  canon4_test) — two different lines, each tuned on the set it is reported on, i.e. a mild leak and
+  not a product number. Only the 64-source unseen test, the wild set and DIV2K were read at the
+  shipped 0.15. Fix: `src.evaluate --threshold 0.15` (fixed; reports fakes caught / reals flagged /
+  accuracy per condition and per generator; saves scores.npz so any cut-off is re-readable). Job
+  135 re-reads the DALL·E benchmark and canon4_test at 0.15.
 - **Wild set (5 iPhone photos + 5 Gemini images) at the shipped cut-off 0.15: 10/10.** Reals 0.000–0.041,
   Gemini 0.191–0.776; nearest miss on each side: real 0.041 vs fake 0.191 (margin 0.15 around the
   cut-off). At 0.5 it was 7/10 — the same scores, a different line.
