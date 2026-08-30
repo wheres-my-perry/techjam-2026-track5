@@ -24,6 +24,9 @@ python -m src.evaluate --manifest data/manifests/canon_official.csv --model "$SP
 echo "== UNSEEN 64 sources  $(date)"
 python -m scripts.random_gen_test --root $S/randtest --model "$SPEC" --threshold 0.15 \
   --save outputs/random_gen/${NAME}_scores_full.csv 2>&1 | grep -E "^POOLED|^  at|^reals pooled"
+echo "== UNSEEN 64 sources under the 15-condition grid (stratified 3K) at fixed 0.15  $(date)"
+python -m src.evaluate --manifest data/manifests/unseen64_tf.csv --model "$SPEC" \
+  --threshold 0.15 --out outputs/$APP/eval_${NAME}_unseen_tf 2>&1 | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
 echo "== CANON4_TEST 3000 seeded at fixed 0.15  $(date)"
 python -m src.evaluate --manifest ${P}_test.csv --model "$SPEC" \
   --threshold 0.15 --limit 3000 --out outputs/$APP/eval_${NAME}_test 2>&1 | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
