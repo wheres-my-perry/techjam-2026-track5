@@ -143,6 +143,28 @@ unseen reals** to set a false-alarm rate against (DIV2K 2K reals: 9 % flagged at
 gap, stated as such. Action: add ≥300 real photos >1024 px (and ≤341 px) to the unseen set before
 any number from those buckets is quoted.
 
+## I. Unseen set, final form (Thinh, 22:30): pruned to matched sizes, equalised
+
+Thinh's rule: no fake without same-size reals. Steps and the audit after each:
+1. `randtest_unique` (11,729 unique images) → keep only native long side 342–1024 px (both classes exist
+   there): **7,589 images, 50 sources** (`randtest_matched`). Dropped entirely: frames, halfmoon,
+   hunyuan_image_2.1, ideogram, seedream_3, imagen_4_ultra (all >1024) and the ≤341-px sources
+   (GenImage ×4, scraper ×2, if/kandinsky/karlo/muse/sd-v1-5/wuerstchen). Metadata-only AUROC still 0.95
+   (format + exact dims).
+2. Centre-crop every image to a square at native resolution, then canonicalise like the training data
+   (long side → 320, PNG) → `randtest_sq`. Metadata 0.76; style canary 0.78.
+3. One JPEG pass (q92) on every image before the PNG, so compression history is identical for both
+   classes → **`randtest_eq` = the evaluation set from now on.** Metadata-only AUROC **0.666**
+   (line 0.65; what remains is PNG file size ∝ image complexity), style canary **0.75** — the same
+   band as the judges' DALL·E set (0.76): an intrinsic real-vs-generated style gap, not a
+   preparation artefact. Both are recorded as over the line; the checkpoint-level checks
+   (greyscale / channel-swap scoring) are the test that the model does not use them.
+Reals in the set: COCO-train2017-640 294, Open Images 300, FFHQ 150, SID 149 (all never trained on).
+Probe manifest for corrupted evaluation rebuilt from this set (`unseen64_tf.csv`: 300 reals + ≤15 per
+source, 982 rows). All candidate evals (`eval_candidate.sh`, `run_B.sh`, `run_consist.sh`) now use it.
+Every number quoted from the unseen set before this point was on the old, duplicated, size-mismatched
+set and must be re-run (canon4 re-evaluation queued).
+
 ## G. What this audit does NOT cover
 - Visual near-duplicates beyond dHash Hamming ≤ 4 (re-crops, heavy re-encodes).
 - Whether the ext HF datasets' own labels are right (we trust "this HF dataset is generator X").

@@ -10,6 +10,12 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **Unseen set final form (Thinh: prune fakes without same-size reals):** 342–1024 px only, 7,589 unique
+  images / 50 sources, square-cropped + canonicalised + one JPEG pass for both classes
+  (`randtest_eq`). Metadata-only AUROC 0.92 → 0.95 (size-matched, raw) → 0.76 (canonical) → **0.67**
+  (JPEG-equalised); style canary 0.75 (= judges' set band; intrinsic). Hunyuan / Ideogram / Seedream /
+  Halfmoon / Frames / Imagen-4-Ultra and all ≤341-px sources are OUT until same-size reals exist.
+  All previous unseen numbers must be re-run on this set.
 - ★★★ **The unseen-64 set was 31% duplicate bytes; the hard-generator "holes" were duplicates of a
   handful of images.** 17,064 rows → 11,729 unique files. Rapidata preference sets reuse one
   generated image across many comparison rows and extraction capped rows, not unique images:
