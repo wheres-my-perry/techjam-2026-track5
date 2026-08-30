@@ -117,6 +117,25 @@ def random_train_transform(img: Image.Image, rng: random.Random,
     return img
 
 
+def hard_train_transform(img: Image.Image, rng: random.Random) -> Image.Image:
+    """ONE extreme corruption from the hard end of the eval grid (option B2, 2026-08-30).
+
+    Applied to BOTH classes with the same probability (class-neutral, so it cannot encode the
+    label). Motivation: at a fixed cut-off the canon4 model flags 20-27% of real photos under
+    resize 1/4, noise 0.10 or blur s2 -- it rarely saw reals that degraded during training.
+    """
+    k = rng.randrange(4)
+    if k == 0:
+        return gaussian_blur(img, rng.uniform(1.5, 2.5))
+    if k == 1:
+        return resize_down_up(img, rng.uniform(0.2, 0.4))
+    if k == 2:
+        a = np.asarray(img, dtype=np.float32) / 255.0
+        n = np.random.default_rng(rng.randrange(2**32)).normal(0, rng.uniform(0.07, 0.12), a.shape).astype(np.float32)
+        return Image.fromarray((np.clip(a + n, 0, 1) * 255 + 0.5).astype(np.uint8))
+    return jpeg_compress(img, rng.randint(20, 40))
+
+
 # ------------------------------------------------- style neutralisation (2026-08-29)
 
 def style_aug(img: Image.Image, rng: random.Random) -> Image.Image:

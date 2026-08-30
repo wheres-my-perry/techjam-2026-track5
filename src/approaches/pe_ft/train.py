@@ -25,19 +25,20 @@ from torch.utils.data import DataLoader, Dataset
 from src.crops import clamp_size, random_crop, sample_size
 from src.data import load_image, load_manifest
 from src.metrics import auroc
-from src.transforms import random_train_transform, style_aug
+from src.transforms import random_train_transform, style_aug, hard_train_transform
 from .model import build_net, pick_device, to_tensor
 
 CROP_MIN, CROP_MAX, CROP_STEP = 112, 168, 14
 
 
 class ManifestDataset(Dataset):
-    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False):
+    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False, hard_aug=0.0):
         self.samples = load_manifest(manifest_csv)
         self.augment = augment
         self.crop = crop
         self.blur_boost = blur_boost  # extra low-pass aug: forces blur-surviving cues
         self.style = style            # label-neutral style randomisation (both classes)
+        self.hard_aug = hard_aug      # prob of ONE extreme corruption instead of the mild chain (both classes)
 
     def __len__(self):
         return len(self.samples)
@@ -47,7 +48,9 @@ class ManifestDataset(Dataset):
         img = load_image(s.path)
         if self.style:
             img = style_aug(img, random.Random())
-        if self.augment:
+        if self.hard_aug and random.random() < self.hard_aug:
+            img = hard_train_transform(img, random.Random())
+        elif self.augment:
             img = random_train_transform(img, random.Random())
         if self.blur_boost:
             rng = random.Random()
@@ -120,6 +123,10 @@ def main():
                     help=f"random-size crop range high end (e.g. {CROP_MAX})")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--out", default="outputs/pe_ft/baseline.pt")
+    ap.add_argument("--hard-aug", type=float, default=0.0,
+                    help="probability that a sample gets ONE extreme corruption (blur 1.5-2.5, "
+                         "resize 0.2-0.4, noise 0.07-0.12, jpeg 20-40) instead of the mild chain; "
+                         "both classes alike (option B2, 2026-08-30)")
     ap.add_argument("--style-aug", action="store_true",
                     help="label-neutral style randomisation on both classes (greyscale, saturation, tone, grain, vignette, flash)")
     ap.add_argument("--real-weight", type=float, default=1.0,
@@ -141,11 +148,11 @@ def main():
     # val uses a FIXED mid size so val AUROC is comparable across epochs
     vfixed = (cmin + cmax) // 2 if rand_size else args.crop
     vfixed = max(CROP_STEP, (vfixed // CROP_STEP) * CROP_STEP)
-    print(f"device={device} augment={args.augment} blur_boost={args.blur_boost} "
+    print(f"device={device} augment={args.augment} blur_boost={args.blur_boost} hard_aug={args.hard_aug} "
           f"crop={f'random {cmin}-{cmax}' if rand_size else args.crop} "
           f"(val fixed {vfixed})", flush=True)
 
-    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost, style=args.style_aug)
+    train_ds = ManifestDataset(args.train, args.augment, args.crop, blur_boost=args.blur_boost, style=args.style_aug, hard_aug=args.hard_aug)
     if args.limit_train and args.limit_train < len(train_ds.samples):
         rng = random.Random(args.seed)
         rng.shuffle(train_ds.samples)
