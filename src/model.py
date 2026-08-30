@@ -81,7 +81,7 @@ class CropVoteModel(BaseModel):
     """
 
     def __init__(self, inner: BaseModel, cmin=None, cmax=None,
-                 grid=3, topk=0, n_sizes=3, alpha=0.0, long=0, rand=0, seed=0, tile=0):
+                 grid=3, topk=0, n_sizes=3, alpha=0.0, long=0, rand=0, seed=0, tile=0, logit=0):
         # topk=0 -> MEAN over all views. Chosen on canon2_val 2026-08-29 (job 36):
         # mean beat top-3 by +0.02 clean / +0.03 worst; max (k=1) was worst.
         self.inner = inner
@@ -98,6 +98,10 @@ class CropVoteModel(BaseModel):
         # square tiles per size (offsets i*c/m, j*c/m), last tile clamped to the far edge, so every
         # pixel is covered ~m*m times -- deterministic like the grid, even like a partition.
         self.tile = tile
+        # logit=1 (f= in the spec): average in log-odds space, then sigmoid. Measured 2026-08-30 on
+        # the 64-source per-crop dump: best AUROC (0.9936), best @5% FA, most stable under crop
+        # resampling; boosting rules (power/softmax/max) were all worse -- see docs/FINDINGS.md.
+        self.logit = logit
         # IDEAS.md cue #7 / family #5 (Thinh): fakes mix sterile and textured
         # regions, so their crop scores should DISAGREE more than reals'.
         # score = aggregate + alpha * std(view scores); alpha chosen on val.
@@ -163,7 +167,12 @@ class CropVoteModel(BaseModel):
         for i in range(len(images)):
             s = np.sort(vscores[owners == i])[::-1]
             k = len(s) if self.topk <= 0 else min(self.topk, len(s))
-            out[i] = float(s[:k].mean()) + self.alpha * float(s.std())
+            if self.logit:
+                eps = 1e-4
+                z = np.log((s[:k] + eps) / (1 - s[:k] + eps)).mean()
+                out[i] = float(1 / (1 + np.exp(-z))) + self.alpha * float(s.std())
+            else:
+                out[i] = float(s[:k].mean()) + self.alpha * float(s.std())
         return out
 
 
@@ -222,7 +231,7 @@ def load_model(name: str = "random") -> BaseModel:
         kw = {}
         for kv in filter(None, (m.group(1) or "").split(",")):
             k, v = kv.split("=")
-            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha", "L": "long", "r": "rand", "s": "seed", "t": "tile"}[k.strip()]
+            key = {"k": "topk", "g": "grid", "n": "n_sizes", "a": "alpha", "L": "long", "r": "rand", "s": "seed", "t": "tile", "f": "logit"}[k.strip()]
             kw[key] = float(v) if key == "alpha" else int(v)
         return CropVoteModel(load_model(m.group(2)), **kw)
     if name.startswith("noise+"):
