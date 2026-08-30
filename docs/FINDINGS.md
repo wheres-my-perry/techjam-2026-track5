@@ -10,6 +10,14 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- **One ranking over everything (Thinh's "AUROC over the whole dataset"), canon4, cut-off 0.15
+  (`scripts/pool_auroc.py`):** clean-only pool of 18,274 images — judges' benchmark 1,200 (6.6% of
+  the pool), 64-source unseen 17,064 (93.4%), wild 10 (0.1%) — **pooled AUROC 0.990**, 90.8% caught,
+  1.6% reals flagged. Adding the 14 corrupted copies of the benchmark (35,074 rows: benchmark 51.3%,
+  unseen 48.7%) — **pooled AUROC 0.979**, 94.0% caught, **8.6% reals flagged**. The pooled AUROC is
+  below every group's own AUROC (0.9999 / 0.992 / 1.0): groups do not share a scale — corrupted
+  COCO reals (0.15–0.3) rank above the hard unseen fakes (FLUX-2 Pro ~0.08) — which is exactly the
+  fixed-cut-off problem in ranking form. canon4_test joins the pool when job 135 finishes.
 - ★★ **At the fixed cut-off 0.15 the judges' benchmark has a REAL-side problem under corruption
   (job 135, canon4, DALL·E-3 vs COCO val, 1,200):** fakes caught 100% clean / 99.0% mean over
   corruptions / 97.0% worst, but real photos wrongly flagged 2.9% clean / **10.2% mean / 26.7%
