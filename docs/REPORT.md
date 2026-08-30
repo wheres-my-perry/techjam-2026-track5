@@ -162,8 +162,33 @@ at the per-image level even though the aggregate is saturated. 100 random crops 
 flips vs 200). The grid has no seed noise (deterministic) but differs from the converged average more
 than that noise (95th-pct |Δ| 0.13): its layout is a systematic bias, currently a helpful one.
 
-Decision: keep the 27-crop grid (deterministic, fastest, best at the tight false-alarm budget the app
-runs at); even-coverage tilings + per-pixel weighting (Thinh's proposal) are the next test (§4, job 80).
+**Even-coverage tilings and weighting rules (Thinh's proposal, job 80).** Thinh proposed replacing the
+grid by k shifted *partitions* of the image into square tiles (every pixel covered the same number of
+times, deterministic) and an area-/pixel-weighted average. We implemented `vote(t=m)` (m² shifted
+partitions per crop size) and re-aggregated the *identical* per-crop scores offline under seven rules.
+Same 64-source set, canon4:
+
+| layout (crops) | plain mean | per-size mean | area-weighted | **per-pixel uniform** | median | trimmed 10 % | top-3 |
+|---|---|---|---|---|---|---|---|
+| grid 3×3 × 3 sizes (27) — shipped | **90.8 %** | 90.8 % | 90.0 % | 89.5 % | 90.0 % | 90.7 % | 88.2 % |
+| 1 partition, t=1 (20) | 89.6 % | 88.8 % | 88.6 % | 88.4 % | 89.6 % | 89.5 % | 86.2 % |
+| 4 shifted partitions, t=2 (44) | 89.4 % | 89.6 % | 89.3 % | 89.4 % | 89.3 % | 89.3 % | 85.4 % |
+| 9 shifted partitions, t=3 (75) | 90.0 % | 89.9 % | 89.8 % | 89.8 % | 89.8 % | 90.1 % | 85.4 % |
+
+(cells = fakes caught at 1 % false alarms; AUROC 0.991–0.993 throughout; at 5 % FA all 95–97 %.)
+Every layout × rule lands within ±1.5 points of the shipped grid: the crop *layout* is saturated.
+Exactly even coverage is not reachable by layout on real aspect ratios (a 320×213 image holds one
+row of 168-px tiles, so the clamped tiles overlap), and making the weighting exactly even per pixel
+(−0.3, CI [−1.4, +1.4]) changes nothing — what matters is that the image is read in native-scale
+crops, not where they are placed. The one reliable effect is at the looser budget: a trimmed mean
+(drop the 10 % highest and lowest crops) or the median is +1.2 points at 5 % FA (95.9 → 97.1 %,
+paired bootstrap CI [+0.7, +1.7]) with the best AUROC (0.9932), driven by hard generators where a few
+extreme crops drag the mean (Hunyuan 2.1 77 → 100 % @5 % FA, FLUX-2 Pro 89 → 99 %). Top-k / max is
+worst everywhere.
+
+Decision: keep the 27-crop grid with the plain mean (no gain at the 1 % operating point from any
+alternative; deterministic; fastest). Trimmed mean is recorded as a free, verified option if a looser
+false-alarm budget is ever the target.
 
 **Localiser (`pe_seg`).** Same trunk, per-patch head (each 14×14 token predicts "altered"),
 supervised by SID_Set's pixel masks; image score = mean of the top 5% patch logits, i.e. the

@@ -4,6 +4,11 @@ Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](do
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
 ## 2026-08-30 (morning — crop-count / aggregation study)
+- vote(t=m) even-coverage tilings; scripts/crop_dump.py (per-crop scores + boxes, one GPU pass) and
+  scripts/crop_agg.py (offline rules: mean/size/area/pixel/median/trim10/top3). Job 80: all layouts x
+  rules within +-1.5 pts of the shipped grid @1% FA; trimmed mean +1.2 @5% FA (significant). Kept grid+mean.
+- 27 random crops, two seeds (job 79): pooled identical, 1.0% of per-image verdicts flip on seed alone.
+- src/predict.py defaults to the shipped policy + --threshold 0.15 + label field. docs/FINDINGS.md started.
 - src/model.py CropVoteModel: `r=N` (N seeded random crops instead of the grid) and `s=seed` spec keys.
 - Same 64-source unseen set, canon4: 27-grid 0.992 / 90.8% @1%FA; 100 random 0.993 / 88.0%; 200 random
   0.993 / 88.6%; 1 centre crop 0.988 / 88.6%; whole image 168px 0.985 / 82.0%, 240px 0.987 / 87.8%.

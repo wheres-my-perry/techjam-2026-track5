@@ -10,6 +10,22 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★ **Even-coverage tilings and per-pixel weighting (Thinh's proposal) do not beat the grid — the
+  crop LAYOUT is saturated.** Same 64-source set, canon4, identical crops re-aggregated offline
+  (job 80): every layout × every rule lands at 88–91% caught @1% FA and AUROC 0.991–0.993.
+  Grid 27 / mean 90.8%; t=1 partition (20 crops) 89.6%; t=2 (44) 89.4%; t=3 (75) 90.0%; per-pixel
+  weighting of the grid 89.5% (−0.3, CI [−1.4, +1.4]); area-weighted 90.0% (±0). Coverage evenness
+  cannot be achieved by layout on real aspect ratios (a 320×213 image fits one row of 168-tiles;
+  clamped tiles overlap: min/max coverage 3/9 for t=1 vs 3/15 for the grid), and making the
+  weighting exactly even per pixel changes nothing. Conclusion: what matters is *that* the image is
+  read in native-scale crops, not *where* they are placed.
+- ★ **A trimmed mean (drop the 10% highest and 10% lowest crop scores, ~3 of 27) is the only rule
+  that is reliably better than the plain mean** — not at the 1%-FA operating point (+0.1, CI
+  [−0.3, +0.7]) but at 5% FA: +1.2 pts (95.9 → 97.1%), CI [+0.7, +1.7], and best AUROC of all
+  (0.9932). Median gives the same +1.2 at 5%. The gain comes from hard generators where a few
+  extreme crops drag the mean: Hunyuan-Image 2.1 77 → 100% @5% FA, FLUX-2 Pro 89 → 99%, GPT-4o
+  88 → 94%, Recraft v3 93 → 96%. Top-3 is worst everywhere (85–88%). Not shipped (no gain at the
+  operating point; would need a new cut-off + official re-eval); recorded as a free option.
 - ★ **27 random crops DO carry real per-image noise (Thinh was right on this point):** the same
   images scored with two different random seeds (27 crops each) differ by ≥0.10 for 5% of images
   (99th pct 0.16) and 1.0% of verdicts at cut-off 0.15 flip on luck alone. The pooled metric does
