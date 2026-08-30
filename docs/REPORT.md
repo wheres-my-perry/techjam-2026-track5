@@ -197,6 +197,15 @@ Mask-aware training crops; one crop size and one shrink factor for both classes.
 
 ## 5. Results
 
+> **Correction (2026-08-30 evening).** A teammate's audit found that every WildFake "GAN" row in our
+> data (stylegan, vqvae, biggan, stargan) was a real AFHQ/FFHQ photograph labelled fake — our builder
+> matched label CSVs to files by filename only, and the GAN images we never downloaded share names
+> with the real photos. 24 % of the training "fakes" in canon2–canon4 were real photos. **Every GAN
+> cell in this report is void**, canon2–4 validation AUROCs were not clean, and the model was
+> partly rewarded for calling real animal/face photos fake. The DALL·E benchmark, the 64 unseen
+> generators, the wild set and DIV2K contain none of these files and stand. Corrected manifests
+> (`canon5`) and a clean retrain are in progress; see docs/FINDINGS.md.
+
 ### 5.1 Reference benchmark (COCO val2017 vs DALL·E-3, never trained on; 1,200-image seeded subsample)
 
 | transform | canon2 (old data) | canon3s (new data, 10-min trial) |

@@ -10,6 +10,31 @@ of fakes flagged when the cut-off lets 1 in 100 real photos through as false ala
 ### Day summary (written at end of day — pending)
 
 ### Findings
+- ★★★ **DATA BUG (found by the teammate's audit, verified in our manifests): every WildFake "GAN" row
+  — stylegan, vqvae, biggan, stargan — is a REAL AFHQ/FFHQ photograph labelled fake.** Train 47,981
+  rows (24.5% of all claimed fakes), val 5,968, test 6,046; 21,564 distinct real files, most listed
+  under two GAN names. Cause: `get_wildfake.py` matched label-CSV rows to disk by FILENAME ONLY; the
+  GAN zips were never downloaded and GAN images share names (`img000000.jpg…`) with the real
+  AFHQ/FFHQ photos, so every GAN row resolved to a real photo. This single bug explains all 4,963
+  files that carried both labels and 4,555 of the 4,825 files present in both train and val, so
+  canon2/3/4 val AUROCs were never clean model-selection evidence, and every "GAN" cell ever quoted
+  (early "GANs 0.91–0.93", canon4_test stylegan/biggan/stargan/vqvae 0.98–0.99) is VOID — the model
+  was scoring real cat/face photos as fake and we called it accuracy. NOT affected: the DALL·E
+  benchmark, the 64 unseen generators, the wild set, DIV2K (none contain these files). Fix:
+  builder now requires the CSV's top-level folder in the local path; `scripts/fix_canon5.py` builds
+  canon5 (bogus rows dropped, duplicates removed, 0 train/val overlap, 0 label conflicts, every
+  bucket re-balanced to 1.00: train 296K, val 36.5K, test 193K). Gates: bucket CLEAN, metadata 0.63
+  (mild, canon4 0.586), style canary 0.68 (canon4 0.62; over the 0.65 line — the mislabelled reals
+  had been pulling the "fake" class toward real-photo style, so the true style gap now shows;
+  recorded, model checked with greyscale/channel-swap after training). canon5 retrain = job 178.
+- **The teammate's "canon4 vs Meta" report is favourable to canon4 on the model side**: on their
+  10,000-image slice of canon4_test (5,000 reals + 1,000 each ddpm / inpainting / LaMa / MAT / Palette)
+  canon4 beats Meta's zero-shot PE on every row (clean 0.891 vs 0.717; per family 0.74–0.98); their
+  scorer reproduces ours to ±0.02. The 0.891 is low only because 4/5 fake families are partial
+  edits (localiser territory) and the reals are the small-image population.
+- **Consistency training, `cos` variant, epoch 1:** agreement term ≈0.003 from the start — the PE
+  embedding is already almost invariant to the corruptions (cosine ≈0.997 between clean and
+  corrupted views of the same crop); the loss has little to push. Val 0.979 (contaminated val).
 - ★ **Stacked corruptions (job 148, canon4 @0.15): fakes hold, degraded reals climb — the single-
   transform story amplified.** Judges' benchmark: fakes caught 96–99.5% on every stack; reals flagged
   JPEG-twice 6.6%, crop80→resize½ 10.2%, blur1→JPEG70 17.6%, noise0.05→JPEG70 19.2%, random
