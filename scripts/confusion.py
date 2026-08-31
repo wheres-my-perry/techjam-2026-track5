@@ -70,22 +70,38 @@ def main():
     ap.add_argument("--fa", type=float, default=0.01)
     ap.add_argument("--threshold", type=float, default=None, help="use a fixed cut-off instead")
     ap.add_argument("--condition", default="clean")
+    ap.add_argument("--pool-conditions", action="store_true",
+                    help="stack EVERY condition into one set: one AUROC, one cut-off, one matrix. "
+                         "A per-condition table makes everything look majestic because each "
+                         "condition sits at its own score level; pooling reshuffles the ordering "
+                         "and shows what a single deployed threshold actually delivers.")
     a = ap.parse_args()
 
     o = np.load(a.npz, allow_pickle=True)
-    y = o["labels"]
-    key = f"score_{a.condition}"
-    if key not in o.files:
-        raise SystemExit(f"{a.condition} not in npz")
-    s = o[key]
-    gens = [str(g) for g in o["generators"]] if "generators" in o.files else [""] * len(y)
-    paths = [_p(p) for p in o["paths"]] if "paths" in o.files else [""] * len(y)
+    y0 = o["labels"]
+    conds = sorted(k[len("score_"):] for k in o.files if k.startswith("score_"))
+    gens0 = [str(g) for g in o["generators"]] if "generators" in o.files else [""] * len(y0)
+    paths0 = [_p(p) for p in o["paths"]] if "paths" in o.files else [""] * len(y0)
+
+    if a.pool_conditions:
+        y = np.concatenate([y0] * len(conds))
+        s = np.concatenate([o[f"score_{c}"] for c in conds])
+        gens = gens0 * len(conds)
+        paths = paths0 * len(conds)
+        print(f"POOLED ACROSS ALL {len(conds)} CONDITIONS "
+              f"({', '.join(conds[:6])}{', ...' if len(conds) > 6 else ''})")
+    else:
+        key = f"score_{a.condition}"
+        if key not in o.files:
+            raise SystemExit(f"{a.condition} not in npz")
+        y, s, gens, paths = y0, o[key], gens0, paths0
 
     thr = a.threshold if a.threshold is not None else float(np.quantile(s[y == 0], 1 - a.fa))
     auc = roc_auc_score(y, s)
     tp, fp, tn, fn, prec, rec, fpr = matrix(y, s, thr)
 
-    print(f"{a.npz}   condition={a.condition}")
+    print(f"{a.npz}   condition="
+          + ("ALL POOLED" if a.pool_conditions else a.condition))
     print(f"\nPOOLED  AUROC {auc:.4f}   n={len(y)} ({int((y==0).sum())} real / {int((y==1).sum())} AI)")
     print(f"ONE GLOBAL CUT-OFF = {thr:.4f}"
           + ("  (given)" if a.threshold is not None
