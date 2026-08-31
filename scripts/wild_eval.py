@@ -16,7 +16,10 @@ from sklearn.metrics import roc_auc_score
 from src.data import load_image
 from src.model import load_model
 
-GROUPS = {"real": 0, "gemini": 1}          # data/hack/<group>/*
+# data/hack/<group>/*  -- label 0 = authentic photo, 1 = AI-generated.
+# "DALL E" (8 Bing/DALL-E images) was on disk but not in this dict, so it was being
+# scored by nobody; added 2026-08-31 so the demo number covers every wild image we hold.
+GROUPS = {"real": 0, "gemini": 1, "DALL E": 1}
 LOOSE = {}  # the two loose files are duplicates of gemini_1/gemini_2 (identical scores 2026-08-29)
 
 
