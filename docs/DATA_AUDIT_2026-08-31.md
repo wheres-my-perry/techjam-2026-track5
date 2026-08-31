@@ -162,6 +162,90 @@ the 513-768 bucket (37 -> 4,227 pairs), which is what let the 640px ELSA fakes t
 
 ---
 
+## PART 1b — Findings after the first pass (the corpus was rebuilt four times)
+
+Each of these was found AFTER Part 1 was written, and each changed the training data.
+
+### 1.11 [VERIFIED] ddim is monotone content and was 30% of the fake class
+Per-generator subject concentration on canon6_train:
+```
+generator                 n     top subject     share   top2    verdict
+ddim                  19093     bedroom         76.4%  100.0%   bedroom + church, nothing else
+```
+Thinh's rule: one-sided content may be kept for TESTING but never for TRAINING. Two harms, and the
+second is the one that gets forgotten: the shortcut ("bedroom => fake") AND the competence limit —
+a model whose fake class is a third bedrooms learns bedroom detection and has nothing for a phone
+photo of a person, which is why canon2 scored 0/10 on wild images. **ddim now joins ddpm in
+HOLDOUT.** Caution on reading that table: rows showing "100% other" (midjourney_v6, sd14/21/xl,
+flux_sid) are NOT monotone — `other` is the tagger's catch-all, see 1.16.
+
+### 1.12 [VERIFIED] Fixing a one-sided subject can create its mirror image
+Three measurements of the same axis:
+```
+ddim in train, no LSUN bedroom reals   bedroom    170 real / 15,752 fake   92.66:1  FAIL
+ddim in train, +20K LSUN bedroom reals bedroom  7,318 real / 15,694 fake    2.14:1  pass
+ddim held out, no LSUN bedroom reals   bedroom    113 real /  1,418 fake   12.55:1  FAIL (mirrored)
+ddim held out, LSUN capped at 3,000    bedroom  1,042 real /  1,418 fake    1.36:1  pass
+```
+Holding ddim out does not remove bedrooms from the fake class: ArtiFact's LSUN-trained GANs
+(diffusion_gan, denoising_diffusion_gan, stable_diffusion) still emit ~1,400. **Both sides of a
+one-sided axis have to move together, and the counterweight needs a cap, not an all-or-nothing
+switch** (`CAP_SOURCE` in configs/canon6.yaml).
+
+### 1.13 [VERIFIED] A size bucket can be perfectly balanced and still content-disjoint
+`bucket_audit` said 1.00 and `content_audit` said two-sided, yet sampling the 342-512 bucket by eye:
+- **real:** 10 of 12 were `afhq_512` cat/dog close-ups
+- **fake:** cars, IKEA product shots, a bride, abstract graphics, marshmallows, suits
+
+"342-512px animal close-up => real" was learnable without detecting anything generated. Fixed by
+capping `afhq_512` to 4,000 and adding **Flickr30k web photos** (13,948 at native ~500px). After:
+real is 8/12 candid Flickr photography. **No gate caught this; only looking did.**
+
+### 1.14 [VERIFIED] The same defect at 769-1024: "1024px face => real"
+`celebahq_1024` supplied 4,008 of the 8,943 reals in that bucket, all faces, while its fakes
+(midjourney_v6, flux_sid) contain almost none. Capped to 1,500 so `openimages_1024` carries the
+bucket; re-checked by eye afterwards — 1 face in a 12-sample, both sides diverse.
+
+### 1.15 [VERIFIED] The 513-768 flag was a FALSE alarm — verified by looking
+Same automated check flagged `general scenes` 4,221 real / 0 fake there. The images say otherwise:
+COCO street scenes on one side, SD violins/appliances/graphics on the other, both diverse. The
+tagger, not the data — see 1.16.
+
+### 1.16 [VERIFIED] `content_audit`'s subject tagger is a PATH REGEX, and `other` means "unclassified"
+`subject()` matches regexes against `source/category/orig`. It never looks at pixels. Consequences:
+- `other` is not a content category, it is "no rule matched". ELSA / Midjourney / flux / openimages
+  all land there. An `other` ratio of 3.6:1 fake:real looks alarming and means nothing.
+- The mirror artifact: COCO tags as `general scenes` while ELSA tags as `other`, so a bucket whose
+  two sides are both diverse still reads as one-sided.
+**I nearly fetched 4 GB of the wrong data on the strength of that 3.6:1 before checking the tagger.**
+The within-bucket check is therefore a WARNING that says "go build a montage and look", not a hard
+failure. Settling it automatically needs image-content embeddings, not path rules.
+
+### 1.17 [VERIFIED] An unregistered real source is re-derived as FAKE and fails the gate
+Adding `flickr30k_web` without adding it to `REAL_EXT` in `label_provenance_audit.py` made the gate
+re-derive 13,948 real photos as fake and refuse to train — **the gate working exactly as designed**.
+Any new real source must be registered in the same commit that adds it.
+
+### 1.18 [VERIFIED] A silent zero-yield source: the `images` column
+Every `diffusers-parti-prompts` repo stores image bytes under **`images`** (plural).
+`_image_column()` matched only `image`/`img`/`jpg`/`png`, so all twelve unseen generators extracted
+**0 images** while the run still printed a total and reported success — an empty overfit checker
+that looks fine. Fixed, and the extractor now reports any source that produced nothing.
+
+### 1.19 [VERIFIED] A gate that does not gate
+`run_final6.sh` piped `audit_all` into `tail`, which discards its exit code, so training started on
+a manifest the gate had FAILED. Exit codes are now checked (`set -o pipefail`, explicit `exit 1`).
+**Printing a failure is not enforcing it.**
+
+### 1.20 [VERIFIED] The binding gate list was incomplete — the direct cause of 1.11/1.12
+CLAUDE.md required `label_provenance_audit`, `shortcut_audit` and `size_audit`. It named
+`bucket_audit`, `canary_audit` and **`content_audit`** nowhere — and `content_audit` is the tool
+that catches church/bedroom monotony, the flaw that cost the team days. The knowledge was in a
+lessons doc; the rule did not require running it, so it was skipped and the bug returned at 92.7:1.
+All seven gates are now bound in CLAUDE.md and run by one command (`scripts/audit_all.py`).
+
+---
+
 ## PART 2 — The previous agent's findings, re-checked
 
 ### 2.1 [VERIFIED] — reproduced on canon6, independent of their data
