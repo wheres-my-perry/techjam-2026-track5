@@ -188,3 +188,14 @@ Any CAVEAT must appear beside every number reported from this manifest.
 VERDICT: every subject has both classes
 ----- benchmark disjointness: judges' rows inside our splits (must be 0/0/0)
   canon6_train: 0 judges' rows of 100204
+  canon6_val: 0 judges' rows of 12502
+  canon6_test: 0 judges' rows of 157673
+  canon6pe_train: 0 judges' rows of 115416
+  canon6pe_val: 0 judges' rows of 14392
+  canon6pe_test: 0 judges' rows of 140571
+----- partial-edit eval set: still unseen by every training manifest
+  canon6_train: 0 overlap (must be 0)
+  canon6_val: 0 overlap (must be 0)
+  canon6pe_train: 0 overlap (must be 0)
+  canon6pe_val: 0 overlap (must be 0)
+AUDIT_PASS_DONE Mon Aug 31 21:02:12 UTC 2026
