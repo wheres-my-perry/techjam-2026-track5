@@ -78,3 +78,32 @@ epoch 2: loss=0.2183 agree=0.0039 share=1.8% val_auroc=0.9963 (371s)
 epoch 3: loss=0.1773 agree=0.0027 share=1.5% val_auroc=0.9962 (370s)
 epoch 4: loss=0.1518 agree=0.0017 share=1.2% val_auroc=0.9968 (366s)
 best val AUROC 0.9968; weights -> outputs/pe_ft/canon6_A.pt
+**Clean AUROC:** 0.9983 · **Mean transformed:** 0.9970 · **Worst:** 0.9952 (noise_s0.10)
+########## outputs/pe_ft/eval_canon6_A_official900   (outputs/pe_ft/eval_canon6_A_official900/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9983   cut-off 0.0897
+      actually AI    -> AI    568   -> real      6
+      actually real  -> AI      4   -> real    322
+      recall  99.0%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9969   cut-off 0.2573
+      actually AI    -> AI   7880   -> real    156
+      actually real  -> AI     46   -> real   4518
+      recall  98.1%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9984   cut-off 0.1765
+      actually AI    -> AI   1146   -> real      9
+      actually real  -> AI      7   -> real    638
+      recall  99.2%   false-alarm 1.09%
+
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9091
+ONE GLOBAL CUT-OFF = 0.0384  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               258                42
+  actually real               1                74
+  recall 86.0%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+########## canon6_B6  Mon Aug 31 19:03:48 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,373,313
+loss: BCE with real_weight=2.0 + 6.0 * cos agreement over 2 views/image
+epoch 1: loss=0.3619 agree=0.0028 share=4.6% val_auroc=0.9940 (370s)
+epoch 2: loss=0.2322 agree=0.0011 share=2.9% val_auroc=0.9958 (372s)
