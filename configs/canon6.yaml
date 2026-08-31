@@ -1,0 +1,104 @@
+# canon6 — the single source of truth for everything that goes into training.
+#
+# Thinh's rule (2026-08-31): keep everything involved in training in one config, then test
+# against it automatically. Before this, the corpus definition was scattered across
+# build_canon6.py (routing), get_ext.py / build_unseen6.py (sources) and run_canon6.sh
+# (hyperparameters), so changing one thing silently broke another — holding ddim out fixed
+# 'bedroom = fake' at 92.7:1 and simultaneously created it at 12.55:1 from the other side.
+#
+# tests/test_corpus_config.py asserts the BUILT manifests satisfy every invariant declared here.
+# Change this file, re-run the build, run the tests. Never edit the rules in the scripts.
+
+name: canon6
+
+canonicalization:
+  # Seeded random CROP at native resolution: a crop is subtractive, so both classes come out the
+  # same size with zero resampling and no resize signature to learn. --long shrinks oversized
+  # images FIRST (never upscales) so large and small native images reach the model at one scale;
+  # legal only because every native-size bucket is class-balanced (see invariants).
+  long: 320
+  crop: 176
+  format: png
+
+routing:
+  # Held out of train/val entirely, keyed on GENERATOR NAME across every dataset — ddpm ships in
+  # both WildFake and ArtiFact, and that is exactly how it leaked into canon2 train while
+  # nominally held out of WildFake.
+  holdout_generators: [ddpm, ddim]
+  # ddim is held out for a second, independent reason: its content is bedroom 76.4% / church
+  # 23.6% — 100% in two subjects — and it was 30% of the fake class. One-sided content may be
+  # kept for TESTING but never used for TRAINING: it is both a shortcut and a competence limit
+  # (a model trained on bedrooms detects bedrooms and nothing else).
+
+  # Localized edits: a whole-image real/fake label is simply wrong for them.
+  partial_edit_generators: [sid_tampered, lama, mat, generative_inpainting, palette]
+
+  # Additional test-only generators (not held out for content reasons).
+  test_only_generators: [deepfloyd_if]
+
+  test_only_sources: []
+
+  # Caps applied BEFORE the size-bucket balance, for sources that exist to balance a SUBJECT
+  # rather than a size bucket. Holding ddim out does not remove bedrooms from the fake class:
+  # ArtiFact's LSUN-trained GANs still emit ~1,400. This admits just enough real bedrooms to
+  # match them without flooding the <=341 bucket.
+  cap_source:
+    lsun_bedroom: 3000
+
+splits:
+  train_frac: 0.8
+  val_frac: 0.1
+  # Per class per native-size bucket in train. Stops the 200px ArtiFact/WildFake thumbnails
+  # from crowding out the large-image buckets that give the model real-photo competence.
+  cap_bucket: 45000
+  seed: 0
+
+# Never used for training under any circumstances. The brief: "Do not use the following data
+# during training." Enforced in code, not by convention.
+forbidden_in_training:
+  - dalle3                 # the judges' AI class
+  - coco val2017           # the judges' real class; ships inside BOTH WildFake and ArtiFact
+
+training:
+  approach: pe_ft
+  trunk: vit_pe_core_large_patch14_336.fb   # 316.1M params, under the brief's 2B limit
+  epochs: 4
+  batch: 48
+  real_weight: 2
+  crop_min: 112
+  crop_max: 168
+  # 40% of samples get a random stack of 2..6 transforms drawn from the brief's own grid, both
+  # classes alike. The brief limits WHICH transforms may be applied, not how many per image.
+  stack_aug: 0.4
+  stack_max: 6
+
+inference:
+  spec: "vote(L=320)+pe_ft"   # shrink long side to 320, mean-vote a 27-crop grid
+  # cut-off is DERIVED, never inherited: canon4's 0.15 came from a benchmark we cannot rebuild.
+  cutoff_rule: "1% false alarms on clean reals of the evaluation set"
+
+# What the built manifests must satisfy. tests/test_corpus_config.py enforces these.
+invariants:
+  train_val_class_balance: true        # real == fake overall
+  bucket_ratio_min: 0.8                # real:fake within every native-size bucket, train+val
+  bucket_ratio_max: 1.25
+  content_two_sided: true              # every SUBJECT appears on both sides of the label
+  content_max_ratio: 8.0               # neither side of a subject may exceed this ratio
+  no_holdout_in_train: true
+  no_partial_edit_in_train: true
+  no_forbidden_in_train: true
+  no_file_in_two_splits: true
+  max_metadata_auroc: 0.65             # shortcut_audit; blind to native size, see below
+  max_canary_auroc: 0.65               # canary_audit; verified on the CHECKPOINT if exceeded
+
+# Gates that must run on every new or changed manifest. `python -m scripts.audit_all` runs them
+# all in one command precisely so none is forgotten — the old CLAUDE.md rule named only three of
+# six, and the one it omitted (content_audit) is the one that caught the bedroom bug.
+gates:
+  - label_provenance_audit   # labels re-derived from source, independent of the builder
+  - bucket_audit             # class balance per native-size bucket
+  - shortcut_audit           # metadata-only AUROC   [BLIND to native size after canonicalization]
+  - size_audit               # per-class dimensions  [BLIND to native size after canonicalization]
+  - canary_audit             # dumb pixel models
+  - content_audit            # every subject on both sides
+  - corpus_audit             # blank images, byte duplicates, cross-split leakage, near-duplicates
