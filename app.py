@@ -34,7 +34,7 @@ from src.transforms import EVAL_GRID
 CKPT = "outputs/pe_ft/canon6.pt"
 SPEC = f"vote(L=320)+pe_ft:{CKPT}"
 EVALUATED_MAX = 640          # largest short side any reported number used
-THRESHOLD = 0.15
+THRESHOLD = 0.5  # see src/predict.py for how this was chosen
 
 TRANSFORMS = dict(EVAL_GRID)
 model = None

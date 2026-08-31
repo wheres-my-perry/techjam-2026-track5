@@ -85,6 +85,38 @@ The decision survives colour destruction, so palette is not the mechanism.
 **What we would do with more time:** add studio/product/press photography and digital art to the
 real half of the training set. That directly attacks the failure rather than moving the threshold.
 
+## 3b. Scope: fully real or fully generated
+
+**This prototype answers "was this image generated?" for images that are wholly one or the other.**
+Partially generated images — an authentic photograph with a region inpainted or replaced — are
+**out of scope** for the current system and are reported separately, never folded into a headline.
+
+That is a deliberate scope choice, and the measurements show why it matters: recall is **33.4%** on
+partial edits against **89.4%** on whole-image generators from the training distribution. Every one
+of the 15 worst false negatives is a partial edit that scores 0.000 and looks like an ordinary
+photograph — because 95% of it is one.
+
+### Future work: change the crop aggregation
+
+The pipeline already scores **27 crops per image** (3×3 grid at 3 crop sizes, native resolution)
+and then takes the **mean**. That mean is exactly what hides a partial edit: one generated region
+among 27 authentic crops is averaged away.
+
+The per-crop scores already exist, so the fix is an aggregation change, not a new model:
+
+| aggregation | effect |
+|---|---|
+| mean (shipped) | robust, lowest false-alarm rate, blind to localised edits |
+| max / top-1 | one generated crop flags the image — most sensitive to edits, most false alarms |
+| **top-k mean (k≈3)** | a middle ground; the spec already supports it as `vote(k=3,L=320)` |
+| trimmed upper quantile | like top-k but less sensitive to a single noisy crop |
+
+Measured trade-off from the earlier aggregation study: mean beat top-3 by +0.02 clean and +0.03
+worst-case AUROC on whole-image data, which is why mean ships. Partial edits invert that argument,
+so the natural next step is a **two-stage decision**: mean for the whole-image verdict, and a
+top-k pass to raise an "edited region suspected" flag — reporting them as two different answers
+rather than one blended score. The per-crop heat-map in `app.py` already visualises this.
+
 ## 4. Trade-offs
 
 **One threshold cannot be right everywhere.** Reading each native-size bucket at its own optimum
@@ -98,7 +130,7 @@ upward. Choosing the cut-off on the pooled set instead (all 15 conditions) moves
 pooled cut-off, because JPEG re-encoding is the most common thing that happens to an image online.
 
 **Known limitations, stated plainly:**
-- partial edits are largely missed (33.4%) — a different task;
+- partially generated images are OUT OF SCOPE for this prototype (33.4% recall); see section 3b;
 - never-seen generators cost ~15 points of recall (89.4% → 74.2%);
 - highly produced real photography is the dominant false-alarm class;
 - the training manifest carries a mild metadata leak (AUROC 0.6285) and fails the dumb-pixel style

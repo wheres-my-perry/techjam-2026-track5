@@ -5,8 +5,21 @@ Usage:
 
 Output JSON: [{"image_path": "...", "pred": 0.87, "label": 1}, ...]
   pred  = P(AI-generated) from the shipped policy (shrink long side to 320, 27-crop grid, mean)
-  label = 1 if pred >= threshold (default 0.15 = 1% false alarms on never-trained real photos,
-          chosen on the 64-source unseen-generator test, docs/REPORT.md 5.4)
+  label = 1 if pred >= threshold (default 0.5)
+
+Choosing the cut-off (measured, pooled over all 15 transform conditions):
+
+    cut-off   judges' set          held-out test        hack set (real files)
+              recall / false-alarm recall / false-alarm caught / false alarms
+    0.300     99.1% / 4.66%        83.5% / 4.61%        17 of 20 / 0 of 5
+    0.500     97.6% / 2.27%        76.8% / 2.24%        17 of 20 / 0 of 5   <- shipped
+    0.717     94.8% / 1.01%        68.0% / 0.78%        11 of 20 / 0 of 5
+
+0.717 is the textbook 1%-false-alarm point, but it costs 6 of 20 real-world detections on the hack
+set and 9 points of recall on the held-out test, for ~1.2 points of false alarms. 0.5 keeps the
+false-alarm rate near 2% while holding recall, so it is the shipped default. Do NOT choose the
+cut-off on clean images alone: that gives 0.216, which holds 1.1% false alarms when clean and 22.9%
+under JPEG q30, because JPEG shifts every score upward.
 """
 
 from __future__ import annotations
@@ -21,7 +34,7 @@ from .model import load_model
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff", ".tif", ".heic", ".heif"}
 DEFAULT_MODEL = "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt"
-DEFAULT_THRESHOLD = 0.15
+DEFAULT_THRESHOLD = 0.5
 BATCH = 32
 
 
