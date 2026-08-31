@@ -80,15 +80,34 @@ def bucket(long_side: int) -> str:
     return ">1024"
 
 
-def balance(rows, seed, tag, cap=0):
-    """Per bucket keep min(n_real, n_fake) (at most `cap`) of each class."""
+def balance(rows, seed, tag, cap=0, equal=0):
+    """Per bucket keep min(n_real, n_fake) (at most `cap`) of each class.
+
+    `equal` > 0 makes EVERY bucket keep the same number per class (Thinh 2026-08-31):
+    canonicalize --long 320 only shrinks images ABOVE 320, so <=341 reaches the model
+    un-rescaled while 769-1024 is downscaled 2.4-3.2x, and downscaling attenuates the
+    high-frequency structure detection depends on. An unequal split trains the model
+    mostly in one forensic regime. equal=-1 means "the largest N every bucket can supply".
+    """
     by = defaultdict(lambda: defaultdict(list))
     for r in rows:
         by[r["bucket"]][r["label"]].append(r)
     kept, excess, rng = [], [], random.Random(seed)
+
+    if equal:
+        feasible = [min(len(c.get("0", [])), len(c.get("1", [])))
+                    for b, c in by.items() if min(len(c.get("0", [])), len(c.get("1", []))) >= 50]
+        common = min(feasible) if feasible else 0
+        if equal > 0:
+            common = min(common, equal)
+        print(f"  {tag}: EQUAL buckets -> {common} per class per bucket "
+              f"(buckets supplying >=50: {len(feasible)})")
+
     for b, cls in sorted(by.items()):
         real, fake = cls.get("0", []), cls.get("1", [])
         n = min(len(real), len(fake))
+        if equal:
+            n = 0 if n < 50 else min(n, common)
         if cap:
             n = min(n, cap)
         for rs in (real, fake):
@@ -108,6 +127,9 @@ def main():
     ap.add_argument("--out-prefix", default="data/manifests/canon6")
     ap.add_argument("--cap-bucket", type=int, default=45000,
                     help="max rows per class per bucket in train (0 = uncapped)")
+    ap.add_argument("--equal-bucket", type=int, default=0,
+                    help="give EVERY native-size bucket the same count per class; "
+                         "N = that count, -1 = the largest all buckets can supply, 0 = off")
     ap.add_argument("--exclude", default=None,
                     help="file of canonical paths to drop (from corpus_audit --write-drop): "
                          "blank/flat images, cross-split byte duplicates, and val/test rows that "
@@ -172,8 +194,11 @@ def main():
 
     print(f"pre-balance: train {len(tr)} val {len(va)} test {len(te)}")
     print("balance (per native-size bucket, larger class subsampled):")
-    tr, x1 = balance(tr, a.seed + 100, "train", a.cap_bucket)
-    va, x2 = balance(va, a.seed + 101, "val", max(1, a.cap_bucket // 8) if a.cap_bucket else 0)
+    eq = a.equal_bucket
+    tr, x1 = balance(tr, a.seed + 100, "train", a.cap_bucket, eq)
+    va, x2 = balance(va, a.seed + 101, "val",
+                     max(1, a.cap_bucket // 8) if a.cap_bucket else 0,
+                     (max(1, eq // 8) if eq > 0 else eq))
     te += x1 + x2
 
     for split, rs in (("train", tr), ("val", va), ("test", te)):
