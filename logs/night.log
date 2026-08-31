@@ -107,3 +107,21 @@ params: 316,373,313
 loss: BCE with real_weight=2.0 + 6.0 * cos agreement over 2 views/image
 epoch 1: loss=0.3619 agree=0.0028 share=4.6% val_auroc=0.9940 (370s)
 epoch 2: loss=0.2322 agree=0.0011 share=2.9% val_auroc=0.9958 (372s)
+epoch 3: loss=0.1916 agree=0.0010 share=3.1% val_auroc=0.9959 (367s)
+epoch 4: loss=0.1644 agree=0.0008 share=2.8% val_auroc=0.9965 (368s)
+best val AUROC 0.9965; weights -> outputs/pe_ft/canon6_B6.pt
+**Clean AUROC:** 0.9994 · **Mean transformed:** 0.9978 · **Worst:** 0.9952 (noise_s0.10)
+########## outputs/pe_ft/eval_canon6_B6_official900   (outputs/pe_ft/eval_canon6_B6_official900/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9994   cut-off 0.1598
+      actually AI    -> AI    567   -> real      7
+      actually real  -> AI      4   -> real    322
+      recall  98.8%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9974   cut-off 0.4095
+      actually AI    -> AI   7793   -> real    243
+      actually real  -> AI     46   -> real   4518
+      recall  97.0%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9991   cut-off 0.2930
+      actually AI    -> AI   1132   -> real     23
+      actually real  -> AI      7   -> real    638
+      recall  98.0%   false-alarm 1.09%
+
