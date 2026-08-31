@@ -44,3 +44,33 @@ loss: BCE with real_weight=2.0 + 3.0 * cos agreement over 2 views/image
 epoch 1: loss=0.5738 agree=0.0128 share=6.7% val_auroc=0.9226 (147s)
 epoch 2: loss=0.5083 agree=0.0036 share=2.1% val_auroc=0.9368 (144s)
 epoch 3: loss=0.4838 agree=0.0025 share=1.6% val_auroc=0.9417 (144s)
+epoch 4: loss=0.4615 agree=0.0020 share=1.3% val_auroc=0.9468 (143s)
+best val AUROC 0.9468; weights -> outputs/pe_ft/canon6_C.pt
+**Clean AUROC:** 0.9993 · **Mean transformed:** 0.9976 · **Worst:** 0.9923 (noise_s0.10)
+########## outputs/pe_ft/eval_canon6_C_official900   (outputs/pe_ft/eval_canon6_C_official900/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9993   cut-off 0.4139
+      actually AI    -> AI    570   -> real      4
+      actually real  -> AI      4   -> real    322
+      recall  99.3%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9978   cut-off 0.4563
+      actually AI    -> AI   7895   -> real    141
+      actually real  -> AI     46   -> real   4518
+      recall  98.2%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9993   cut-off 0.4134
+      actually AI    -> AI   1143   -> real     12
+      actually real  -> AI      7   -> real    638
+      recall  99.0%   false-alarm 1.09%
+
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9745
+ONE GLOBAL CUT-OFF = 0.6683  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               260                40
+  actually real               1                74
+  recall 86.7%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+########## canon6_A  Mon Aug 31 18:29:15 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+loss: BCE with real_weight=2.0 + 1.0 * cos agreement over 2 views/image
+epoch 1: loss=0.3363 agree=0.0081 share=2.4% val_auroc=0.9943 (369s)
