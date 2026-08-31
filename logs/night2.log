@@ -1,1 +1,10 @@
 [32mActivated conda/uv virtual environment at [36m/venv/main[0m
+appending A+lowLR re-run  Mon Aug 31 19:38:47 UTC 2026
+########## canon6_AlowLR  idea A, alpha 3.0, trunk LR 2e-6, correct augmentation  Mon Aug 31 19:38:47 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+loss: BCE with real_weight=2.0 + 3.0 * cos agreement over 2 views/image
+epoch 1: loss=0.4023 agree=0.0059 share=4.4% val_auroc=0.9898 (370s)
+epoch 2: loss=0.2690 agree=0.0028 share=3.1% val_auroc=0.9951 (371s)
+epoch 3: loss=0.2233 agree=0.0021 share=2.8% val_auroc=0.9959 (369s)
