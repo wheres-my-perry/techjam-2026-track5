@@ -29,9 +29,22 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
-# OmniFake generator -> whether the NAME also appears in canon6 training. Same name from a
-# different pipeline is still a different render, but the distinction must be reported.
-ALSO_IN_TRAIN = {"DDIM", "GLIDE", "VQVAE", "StyleGAN_3"}
+def trained_generators(manifest="data/manifests/canon6_train.csv"):
+    """Generator names actually present in TRAINING, read from the manifest.
+
+    This was a hardcoded guess and it was wrong: it listed DDIM and VQVAE as trained when ddim is
+    HELD OUT (a decision made the same day) and we train vq_diffusion, a different model. That
+    halved the count of genuinely-unseen generators in our own result. Never assert the contents
+    of a manifest from memory -- read it.
+    """
+    import csv as _csv
+    import os as _os
+    if not _os.path.exists(manifest):
+        print(f"!! {manifest} missing — cannot say which generators are trained")
+        return None
+    with open(manifest, newline="") as fh:
+        return {r["generator"].replace("_", "").lower()
+                for r in _csv.DictReader(fh) if r["label"] == "1" and r["generator"]}
 
 
 def main():
@@ -41,6 +54,7 @@ def main():
     ap.add_argument("--cap", type=int, default=1500, help="images per generator")
     a = ap.parse_args()
 
+    trained = trained_generators()
     rows, per = [], Counter()
     for d in sorted(os.listdir(a.root)):
         if not d.startswith("x_"):
@@ -66,7 +80,12 @@ def main():
             if n >= a.cap:
                 break
         per[gen] = n
-        tag = "  (name also in canon6 train)" if gen in ALSO_IN_TRAIN else ""
+        if trained is None:
+            tag = "  (training set unknown)"
+        elif gen.replace("_", "").lower() in trained:
+            tag = "  <- this generator IS in our training set (easier test)"
+        else:
+            tag = "  <- NOT in our training set (true unseen-generator test)"
         print(f"  {gen:16s} {n:6d} images{tag}", flush=True)
 
     empty = [g for g, n in per.items() if n == 0]
