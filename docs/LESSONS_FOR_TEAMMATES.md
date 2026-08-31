@@ -103,3 +103,83 @@ a 176x176 PNG native crop, ddpm (21K) and tampered (27.6K) test-only, content mi
 4. Per-generator table inspected; any row >= 0.99 explained or excluded.
 5. Clean vs mean-transformed vs worst-condition reported together; threshold chosen on val.
 6. State whether the number is unseen-generator-seen-family or unseen-family.
+
+## 6. Process lessons — every one of these was a miss caught by Thinh, not by a gate
+
+Written 2026-08-31 during the canon6 rebuild. Each entry is a mistake that was actually
+made in this repo, what it cost, and the thing that now prevents it. Kept because the
+technical lessons above were already written down and the process ones still bit us.
+
+### 6.1 The last run's config is not "the recipe"
+canon6 was launched with `--stack-aug 0` because that is what `run_canon5.sbatch` passed.
+It was the BASELINE arm; the arm that turned stacking on (`canon5_stack`, job 194) was
+queued when the server died and never ran. Reading the shipped script told us what was
+last executed, not what was intended.
+**Prevention:** before copying a config, check it against the problem statement and the
+queue/plan, not just the last script that ran. `--stack-aug 0.4 --stack-max 6` is the
+canon6 setting and `run_canon6.sh` states why in a comment.
+
+### 6.2 Keep the source text verbatim and separate from your reading of it
+`docs/TRACK5_BRIEF.md` was a condensation with interpretation folded in — it asserted the
+source "settles" that stacked transforms are in scope. The actual text says only "a subset
+of the following augmentations" and is silent on how many per image. A defensible inference
+had hardened into a quotation, and there was no clean copy to check it against.
+**Prevention:** `docs/TRACK5_BRIEF_ORIGINAL.md` is the verbatim text, marked do-not-edit.
+`TRACK5_BRIEF.md` is labelled as interpretation. Any doc that paraphrases a source needs
+the source next to it.
+
+### 6.3 "A subset" bounds WHICH, not HOW MANY
+Reading it as "one transform, maybe two" under-covered the brief. A subset of six transform
+families can be any size up to six, and the background text ("compressed, cropped, reposted")
+describes chains.
+**Prevention:** `EXTRA_GRID` now runs stack depths 2-6, and training draws depth over
+2..`--stack-max`. The robustness table reports the whole depth curve so the reading is
+visible rather than assumed.
+
+### 6.4 Read the deliverables as a spec, not as background
+The brief names literal required fields — development tools, libraries/frameworks, datasets —
+and the word "compact" for the robustness summary. `docs/REPORT.md` had zero mentions of
+development tools or of PyTorch/timm/scikit/Pillow.
+**Prevention:** `scripts/robustness_table.py` collapses the 15 conditions into the SIX
+families the brief itself tabulates, because compact is a requirement and not a style note.
+
+### 6.5 Run the whole gate list, every time
+CLAUDE.md binds every manifest to label_provenance + shortcut + size_audit. canon6 was
+audited with four gates and `size_audit` was simply skipped — three had passed and it felt
+covered.
+**Prevention:** `python -m scripts.audit_all --prefix data/manifests/canon6` runs all of
+them and prints one verdict table. Never run them one at a time from memory again.
+
+### 6.6 An audit that passes may be blind, not clean  ← the expensive one
+After canonicalization every image is a 176x176 PNG. `shortcut_audit` and `size_audit` both
+read the CANONICAL files, so width/height/format are constant and the only feature left is
+file size. They are structurally incapable of seeing native size.
+`canon_unseen6` passed shortcut_audit at 0.617 ("mild") while:
+  - three of its five native-size buckets contained NO FAKES AT ALL,
+  - reals ran to 7712 px native against fakes capped at 1024 px.
+"Big => real" was perfectly learnable, and the shrink-to-320 factor leaves a physical trace
+(section 2). A pooled AUROC over that set would partly have been a measurement of image size,
+and it was about to be reported.
+**Prevention:** `audit_all` checks the NATIVE size distribution from the manifest's `long`
+column and says in the output that the pixel audits are blind to it.
+`scripts/size_matched.py` re-reads any evaluation per bucket from `scores.npz` and prints how
+much the unmatched number was inflated. For an eval set with one-class buckets, the
+size-matched number is the only one that may be quoted.
+**General form: ask what each gate physically cannot see, and check that separately.**
+
+### 6.7 Deduplicate a benchmark against training before quoting it
+`bitmind/DiffFace-Real` is built from the same public face pools canon6 trains on: 229 of its
+1,500 images (18%) were images we had trained on, plus ~8% of mobius / realvisxl /
+bm-diffusion. The precedent was already in this repo — the original unseen-64 set was 31%
+duplicate rows and re-reading it on unique images moved the headline.
+**Prevention:** `scripts/dedup_unseen6.py`, matched on ORIGINAL files (canonicalize takes a
+per-path seeded crop, so the same source image via two paths yields two different crops and
+survives a post-canonicalization check).
+
+### 6.8 A benchmark can only be quoted if it can be rebuilt
+canon4's headline (0.9955 AUROC / 94% caught) was measured on `randtest_eq`, whose 64 sources
+were documented BY CATEGORY only and whose builder (`extract_randtest.py`) was never
+committed. When the server died the number became permanently unverifiable.
+**Prevention:** every fetch is now a committed script with repo ids and shard slices
+(`scripts/get_ext.py`, `scripts/build_unseen6.py`). If a number matters, its data must be
+reproducible from the repo alone.
