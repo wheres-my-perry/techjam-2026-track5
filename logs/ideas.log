@@ -1,0 +1,56 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+########## A) MLP HEAD 1024->64->1   Mon Aug 31 13:45:18 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+loss: BCE with real_weight=2.0
+epoch 1: loss=0.3212 val_auroc=0.9922 (199s)
+epoch 2: loss=0.2139 val_auroc=0.9933 (203s)
+epoch 3: loss=0.1754 val_auroc=0.9943 (199s)
+epoch 4: loss=0.1564 val_auroc=0.9959 (198s)
+best val AUROC 0.9959; weights -> outputs/pe_ft/canon6_mlp.pt
+MLP_TRAIN_DONE Mon Aug 31 13:58:55 UTC 2026
+----- canon6_mlp : HACK SET
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.920  real mean P=0.04  fake mean P=0.75  [vote(L=320)+pe_ft:outputs/pe_ft/canon6_mlp.pt]
+----- canon6_mlp : JUDGES SET (pooled over 15 conditions)
+**Clean AUROC:** 0.9987 · **Mean transformed:** 0.9971 · **Worst:** 0.9928 (jpeg_q70)
+POOLED ACROSS ALL 15 CONDITIONS (blur_s0.5, blur_s1.0, blur_s2.0, clean, crop_80, jitter_20, ...)
+outputs/pe_ft/eval_canon6_mlp_official/scores.npz   condition=ALL POOLED
+
+POOLED  AUROC 0.9968   n=13500 (4890 real / 8610 AI)
+ONE GLOBAL CUT-OFF = 0.5999  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI             8350               260
+  actually real             49              4841
+
+  precision 99.4%   recall 97.0%   false-alarm rate 1.00%   accuracy 97.7%
+########## B) CONSISTENCY LOSS (embedding invariance)   Mon Aug 31 14:07:56 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+loss: BCE with real_weight=2.0 + 1.0 * cos agreement over 2 views/image
+epoch 1: loss=0.2793 agree=0.0084 val_auroc=0.9952 (418s)
+epoch 2: loss=0.1728 agree=0.0035 val_auroc=0.9968 (367s)
+epoch 3: loss=0.1340 agree=0.0023 val_auroc=0.9963 (457s)
+epoch 4: loss=0.1108 agree=0.0015 val_auroc=0.9973 (400s)
+best val AUROC 0.9973; weights -> outputs/pe_ft/canon6_mlp_consist.pt
+CONSIST_TRAIN_DONE Mon Aug 31 14:35:34 UTC 2026
+----- canon6_mlp_consist : HACK SET
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.84  AUROC=0.870  real mean P=0.02  fake mean P=0.69  [vote(L=320)+pe_ft:outputs/pe_ft/canon6_mlp_consist.pt]
+----- canon6_mlp_consist : JUDGES SET (pooled over 15 conditions)
+**Clean AUROC:** 0.9989 · **Mean transformed:** 0.9960 · **Worst:** 0.9907 (jpeg_q70)
+POOLED ACROSS ALL 15 CONDITIONS (blur_s0.5, blur_s1.0, blur_s2.0, clean, crop_80, jitter_20, ...)
+outputs/pe_ft/eval_canon6_mlp_consist_official/scores.npz   condition=ALL POOLED
+
+POOLED  AUROC 0.9957   n=13500 (4890 real / 8610 AI)
+ONE GLOBAL CUT-OFF = 0.5088  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI             8216               394
+  actually real             49              4841
+
+  precision 99.4%   recall 95.4%   false-alarm rate 1.00%   accuracy 96.7%
+IDEAS_DONE Mon Aug 31 14:44:51 UTC 2026

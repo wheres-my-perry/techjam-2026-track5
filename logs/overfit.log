@@ -1,0 +1,73 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== dedup result  Mon Aug 31 12:47:27 UTC 2026
+DROPPED:
+     491  byte-identical to train (omnifake_real)
+     107  near-duplicate of train (omnifake_real)
+      95  near-duplicate of train (omnifake)
+      64  byte-identical to train (omnifake)
+kept 175166 of 175923 (85674 real / 89492 fake) -> data/manifests/omnifake_bench.csv
+===== OVERFIT CHECK: OmniFake, 41 unseen generators  Mon Aug 31 12:47:27 UTC 2026
+**Clean AUROC:** 0.9009 · **Mean transformed:** 0.9169 · **Worst:** 0.8876 (jitter_20)
+Saved to outputs/pe_ft/eval_ship_omnifake/
+===== GLOBAL AUROC + CONFUSION MATRIX  Mon Aug 31 13:38:48 UTC 2026
+outputs/pe_ft/eval_ship_omnifake/scores.npz   condition=clean
+
+POOLED  AUROC 0.9009   n=4000 (1970 real / 2030 AI)
+ONE GLOBAL CUT-OFF = 0.9739  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI              565              1465
+  actually real             20              1950
+
+  precision 96.6%   recall 27.8%   false-alarm rate 1.02%   accuracy 62.9%
+  In words: of 2030 AI images 565 are caught and 1465 slip through; of 1970 real photos 20 are wrongly flagged.
+
+BY GENERATOR (each vs ALL 1970 reals, same global cut-off)
+
+  slice                            n    AUROC |      TP     FP      TN     FN |     prec   recall    FPR |  own thr
+  ------------------------------------------------------------------------------------------------------------
+  omni_dit_xl                   2013   0.8265 |       1     20    1950     42 |     4.8%     2.3%    1.0% |   0.9739 
+  omni_stable_diffusion_3_medium    2016   0.8333 |       2     20    1950     44 |     9.1%     4.3%    1.0% |   0.9739 
+  omni_adm                      2012   0.6080 |       2     20    1950     40 |     9.1%     4.8%    1.0% |   0.9739 
+  omni_infinity                 2012   0.8206 |       2     20    1950     40 |     9.1%     4.8%    1.0% |   0.9739 
+  omni_bria_3_2                 2006   0.8699 |       2     20    1950     34 |     9.1%     5.6%    1.0% |   0.9739 
+  omni_midjourney_v_5           2011   0.7683 |       3     20    1950     38 |    13.0%     7.3%    1.0% |   0.9739 
+  omni_cogview_2                2022   0.9497 |       4     20    1950     48 |    16.7%     7.7%    1.0% |   0.9739 
+  omni_blip3_o                  2011   0.9059 |       4     20    1950     37 |    16.7%     9.8%    1.0% |   0.9739 
+  omni_gpt4_o                   2019   0.7734 |       5     20    1950     44 |    20.0%    10.2%    1.0% |   0.9739 
+  omni_if                       2015   0.7673 |       5     20    1950     40 |    20.0%    11.1%    1.0% |   0.9739 
+  omni_ddpm                     2021   0.8999 |       6     20    1950     45 |    23.1%    11.8%    1.0% |   0.9739 
+  omni_lumina_image_2_0         2017   0.8066 |       6     20    1950     41 |    23.1%    12.8%    1.0% |   0.9739 
+  omni_sdxl                     2022   0.8915 |       7     20    1950     45 |    25.9%    13.5%    1.0% |   0.9739 
+  omni_stylegan_3               2019   0.9302 |       7     20    1950     42 |    25.9%    14.3%    1.0% |   0.9739 
+  omni_gigagan                  2025   0.9110 |       8     20    1950     47 |    28.6%    14.5%    1.0% |   0.9739 
+  omni_vqdm                     2012   0.9439 |       7     20    1950     35 |    25.9%    16.7%    1.0% |   0.9739 
+  omni_glide                    2011   0.9374 |       8     20    1950     33 |    28.6%    19.5%    1.0% |   0.9739 
+  omni_hidream_i1_dev           2011   0.7777 |       8     20    1950     33 |    28.6%    19.5%    1.0% |   0.9739 
+  omni_omnigen                  2016   0.9243 |       9     20    1950     37 |    31.0%    19.6%    1.0% |   0.9739 
+  omni_uniworld_v_1             2004   0.8879 |       7     20    1950     27 |    25.9%    20.6%    1.0% |   0.9739 
+  omni_muse                     2005   0.9176 |       8     20    1950     27 |    28.6%    22.9%    1.0% |   0.9739 
+  omni_omnigen_2                2018   0.9089 |      11     20    1950     37 |    35.5%    22.9%    1.0% |   0.9739 
+  omni_imagen                   2012   0.8984 |      10     20    1950     32 |    33.3%    23.8%    1.0% |   0.9739 
+  omni_janus_pro                2032   0.9599 |      17     20    1950     45 |    45.9%    27.4%    1.0% |   0.9739 
+  omni_show_o                   2019   0.9521 |      14     20    1950     35 |    41.2%    28.6%    1.0% |   0.9739 
+  omni_hunyuan_dit              2022   0.9478 |      15     20    1950     37 |    42.9%    28.8%    1.0% |   0.9739 
+  omni_cogview_4                2015   0.9420 |      13     20    1950     32 |    39.4%    28.9%    1.0% |   0.9739 
+  omni_pixart_alpha             2011   0.6376 |      12     20    1950     29 |    37.5%    29.3%    1.0% |   0.9739 
+  omni_ovis_u_1                 2026   0.9487 |      17     20    1950     39 |    45.9%    30.4%    1.0% |   0.9739 
+  omni_bagel                    2010   0.9308 |      13     20    1950     27 |    39.4%    32.5%    1.0% |   0.9739 
+  omni_stable_diffusion_v_1_5    2015   0.9596 |      15     20    1950     30 |    42.9%    33.3%    1.0% |   0.9739 
+  omni_dalle_2                  2017   0.9759 |      16     20    1950     31 |    44.4%    34.0%    1.0% |   0.9739 
+  omni_vqvae                    2012   0.9686 |      16     20    1950     26 |    44.4%    38.1%    1.0% |   0.9739 
+  omni_galip                    2009   0.8893 |      15     20    1950     24 |    42.9%    38.5%    1.0% |   0.9739 
+  omni_df_gan                   2020   0.9672 |      20     20    1950     30 |    50.0%    40.0%    1.0% |   0.9739 
+  omni_midjourney_v_6           2010   0.9447 |      16     20    1950     24 |    44.4%    40.0%    1.0% |   0.9739 
+  omni_ddim                     2014   0.9115 |      18     20    1950     26 |    47.4%    40.9%    1.0% |   0.9739 
+  omni_ideogram                 2012   0.9586 |      19     20    1950     23 |    48.7%    45.2%    1.0% |   0.9739 
+  omni_playground_v_2_5         2017   0.9606 |      23     20    1950     24 |    53.5%    48.9%    1.0% |   0.9739 
+  omni_leonardo_phoenix         2015   0.9415 |      23     20    1950     22 |    53.5%    51.1%    1.0% |   0.9739 
+  omni_sana_v_1_5               2015   0.9844 |      26     20    1950     19 |    56.5%    57.8%    1.0% |   0.9739 
+  omni_llamagen                 2016   0.9724 |      27     20    1950     19 |    57.4%    58.7%    1.0% |   0.9739 
+  omni_midjourney_v_4           2013   0.9460 |      26     20    1950     17 |    56.5%    60.5%    1.0% |   0.9739 
+OVERFIT_DONE Mon Aug 31 13:38:50 UTC 2026

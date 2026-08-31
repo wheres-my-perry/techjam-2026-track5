@@ -39,6 +39,12 @@ def _score_condition(model, samples, tf, batch=BATCH):
     return np.asarray(scores, dtype=np.float32)
 
 
+def _agg(fn, xs):
+    """np.nanmin/nanmax/nanmean on an EMPTY list raises. With `--conditions clean` every
+    "transformed" statistic is empty, which is legitimate. Report None instead of dying."""
+    return float(fn(xs)) if len(xs) else None
+
+
 def evaluate(model, samples, topk=20, threshold=None, conditions=None):
     import sys
     import time
@@ -73,21 +79,25 @@ def evaluate(model, samples, topk=20, threshold=None, conditions=None):
     aurocs = [results[n]["auroc"] for n, _ in grid if n != "clean"]
     tprs = [results[n]["tpr@thr"] for n, _ in grid if n != "clean"]
     fprs = [results[n]["fpr@thr"] for n, _ in grid if n != "clean"]
+    # `--conditions clean` is a legitimate run (e.g. the partial-edit probe) and leaves these
+    # lists EMPTY. np.nanmin/nanmax raise on an empty array, which killed the whole evaluation
+    # AFTER every image had been scored but BEFORE scores.npz was written -- two minutes of GPU
+    # thrown away and no result. Report None for the transformed statistics instead. (2026-08-31)
     summary = {
         "threshold_frozen_on_clean": thr,
         "threshold_source": "fixed" if threshold is not None else "youden_on_this_set",
         "clean_tpr@thr": results["clean"]["tpr@thr"],
         "clean_fpr@thr": results["clean"]["fpr@thr"],
-        "mean_transformed_tpr@thr": float(np.nanmean(tprs)),
-        "mean_transformed_fpr@thr": float(np.nanmean(fprs)),
-        "worst_transformed_tpr@thr": float(np.nanmin(tprs)),
-        "worst_transformed_fpr@thr": float(np.nanmax(fprs)),
+        "mean_transformed_tpr@thr": _agg(np.nanmean, tprs),
+        "mean_transformed_fpr@thr": _agg(np.nanmean, fprs),
+        "worst_transformed_tpr@thr": _agg(np.nanmin, tprs),
+        "worst_transformed_fpr@thr": _agg(np.nanmax, fprs),
         "clean_auroc": results["clean"]["auroc"],
-        "mean_transformed_auroc": float(np.nanmean(aurocs)),
-        "worst_transformed_auroc": float(np.nanmin(aurocs)),
+        "mean_transformed_auroc": _agg(np.nanmean, aurocs),
+        "worst_transformed_auroc": _agg(np.nanmin, aurocs),
         "worst_condition": min(
             (n for n, _ in grid if n != "clean"), key=lambda n: results[n]["auroc"]
-        ),
+        ) if len(aurocs) else None,
     }
 
     # per-generator breakdown: each generator's fakes vs ALL reals, per condition.
@@ -109,12 +119,15 @@ def evaluate(model, samples, topk=20, threshold=None, conditions=None):
             per_generator[g] = {
                 "n_fake": int(len(g_idx)),
                 "clean_auroc": aurocs_g["clean"],
-                "mean_transformed_auroc": float(np.nanmean(tf_vals)),
-                "worst_transformed_auroc": float(np.nanmin(tf_vals)),
+                # same empty-list guard as the summary block above: with `--conditions clean`
+                # there are no transformed conditions, and an unguarded nanmin here threw away
+                # the whole evaluation after every image had already been scored. (2026-08-31)
+                "mean_transformed_auroc": _agg(np.nanmean, tf_vals),
+                "worst_transformed_auroc": _agg(np.nanmin, tf_vals),
                 "conditions": aurocs_g,
                 "clean_catch@thr": catch_g["clean"],
-                "mean_transformed_catch@thr": float(np.nanmean(tf_catch)),
-                "worst_transformed_catch@thr": float(np.nanmin(tf_catch)),
+                "mean_transformed_catch@thr": _agg(np.nanmean, tf_catch),
+                "worst_transformed_catch@thr": _agg(np.nanmin, tf_catch),
                 "catch@thr": catch_g,
             }
 
@@ -128,6 +141,15 @@ def evaluate(model, samples, topk=20, threshold=None, conditions=None):
                    "threshold": thr, **{f"score_{n}": all_scores[n] for n, _ in grid}}
 
     return results, summary, errors, per_generator, scores_dump
+
+
+def _n(v, spec=".4f", scale=1.0, suffix=""):
+    """Format a summary value that is None when there are no transformed conditions
+    (`--conditions clean`). Formatting None raised TypeError and killed the report -- and with it
+    the whole evaluation, three times. (2026-09-01)"""
+    if v is None:
+        return "n/a"
+    return format(v * scale, spec) + suffix
 
 
 def to_markdown(results, summary, model_name, per_generator=None):
@@ -148,14 +170,15 @@ def to_markdown(results, summary, model_name, per_generator=None):
     lines += [
         "",
         f"**Clean AUROC:** {summary['clean_auroc']:.4f} · "
-        f"**Mean transformed:** {summary['mean_transformed_auroc']:.4f} · "
-        f"**Worst:** {summary['worst_transformed_auroc']:.4f} ({summary['worst_condition']})",
+        f"**Mean transformed:** {_n(summary['mean_transformed_auroc'])} · "
+        f"**Worst:** {_n(summary['worst_transformed_auroc'])} ({summary['worst_condition']})",
         "",
         f"At the threshold — clean: {summary['clean_tpr@thr'] * 100:.1f}% of fakes caught, "
         f"{summary['clean_fpr@thr'] * 100:.1f}% of reals flagged · mean over transforms: "
-        f"{summary['mean_transformed_tpr@thr'] * 100:.1f}% caught, {summary['mean_transformed_fpr@thr'] * 100:.1f}% flagged · "
-        f"worst transform: {summary['worst_transformed_tpr@thr'] * 100:.1f}% caught, "
-        f"{summary['worst_transformed_fpr@thr'] * 100:.1f}% flagged",
+        f"{_n(summary['mean_transformed_tpr@thr'], '.1f', 100, '%')} caught, "
+        f"{_n(summary['mean_transformed_fpr@thr'], '.1f', 100, '%')} flagged · "
+        f"worst transform: {_n(summary['worst_transformed_tpr@thr'], '.1f', 100, '%')} caught, "
+        f"{_n(summary['worst_transformed_fpr@thr'], '.1f', 100, '%')} flagged",
         "",
     ]
     if per_generator:
@@ -168,9 +191,9 @@ def to_markdown(results, summary, model_name, per_generator=None):
         for g, r in sorted(per_generator.items()):
             lines.append(
                 f"| {g} | {r['n_fake']} | {r['clean_auroc']:.4f} "
-                f"| {r['mean_transformed_auroc']:.4f} | {r['worst_transformed_auroc']:.4f} "
-                f"| {r['clean_catch@thr'] * 100:.1f}% | {r['mean_transformed_catch@thr'] * 100:.1f}% "
-                f"| {r['worst_transformed_catch@thr'] * 100:.1f}% |"
+                f"| {_n(r['mean_transformed_auroc'])} | {_n(r['worst_transformed_auroc'])} "
+                f"| {r['clean_catch@thr'] * 100:.1f}% | {_n(r['mean_transformed_catch@thr'], '.1f', 100, '%')} "
+                f"| {_n(r['worst_transformed_catch@thr'], '.1f', 100, '%')} |"
             )
         lines.append("")
     return "\n".join(lines)
@@ -206,6 +229,10 @@ def main(argv=None):
         conditions=[c.strip() for c in args.conditions.split(",") if c.strip()] or None)
 
     os.makedirs(args.out, exist_ok=True)
+    # scores.npz FIRST. It is the only artifact that costs GPU time; every report below is
+    # re-derivable from it. Writing it last meant a formatting bug in to_markdown threw away a
+    # completed evaluation -- which happened three times on --conditions clean. (2026-09-01)
+    np.savez_compressed(os.path.join(args.out, "scores.npz"), **scores_dump)
     with open(os.path.join(args.out, "results.json"), "w") as f:
         json.dump({"model": model.name, "summary": summary, "conditions": results,
                    "per_generator": per_generator}, f, indent=1)
@@ -213,7 +240,6 @@ def main(argv=None):
         f.write(to_markdown(results, summary, model.name, per_generator))
     with open(os.path.join(args.out, "errors_clean.json"), "w") as f:
         json.dump(errors, f, indent=1)
-    np.savez_compressed(os.path.join(args.out, "scores.npz"), **scores_dump)  # re-read at any cut-off
 
     print(to_markdown(results, summary, model.name, per_generator))
     print(f"Saved to {args.out}/")

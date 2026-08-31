@@ -1,0 +1,107 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== canonicalize OmniFake  Mon Aug 31 11:22:53 UTC 2026
+skip ./data/omnival/data/val/real/wukong_9_144598.jpeg: smaller than crop (320x111)
+180000/180000 (285/s, eta 0m)
+175923 rows -> data/manifests/canon_omnitrain.csv
+===== assemble  Mon Aug 31 11:33:25 UTC 2026
+data/manifests/canon_omnitrain.csv: +175923 rows
+total 175923 rows from 1 manifests
+pre-balance: train 140737 val 17589 test 17597
+balance (per native-size bucket, larger class subsampled):
+  train bucket 342-512   real   14526 fake   14992 -> keep   9000 each (11518 to test)
+  train bucket 513-768   real   22603 fake     421 -> keep    421 each (22182 to test)
+  train bucket 769-1024  real   22545 fake   31885 -> keep   9000 each (36430 to test)
+  train bucket <=341     real    1702 fake   17774 -> keep   1702 each (16072 to test)
+  train bucket >1024     real    7641 fake    6648 -> keep   6648 each (993 to test)
+  val   bucket 342-512   real    1881 fake    1867 -> keep   1125 each (1498 to test)
+  val   bucket 513-768   real    2846 fake      49 -> keep     49 each (2797 to test)
+  val   bucket 769-1024  real    2693 fake    3998 -> keep   1125 each (4441 to test)
+  val   bucket <=341     real     218 fake    2228 -> keep    218 each (2010 to test)
+  val   bucket >1024     real     989 fake     820 -> keep    820 each (169 to test)
+data/manifests/omni_train.csv: 53542 rows (26771 real / 26771 fake), 45 fake generators
+data/manifests/omni_val.csv: 6674 rows (3337 real / 3337 fake), 45 fake generators
+data/manifests/omni_test.csv: 115707 rows (56164 real / 59543 fake), 45 fake generators
+===== duplicates -> drop list  Mon Aug 31 11:33:26 UTC 2026
+
+2/3. BYTE DUPLICATES
+  duplicate copies within a split: {'train': 8, 'test': 9}
+  files appearing in >1 split    : 1
+  byte-identical LABEL CONFLICTS : 0
+    -> cross-split duplicates leak train into val/test; label conflicts are unlabelable
+
+4. PERCEPTUAL NEAR-DUPLICATES (dHash Hamming <= 2, flat images excluded)
+  val: 15 of 6674 rows (0.22%) are near-copies of a TRAIN image
+  test: 181 of 115707 rows (0.16%) are near-copies of a TRAIN image
+
+  wrote 242 paths to drop -> data/manifests/omni_drop.txt
+
+VERDICT: 2 PROBLEM AREA(S) — fix before training
+===== reassemble  Mon Aug 31 11:34:14 UTC 2026
+  val   bucket 342-512   real    1845 fake    1859 -> keep   1125 each (1454 to test)
+  val   bucket 513-768   real    2786 fake      49 -> keep     49 each (2737 to test)
+  val   bucket 769-1024  real    2784 fake    3988 -> keep   1125 each (4522 to test)
+  val   bucket <=341     real     220 fake    2221 -> keep    220 each (2001 to test)
+  val   bucket >1024     real     976 fake     818 -> keep    818 each (158 to test)
+data/manifests/omni_train.csv: 53514 rows (26757 real / 26757 fake), 45 fake generators
+data/manifests/omni_val.csv: 6674 rows (3337 real / 3337 fake), 45 fake generators
+data/manifests/omni_test.csv: 115493 rows (56019 real / 59474 fake), 45 fake generators
+===== GATES  Mon Aug 31 11:34:15 UTC 2026
+
+native-size distribution — data/manifests/omni_train.csv
+  <=341      real    1683 fake    1683     1.00:1
+  342-512    real    9000 fake    9000     1.00:1
+  513-768    real     421 fake     421     1.00:1
+  769-1024   real    9000 fake    9000     1.00:1
+  >1024      real    6653 fake    6653     1.00:1
+  real native long: min 180 median 800 max 8227
+  fake native long: min 200 median 1024 max 8192
+
+content within each size bucket — data/manifests/omni_train.csv
+  <=341      n=   3366  real 100% from 'omnifake_real'
+  342-512    n=  18000  real 100% from 'omnifake_real'
+  513-768    n=    842  real 100% from 'omnifake_real'
+  769-1024   n=  18000  real 100% from 'omnifake_real'
+  >1024      n=  13306  real 100% from 'omnifake_real'
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) omni_train.csv             PASS     AUROC 0.4742 — canonical files only: BLIND to native size
+canary (dumb pixels) omni_train.csv            CAVEAT   worst 0.7201 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit omni_train.csv                      PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size omni_train.csv                     PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket omni_train.csv      PASS     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+===== CONTENT  Mon Aug 31 11:34:57 UTC 2026
+  animals                   0       36        inf  
+  painting                  0       29        inf  
+  landscape                 0       19        inf  
+
+data/manifests/omni_val.csv  (6674 rows)
+  subject                real     fake  fake:real  flag
+  other                  2116     3060       1.45  
+  general scenes          904      188       0.21  
+  faces                   166       39       0.23  
+  church                  151       11       0.07  
+  bedroom                   0       22        inf  
+  animals                   0        9        inf  
+  painting                  0        5        inf  
+  landscape                 0        3        inf  
+
+VERDICT: ONE-SIDED SUBJECTS FOUND — fix the data
+===== DATA REPORT  Mon Aug 31 11:35:02 UTC 2026
+# Data state — `data/manifests/omni`
+
+| split | total | real | fake | fake generators |
+|---|---|---|---|---|
+| **train** | 53,514 | 26,757 | 26,757 | 45 |
+| **val** | 6,674 | 3,337 | 3,337 | 45 |
+| **test** | 115,493 | 56,019 | 59,474 | 45 |
+
+**Images actually pushed into training (train + val): 60,188** (53,514 train / 6,674 val). Test is never trained on.
+
+## train — by native-size bucket
+
+OMNITRAIN_DATA_READY Mon Aug 31 11:35:07 UTC 2026

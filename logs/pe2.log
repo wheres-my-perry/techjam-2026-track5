@@ -1,0 +1,107 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== 1. build canon6pe = shipped recipe + all partial edits train-eligible  Mon Aug 31 14:31:57 UTC 2026
+  ('artifact', 'palette')                        n=   2046 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('elsa_deepfloyd_if', 'deepfloyd_if')          n=   3508 -> TEST ONLY (test-only)
+  ('sid_tampered', 'sid_tampered')               n=   2289 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('wildfake', 'ddim')                           n=  29995 -> TEST ONLY (HOLD-OUT)
+  ('wildfake', 'ddpm')                           n=  29982 -> TEST ONLY (HOLD-OUT)
+pre-balance: train 164775 val 20578 test 85026
+balance (per native-size bucket, larger class subsampled):
+  train bucket 342-512   real   17874 fake    4210 -> keep   4210 each (13664 to test)
+  train bucket 513-768   real   13462 fake    4233 -> keep   4233 each (9229 to test)
+  train bucket 769-1024  real   10009 fake   10774 -> keep  10009 each (765 to test)
+  train bucket <=341     real   64953 fake   39256 -> keep  39256 each (25697 to test)
+  train bucket >1024     real       4 fake       0 -> keep      0 each (4 to test)
+  val   bucket 342-512   real    2225 fake     558 -> keep    558 each (1667 to test)
+  val   bucket 513-768   real    1697 fake     496 -> keep    496 each (1201 to test)
+  val   bucket 769-1024  real    1246 fake    1345 -> keep   1246 each (99 to test)
+  val   bucket <=341     real    8114 fake    4896 -> keep   4896 each (3218 to test)
+  val   bucket >1024     real       1 fake       0 -> keep      0 each (1 to test)
+data/manifests/canon6pe_train.csv: 115416 rows (57708 real / 57708 fake), 30 fake generators
+data/manifests/canon6pe_val.csv: 14392 rows (7196 real / 7196 fake), 30 fake generators
+data/manifests/canon6pe_test.csv: 140571 rows (67984 real / 72587 fake), 33 fake generators
+canon6pe_train: 115416 rows, 30 fake generators
+   <=341      real  39256  fake  39256   ratio 1.00
+   342-512    real   4210  fake   4210   ratio 1.00
+   513-768    real   4233  fake   4233   ratio 1.00
+   769-1024   real  10009  fake  10009   ratio 1.00
+canon6pe_val: 14392 rows, 30 fake generators
+   <=341      real   4896  fake   4896   ratio 1.00
+   342-512    real    558  fake    558   ratio 1.00
+   513-768    real    496  fake    496   ratio 1.00
+   769-1024   real   1246  fake   1246   ratio 1.00
+===== 2. GATES  Mon Aug 31 14:31:59 UTC 2026
+  real native long: min 200 median 200 max 1024
+  fake native long: min 200 median 200 max 1024
+
+content within each size bucket — data/manifests/canon6pe_train.csv
+  <=341      n=  78512  sources mixed
+  342-512    n=   8420  sources mixed
+  513-768    n=   8466  real 100% from 'coco_640'
+      subject 'general scenes': 4221 real / 0 fake  ONE-SIDED INSIDE THIS BUCKET
+  769-1024   n=  20018  real 70% from 'openimages_1024'
+  => LOOK AT THIS BUCKET before trusting it: build a montage of its reals and
+     its fakes and read them. This is a WARNING, not a failure, because the
+     tagger is a PATH REGEX and cannot settle content: COCO tags as 'general
+     scenes' while ELSA/Midjourney/flux tag as 'other', so a bucket whose two
+     sides are both diverse still reads as one-sided. Verified by eye on
+     513-768 (both sides diverse: false alarm) and on 342-512 (reals were
+     10/12 animal close-ups: a REAL confound, fixed by capping afhq_512 and
+     adding flickr30k_web). Settling this automatically needs image-content
+     embeddings, not path rules.
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6pe_train.csv         CAVEAT   AUROC 0.6090 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6pe_train.csv        CAVEAT   worst 0.6780 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6pe_train.csv                  PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6pe_train.csv                 PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket canon6pe_train.csv  WARN     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+AUDIT_EXIT=0
+data/manifests/canon6pe_train.csv  (115416 rows)
+  subject                real     fake  fake:real  flag
+  other                 11394    20740       1.82  
+  general scenes        18013    13068       0.73  
+  faces                 10245    14619       1.43  
+  animals                6968     1567       0.22  
+  church                 3263     1346       0.41  
+  landscape              2098     1639       0.78  
+  voc objects            2117     1295       0.61  
+  painting               1727     1326       0.77  
+  bedroom                1107     1418       1.28  
+  vehicles/street         776      690       0.89  
+
+VERDICT: every subject has both classes
+  flat/blank images: 0
+
+2/3. BYTE DUPLICATES
+  duplicate copies within a split: {'train': 1}
+  files appearing in >1 split    : 0
+  byte-identical LABEL CONFLICTS : 0
+
+4. PERCEPTUAL NEAR-DUPLICATES (dHash Hamming <= 2, flat images excluded)
+  val: 3 of 14392 rows (0.02%) are near-copies of a TRAIN image
+  test: 41 of 140571 rows (0.03%) are near-copies of a TRAIN image
+
+VERDICT: CLEAN
+===== 3. common partial-edit eval set (unseen by BOTH models)  Mon Aug 31 14:34:04 UTC 2026
+candidate fakes 1182  candidate reals 64173
+  342-512    fake     0 real 17551 -> keep 0 each
+  513-768    fake     0 real 12128 -> keep 0 each
+  769-1024   fake   360 real  1252 -> keep 360 each
+  <=341      fake   822 real 33237 -> keep 822 each
+  >1024      fake     0 real     5 -> keep 0 each
+data/manifests/edits_eval.csv: 2364 rows (1182 real / 1182 partial-edit fake)
+  generators: {'palette': 206, 'sid_tampered': 360, 'generative_inpainting': 205, 'mat': 205, 'lama': 206}
+LEAK CHECK PASS: no eval row appears in either model's train/val
+===== 4. wait for the GPU  Mon Aug 31 14:34:06 UTC 2026
+GPU free Mon Aug 31 14:35:46 UTC 2026
+===== 5. BASELINE canon6_mlp on the partial-edit set  Mon Aug 31 14:35:46 UTC 2026
+  File "/venv/main/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 83, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: zero-size array to reduction operation minimum which has no identity

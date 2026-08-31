@@ -1,0 +1,24 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+  mobius            704 images  (label 1, generator mobius)
+  realvisxl         746 images  (label 1, generator realvis_xl)
+  bmdiffusion       744 images  (label 1, generator bm_diffusion)
+  ldm_face         6000 images  (label 1, generator ldm_diffface)
+  flux_celeba      6000 images  (label 1, generator flux1_dev)
+  flux_coco        6000 images  (label 1, generator flux1_dev)
+  real_bm          6000 images  (label 0, generator -)
+  real_diffface    6000 images  (label 0, generator -)
+  parti_karlo      1632 images  (label 1, generator karlo)
+  parti_kandinsky   1632 images  (label 1, generator kandinsky)
+  parti_wuerstchen   1632 images  (label 1, generator wuerstchen)
+  parti_muse512    1632 images  (label 1, generator muse512)
+  parti_muse256    1632 images  (label 1, generator muse256)
+  parti_if         1632 images  (label 1, generator if)
+  parti_sd15       1632 images  (label 1, generator sd15)
+  parti_sd21       1632 images  (label 1, generator sd21)
+  parti_sdxl09     1632 images  (label 1, generator sdxl09)
+  parti_sdxl09_ref   1632 images  (label 1, generator sdxl09_ref)
+  parti_sdxl10     1632 images  (label 1, generator sdxl10)
+  parti_sdxl10_ref   1632 images  (label 1, generator sdxl10_ref)
+
+51778 rows (12000 real / 39778 fake) -> /workspace/techjam-2026-track5/data/manifests/raw_unseen6.csv
+UNSEEN_EXTRACT_DONE

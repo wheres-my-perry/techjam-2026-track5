@@ -206,3 +206,22 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
   0.70→0.885 at clean cost −0.012) — core augmentation hypothesis validated. cnn w64: 0.961 mean
   transformed. clip_linear B/32 sanity run.
 - Colab pipeline notebook (superseded by GPU server, kept as fallback).
+
+## 2026-08-31 (late) — head shape, val augmentation, partial-edit experiment
+
+- **MLP head 1024->64->1 shipped** over the single linear layer: +2.1 points of recall on the
+  judges' set at an identical 1% false-alarm rate, +0.03 AUROC on the hack set, everything else
+  held identical. `src/approaches/pe_ft/model.py:make_head`; checkpoints select their own head
+  shape from the state_dict keys, so old and new weights both load with no flag.
+- **`--val-augment` added to `pe_ft/train.py`.** Validation was scored on CLEAN images while train
+  and test were augmented, so "best val AUROC -> save" was blind to robustness. Off by default for
+  comparability with earlier checkpoints; on for any run that selects a checkpoint.
+- **`src/evaluate.py`: `--conditions clean` no longer crashes.** With no transformed condition the
+  `np.nanmin(tprs)` summary raised on an empty array AFTER every image had been scored and BEFORE
+  scores.npz was written — a whole evaluation lost to a summary statistic. Transformed statistics
+  now report None.
+- **`--train-partial-edits FRAC` added to `scripts/build_canon6.py`** (experiment only) to measure
+  what happens if partially edited images are TRAINED on instead of held out for test. Verified:
+  with the flag off the builder reproduces `canon6_train.csv` byte-for-byte.
+- **Negative result: augmentation-consistency loss.** Best clean val (0.9973), worst hack set
+  (0.870). Not shipped. docs/REPORT.md section 4.3.

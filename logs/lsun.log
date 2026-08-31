@@ -1,0 +1,8 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+23000/25000 (43/s, eta 1m)
+24000/25000 (43/s, eta 0m)
+25000/25000 (44/s, eta 0m)
+25000 rows -> data/manifests/lsun_bedroom_raw.csv
+skip ./data/lsun_bedroom/lsun_024893.png: smaller than crop (320x172)
+23697 rows -> data/manifests/canon_lsun_bedroom.csv
+LSUN_BEDROOM_READY

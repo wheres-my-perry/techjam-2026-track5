@@ -1,0 +1,59 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== VAL BY BUCKET  Mon Aug 31 11:47:31 UTC 2026
+model: vote(L=320)+pe_ft:outputs/pe_ft/omni.pt
+val: data/manifests/omni_val.csv
+
+bucket      train imgs   val n    AUROC  cut-off   caught  flagged
+----------------------------------------------------------------------
+<=341            1,908     240   0.9681   0.7114    75.0%     1.7%
+342-512         18,000    1200   0.9988   0.6228    99.0%     1.0%
+513-768            844      96   0.9961   0.3495    95.8%     2.1%
+769-1024        18,000    1200   0.9998   0.2418    99.3%     1.0%
+>1024           13,308    1200   0.9974   0.6431    93.0%     1.0%
+
+  best  769-1024 0.9998   worst <=341 0.9681   spread 0.0317
+  Cut-off is chosen per bucket at 1% false alarms, so buckets are compared at a matched operating point.
+  If the worst bucket is also the one with the fewest training images, more data there should help; if not, it is intrinsically harder and more data will not fix it.
+===== BUILD DECOUPLED BENCHMARK  Mon Aug 31 11:49:32 UTC 2026
+training generators: 90
+
+EXCLUDED (generator also in training): ddpm 30877, ddim 29995, midjourney_v6 5207, stylegan3 1799, glide 1798, sdxl 1420
+
+KEPT 28 disjoint generators:
+   big_gan                    700
+   cips                       700
+   cycle_gan                  700
+   deepfloyd_if               700
+   denoising_diffusion_gan    700
+   diffusion_gan              700
+   face_synthetics            700
+   flux_sid                   700
+   gansformer                 700
+   gau_gan                    700
+   generative_inpainting      700
+   lama                       700
+   latent_diffusion           700
+   mat                        700
+   palette                    700
+   pro_gan                    700
+   projected_gan              700
+   sd14                       700
+   sd21                       700
+   sfhq                       700
+   sid_tampered               700
+   stable_diffusion           700
+   star_gan                   700
+   stylegan1                  700
+   stylegan2                  700
+   taming_transformer         700
+   vq_diffusion               700
+   wukong                     700
+   (reals)                    6000
+
+hashing 26030 training reals + 6000 benchmark reals...
+  DROPPED 3 benchmark reals that are byte-identical to a TRAINING real
+
+25597 rows (5997 real / 19600 fake) -> data/manifests/benchmark.csv
+Paths are ORIGINAL files: score through the production path, never canonicalize.
+===== BENCHMARK (original files, production path)  Mon Aug 31 11:49:33 UTC 2026
+===== JUDGES SET  Mon Aug 31 12:17:14 UTC 2026

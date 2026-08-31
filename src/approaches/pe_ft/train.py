@@ -25,7 +25,8 @@ from torch.utils.data import DataLoader, Dataset
 from src.crops import clamp_size, random_crop, sample_size
 from src.data import load_image, load_manifest
 from src.metrics import auroc
-from src.transforms import random_train_transform, style_aug, hard_train_transform, _stack as stack_transform
+from src.transforms import (random_train_transform, style_aug, hard_train_transform,
+                            _stack as stack_transform, stack_no_geometry)
 from .model import build_net, pick_device, to_tensor
 
 CROP_MIN, CROP_MAX, CROP_STEP = 112, 168, 14
@@ -96,12 +97,21 @@ def make_collate(cmin, cmax, fixed=None):
     return collate
 
 
-def make_consist_collate(cmin, cmax, k, hard_aug):
+def make_consist_collate(cmin, cmax, k, hard_aug, stack_aug=0.0, stack_max=5):
     """Consistency training (Thinh, 2026-08-30): ONE crop per image, K independently corrupted
     views of that crop (no geometry change, so the views show the same content and their
     embeddings should agree). Returns x of shape (K*B, C, H, W) ordered [view0 batch, view1 batch,
     ...] and y repeated K times; the trainer pairs view v of image i with view v' of image i."""
     def view_aug(im, rng):
+        # BUG FIX 2026-09-01 (Thinh: "do you augment the images multiple times when training
+        # consistency?"). It did not. --stack-aug was passed on every consistency run and silently
+        # ignored, because raw=True skips the dataset's stacking branch and this function only ever
+        # applied the mild <=2-transform chain. Every consistency model therefore trained on weaker
+        # augmentation than the baseline it was compared against.
+        # Geometry note: the K views must stay the SAME SIZE to batch, so a view-level stack draws
+        # from the five size-preserving families and excludes centre-crop -- depth caps at 5, not 6.
+        if stack_aug and rng.random() < stack_aug:
+            return stack_no_geometry(im, rng.randint(2, min(stack_max, 5)), rng)
         if hard_aug and rng.random() < hard_aug:
             return hard_train_transform(im, rng)
         return random_train_transform(im, rng, geometry=False)
@@ -157,11 +167,40 @@ def main():
     ap.add_argument("--val", required=True)
     ap.add_argument("--epochs", type=int, default=4)
     ap.add_argument("--batch", type=int, default=48)
+    ap.add_argument("--unfreeze-last", type=int, default=-1, metavar="N",
+                    help="Freeze the trunk except its top N transformer blocks (Thinh, 2026-09-01). "
+                         "-1 = every trunk parameter trainable, the current behaviour. N>=0 also "
+                         "leaves `norm` and `attn_pool` trainable, because both sit AFTER the blocks "
+                         "and produce the 1024-d embedding the head reads -- freezing them while "
+                         "unfreezing the block below is incoherent. Patch/pos embeddings and the "
+                         "lower blocks stay frozen, so fine-tuning cannot disturb the pretrained "
+                         "features that the whole-trunk runs appear to damage.")
+    ap.add_argument("--lr-ladder", action="store_true",
+                    help="Layer-wise LR decay over the TRAINABLE tail (Thinh, 2026-09-01): "
+                         "'the further it is from the input side (closer to output), the higher "
+                         "the LR'. Groups are ordered input->output (unfrozen blocks, then norm, "
+                         "then attn_pool, then head) and given geometrically spaced learning "
+                         "rates from --lr at the far end to --head-lr at the output. Use with "
+                         "--unfreeze-last; without it the ladder still applies to whatever is "
+                         "trainable. Rationale: the layers nearest the input carry the most "
+                         "general pretrained features and are the ones fine-tuning damages.")
+    ap.add_argument("--ladder-top", type=float, default=1e-5,
+                    help="Top of the --lr-ladder, applied to the LAST PRETRAINED module (attn_pool). "
+                         "Defaults to the trunk LR, so nothing pretrained is ever trained faster "
+                         "than we already trust (Thinh, 2026-09-01: 'we should strictly set a small "
+                         "learning rate on parts that touch the good model'). The fresh head is NOT "
+                         "on the ladder -- it is randomly initialised, is not part of the pretrained "
+                         "model, and keeps --head-lr.")
     ap.add_argument("--lr", type=float, default=1e-5, help="trunk LR (pretrained ViT-L)")
     ap.add_argument("--head-lr", type=float, default=1e-3, help="fresh linear head LR")
     ap.add_argument("--max-steps", type=int, default=0,
                     help="debug: stop each epoch after N steps")
     ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--val-augment", action="store_true",
+                    help="augment VAL exactly like train (same --stack-aug / --stack-max). "
+                         "Off by default for comparability with earlier checkpoints, but a clean "
+                         "val cannot see robustness, which is the property we ship -- use it "
+                         "whenever the run is choosing a checkpoint.")
     ap.add_argument("--blur-boost", action="store_true",
                     help="extra blur/downscale aug on top of --augment (60%% of "
                          "samples get heavy low-pass; targets the measured "
@@ -188,10 +227,25 @@ def main():
     ap.add_argument("--consist", type=int, default=0,
                     help="K>0: augmentation-consistency training (Thinh): K corrupted views of the same "
                          "crop per image; loss = BCE(all views) + alpha * agreement loss")
+    ap.add_argument("--consist-at", default="trunk", choices=["trunk", "head"],
+                    help="WHERE the agreement loss is applied. 'trunk' (original) constrains the "
+                         "pretrained 1024-d embedding and measurably costs augmented-slice recall "
+                         "-- it alters the model we are fine-tuning. 'head' (Thinh, 2026-08-31) "
+                         "constrains the head's own 256-d embedding computed from a DETACHED trunk "
+                         "output, so the trunk is trained by BCE alone. Requires --head mlp2.")
     ap.add_argument("--consist-loss", default="cos", choices=["cos", "nce", "out"],
                     help="cos: 1-cosine between view embeddings; nce: NT-Xent contrastive on embeddings; "
                          "out: MSE between view output probabilities (control)")
     ap.add_argument("--alpha", type=float, default=1.0, help="weight of the agreement loss")
+    ap.add_argument("--alpha-share", type=float, default=0.0, metavar="FRAC",
+                    help="Overrides --alpha: hold the agreement term at FRAC of the TOTAL loss "
+                         "every step (Thinh, 2026-09-01: 'I want similarity to contribute 1/5 "
+                         "importance to the loss' -> 0.2). A FIXED alpha cannot do this: the "
+                         "cosine disagreement shrinks as the model learns (0.0084 -> 0.0015 over "
+                         "four epochs at alpha 1.0), so the same alpha that gives a 20% share at "
+                         "epoch 1 gives 8% by epoch 4. Here the weight is recomputed per step as "
+                         "FRAC/(1-FRAC) * BCE/agree, both detached, which makes the share exactly "
+                         "FRAC by construction.")
     ap.add_argument("--tau", type=float, default=0.1, help="NT-Xent temperature")
     ap.add_argument("--style-aug", action="store_true",
                     help="label-neutral style randomisation on both classes (greyscale, saturation, tone, grain, vignette, flash)")
@@ -201,7 +255,7 @@ def main():
                          "per-crop verdicts must be conservative so an any-crop rule is safe.")
     ap.add_argument("--limit-train", type=int, default=0,
                     help="seeded subsample of the train manifest (small-dataset trials)")
-    ap.add_argument("--head", default="linear", choices=["linear", "mlp"],
+    ap.add_argument("--head", default="linear", choices=["linear", "mlp", "mlp2"],
                     help="classifier on the 1024-d embedding. linear = single projection (shipped); "
                          "mlp = 1024->64->1, measured optimal by Thinh's friend")
     ap.add_argument("--seed", type=int, default=0)
@@ -221,7 +275,7 @@ def main():
     # val uses a FIXED mid size so val AUROC is comparable across epochs
     vfixed = (cmin + cmax) // 2 if rand_size else args.crop
     vfixed = max(CROP_STEP, (vfixed // CROP_STEP) * CROP_STEP)
-    print(f"device={device} augment={args.augment} blur_boost={args.blur_boost} hard_aug={args.hard_aug} stack_aug={args.stack_aug} "
+    print(f"device={device} augment={args.augment} VAL_AUGMENT={args.val_augment} blur_boost={args.blur_boost} hard_aug={args.hard_aug} stack_aug={args.stack_aug} "
           f"crop={f'random {cmin}-{cmax}' if rand_size else args.crop} "
           f"(val fixed {vfixed})", flush=True)
 
@@ -232,19 +286,75 @@ def main():
         rng.shuffle(train_ds.samples)
         train_ds.samples = train_ds.samples[: args.limit_train]
         print(f"limit-train: {len(train_ds.samples)} rows", flush=True)
-    train_collate = (make_consist_collate(cmin, cmax, args.consist, args.hard_aug) if args.consist > 0
+    train_collate = (make_consist_collate(cmin, cmax, args.consist, args.hard_aug,
+                                          stack_aug=args.stack_aug, stack_max=args.stack_max)
+                     if args.consist > 0
                      else make_collate(cmin, cmax))
     train_dl = DataLoader(train_ds,
                           batch_size=args.batch, shuffle=True, num_workers=args.workers,
                           collate_fn=train_collate)
-    val_dl = DataLoader(ManifestDataset(args.val, False, args.crop),
+    # --val-augment (2026-08-31, Thinh): val used to be scored on CLEAN images while train and
+    # test were both augmented, so "best val AUROC -> save" picked the checkpoint on a
+    # distribution we never ship on. It is blind to robustness by construction: on clean images
+    # the linear and MLP heads tie (0.9965 vs 0.9959) while on the pooled 15-condition benchmark
+    # the MLP wins by 2.1 points of recall. DEFAULT IS OFF only so that runs compared against an
+    # earlier checkpoint keep one variable; turn it ON for any run that is selecting a checkpoint.
+    val_dl = DataLoader(ManifestDataset(args.val, args.val_augment, args.crop,
+                                        stack_aug=args.stack_aug if args.val_augment else 0.0,
+                                        stack_max=args.stack_max),
                         batch_size=args.batch, shuffle=False, num_workers=args.workers,
                         collate_fn=make_collate(cmin, cmax, fixed=vfixed))
 
     net = build_net(pretrained=True, head=args.head).to(device)
     print(f"params: {sum(p.numel() for p in net.parameters()):,}", flush=True)
-    opt = torch.optim.AdamW(
-        [{"params": net.trunk.parameters(), "lr": args.lr},
+    if args.unfreeze_last >= 0:
+        n_blocks = len(net.trunk.blocks)
+        keep = set(range(max(0, n_blocks - args.unfreeze_last), n_blocks))
+        import re as _re
+        n_train = n_frozen = 0
+        for name, prm in net.trunk.named_parameters():
+            m = _re.match(r"blocks\.(\d+)\.", name)
+            trainable = (int(m.group(1)) in keep) if m else name.startswith(("norm.", "attn_pool."))
+            prm.requires_grad_(trainable)
+            if trainable:
+                n_train += prm.numel()
+            else:
+                n_frozen += prm.numel()
+        print(f"trunk: top {args.unfreeze_last} of {n_blocks} blocks + norm + attn_pool trainable "
+              f"({n_train:,} params); {n_frozen:,} frozen", flush=True)
+
+    if args.lr_ladder:
+        # Ordered input -> output. Anything frozen contributes no group.
+        import re as _re2
+        tail = []
+        blk_ids = sorted({int(m.group(1)) for n, q in net.trunk.named_parameters()
+                          if q.requires_grad and (m := _re2.match(r"blocks\.(\d+)\.", n))})
+        for b in blk_ids:
+            tail.append((f"block{b}", [q for n, q in net.trunk.named_parameters()
+                                       if q.requires_grad and n.startswith(f"blocks.{b}.")]))
+        for mod in ("norm", "attn_pool"):
+            ps = [q for n, q in net.trunk.named_parameters()
+                  if q.requires_grad and n.startswith(mod + ".")]
+            if ps:
+                tail.append((mod, ps))
+        # The ladder spans the PRETRAINED tail only: --lr at the far end up to --ladder-top at
+        # attn_pool. The head is appended afterwards at --head-lr and is deliberately off the
+        # ladder -- it is fresh weights, not part of the model we are trying not to damage.
+        k = len(tail)
+        groups = []
+        for i, (name, ps) in enumerate(tail):
+            lr_i = args.lr if k == 1 else args.lr * (args.ladder_top / args.lr) ** (i / (k - 1))
+            groups.append({"params": ps, "lr": lr_i})
+            print(f"  lr ladder: {name:10s} lr={lr_i:.3e}  ({sum(q.numel() for q in ps):,} params)",
+                  flush=True)
+        groups.append({"params": list(net.head.parameters()), "lr": args.head_lr})
+        print(f"  lr ladder: {'head':10s} lr={args.head_lr:.3e}  "
+              f"({sum(q.numel() for q in net.head.parameters()):,} params, fresh weights, off the ladder)",
+              flush=True)
+        opt = torch.optim.AdamW(groups, weight_decay=0.01)
+    else:
+        opt = torch.optim.AdamW(
+        [{"params": [q for q in net.trunk.parameters() if q.requires_grad], "lr": args.lr},
          {"params": net.head.parameters(), "lr": args.head_lr}],
         weight_decay=0.05, fused=(device == "cuda"))
     amp = device == "cuda"
@@ -255,7 +365,10 @@ def main():
         w = torch.where(y < 0.5, torch.full_like(y, args.real_weight), torch.ones_like(y))
         return (bce(logits, y) * w).sum() / w.sum()
     print(f"loss: BCE with real_weight={args.real_weight}" + (
-        f" + {args.alpha} * {args.consist_loss} agreement over {args.consist} views/image" if args.consist > 0 else ""), flush=True)
+        (f" + {args.consist_loss} agreement held at {args.alpha_share:.0%} of the total loss "
+         f"over {args.consist} views/image" if args.alpha_share > 0 else
+         f" + {args.alpha} * {args.consist_loss} agreement over {args.consist} views/image")
+        if args.consist > 0 else ""), flush=True)
 
     best, start_epoch = -1.0, 1
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
@@ -278,7 +391,10 @@ def main():
             opt.zero_grad()
             with torch.autocast(device, dtype=torch.bfloat16, enabled=amp):
                 if args.consist > 0:
-                    emb, logits = net.forward_feat(x)
+                    if args.consist_at == "head":
+                        emb, logits = net.forward_feat_head(x)
+                    else:
+                        emb, logits = net.forward_feat(x)
                     logits = logits.squeeze(1)
                 else:
                     logits = net(x).squeeze(1)
@@ -289,7 +405,13 @@ def main():
                     agree = ((pv - pv.mean(0, keepdim=True)) ** 2).mean()
                 else:
                     agree = embedding_loss(emb, args.consist_loss, args.consist, args.tau)
-                loss = loss + args.alpha * agree
+                if args.alpha_share > 0:
+                    # loss = bce + w*agree with w = F/(1-F) * bce/agree  =>  w*agree / loss = F.
+                    f = args.alpha_share
+                    w = (f / (1.0 - f)) * (loss.detach() / (agree.detach() + 1e-8))
+                    loss = loss + w * agree
+                else:
+                    loss = loss + args.alpha * agree
                 run_agree += agree.item() * len(y)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
@@ -297,7 +419,14 @@ def main():
             running += loss.item() * len(y)
             seen += len(y)
         val_auc = evaluate_auroc(net, val_dl, device)
-        print(f"epoch {epoch}: loss={running/seen:.4f}" + (f" agree={run_agree/seen:.4f}" if args.consist > 0 else "") + f" val_auroc={val_auc:.4f} "
+        # Report the SHARE the agreement term actually took of the total loss, not just its raw
+        # value: alpha 1.0 looks like a strong constraint and was only 3% of the loss (Thinh,
+        # 2026-09-01, asked for a target share, so the achieved share must be visible).
+        _share = ""
+        if args.consist > 0:
+            _w = args.alpha_share / (1 - args.alpha_share) if args.alpha_share > 0 else args.alpha
+            _share = f" agree={run_agree/seen:.4f} share={_w * run_agree / max(running, 1e-9) * 100:.1f}%"
+        print(f"epoch {epoch}: loss={running/seen:.4f}" + _share + f" val_auroc={val_auc:.4f} "
               f"({time.time()-t0:.0f}s)", flush=True)
         if val_auc > best:
             best = val_auc

@@ -1,0 +1,21 @@
+FAIL DiT_XL BadZipFile zipfiles that span multiple disks are not supported
+FAIL LlamaGen BadZipFile zipfiles that span multiple disks are not supported
+FAIL Show_O BadZipFile zipfiles that span multiple disks are not supported
+  CogView_2          1500 images
+  DDIM               1500 images  (name also in canon6 train)
+  DiT_XL                0 images
+  GALIP              1500 images
+  GLIDE              1500 images  (name also in canon6 train)
+  Janus_Pro          1500 images
+  LlamaGen              0 images
+  Muse               1500 images
+  Show_O                0 images
+  StyleGAN_3         1500 images  (name also in canon6 train)
+  VQVAE              1500 images  (name also in canon6 train)
+!! 3 generator(s) produced NO images: ['DiT_XL', 'LlamaGen', 'Show_O']
+
+12000 fakes from 8 generators -> data/manifests/raw_omnifake.csv
+native long side: [(256, 4500), (200, 3000), (480, 1500), (224, 1500), (384, 1500)]
+
+NOTE: fakes only. Pair with never-trained reals at eval time; the real half is ours.
+OMNI_MANIFEST_DONE

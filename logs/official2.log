@@ -1,0 +1,29 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+== official_val (DALL-E rows)  Mon Aug 31 09:10:08 UTC 2026
+official val: 8843/8843 fakes and 4998/4998 reals on disk (missing: 0 fake, 0 real)
+wrote /workspace/techjam-2026-track5/data/manifests/official_val.csv: 13841 rows
+== swap in original-resolution COCO val2017  Mon Aug 31 09:10:50 UTC 2026
+8843 fakes + 4998 original-res reals -> data/manifests/official_v2.csv
+== canonicalize (band 375-640 -> crop 320)  Mon Aug 31 09:10:50 UTC 2026
+skip ./data/coco/val2017/000000286458.jpg: smaller than crop (455x310)
+13720 rows -> data/manifests/canon_official.csv
+== gates  Mon Aug 31 09:12:14 UTC 2026
+
+native-size distribution — data/manifests/canon_official.csv
+  342-512    real     695 fake       5   139.00:1   SKEWED
+  513-768    real    4182 fake       9   464.67:1   SKEWED
+  769-1024   real       0 fake    7564   ONE CLASS ONLY
+  >1024      real       0 fake    1265   ONE CLASS ONLY
+  real native long: min 400 median 640 max 640
+  fake native long: min 346 median 1024 max 3056
+  => EVAL SET: report SIZE-MATCHED only (python -m scripts.size_matched ...). A pooled number over these buckets is partly a measurement of image size.
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+shortcut (metadata) canon_official.csv         PASS     AUROC 0.5814 — canonical files only: BLIND to native size
+canary (dumb pixels) canon_official.csv        CAVEAT   worst 0.7724 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon_official.csv                  PASS     1 distinct canonical size(s): ['320x320']
+NATIVE size canon_official.csv                 CAVEAT   the one no canonical-pixel audit can do
+
+Any CAVEAT must appear beside every number reported from this manifest.
+OFFICIAL2_READY Mon Aug 31 09:13:57 UTC 2026

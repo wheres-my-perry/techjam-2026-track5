@@ -1,33 +1,26 @@
 #!/bin/bash
-# Option B retrain (2026-08-30): canon4 data, class-neutral changes only, evaluated at the FIXED
-# cut-off with scores saved for an offline sweep.
-#   bash run_B.sh <name> <real_weight> <hard_aug_prob>
+# IDEA B (Thinh, 2026-09-01), raw form, no tuning: head 1024 -> 256 -> 32 -> 1 with the
+# augmentation-consistency constraint applied at the 256-d layer instead of the trunk's 1024-d
+# embedding, so the pretrained model is not touched. Default alpha 1.0, default trunk LR 1e-5.
+# Nothing is queued behind this -- Thinh is building the queue himself.
 set -u
-cd "$(dirname "$0")"
-source .venv/bin/activate
+cd /workspace/techjam-2026-track5
+source /venv/main/bin/activate
 export PYTHONPATH=.
-NAME=$1; RW=$2; HA=$3; APP=pe_ft
-P=${MANIFEST_PREFIX:-data/manifests/canon4}
-CK=outputs/$APP/$NAME.pt
-S=/tmp/claude-1006/-home-chim-techjam-2026-track5/217c8dee-cd23-4c85-b87a-c20ed3db7c0a/scratchpad
-echo "== TRAIN $NAME epochs=4 real_weight=$RW hard_aug=$HA stack_aug=${STACK_AUG:-0}  $(date)"
-rm -f $CK $CK.state
-python -m src.approaches.$APP.train --train ${P}_train.csv --val ${P}_val.csv \
-  --epochs 4 --augment --hard-aug $HA --stack-aug ${STACK_AUG:-0} --crop-min 112 --crop-max 168 --batch 48 --workers 16 \
-  --real-weight $RW --limit-train 0 --out $CK || exit 1
-SPEC="vote(L=320)+${APP}:$CK"
-echo "== WILD  $(date)"
-python -m scripts.wild_eval --model "$SPEC"
-echo "== OFFICIAL at fixed 0.15 (scores.npz -> sweep)  $(date)"
-python -m src.evaluate --manifest data/manifests/canon_official.csv --model "$SPEC" \
-  --threshold 0.15 --limit 1200 --out outputs/$APP/eval_${NAME}_official 2>&1 | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
-echo "== UNSEEN 64 sources  $(date)"
-python -m scripts.random_gen_test --root $S/randtest_eq --model "$SPEC" --threshold 0.15 \
-  --save outputs/random_gen/${NAME}_scores_full.csv 2>&1 | grep -E "^POOLED|^  at|^reals pooled"
-echo "== UNSEEN 64 sources under the 15-condition grid (stratified 3K) at fixed 0.15  $(date)"
-python -m src.evaluate --manifest data/manifests/unseen64_tf.csv --model "$SPEC" \
-  --threshold 0.15 --conditions clean,jpeg_q30,blur_s2.0,resize_0.5x,resize_0.25x,noise_s0.05,noise_s0.10 --out outputs/$APP/eval_${NAME}_unseen_tf 2>&1 | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
-echo "== CANON4_TEST 3000 seeded at fixed 0.15  $(date)"
-python -m src.evaluate --manifest ${P}_test.csv --model "$SPEC" \
-  --threshold 0.15 --limit 3000 --out outputs/$APP/eval_${NAME}_test 2>&1 | grep -E "^\||^At the|^\*\*|Saved|Traceback|Error"
-echo "B_${NAME}_DONE  $(date)"
+python -m src.approaches.pe_ft.train \
+  --train data/manifests/canon6_train.csv --val data/manifests/canon6_val.csv \
+  --epochs 4 --augment --stack-aug 0.4 --stack-max 6 --crop-min 112 --crop-max 168 \
+  --batch 48 --workers 24 --real-weight 2 \
+  --head mlp2 --consist 2 --consist-at head --consist-loss cos --alpha 1.0 --lr 1e-5 \
+  --out outputs/pe_ft/canon6_mlp2_a1.pt || exit 1
+echo "B_TRAIN_DONE $(date)"
+SPEC="vote(L=320)+pe_ft:outputs/pe_ft/canon6_mlp2_a1.pt"
+python -m src.evaluate --manifest data/manifests/official_v2.csv --model "$SPEC" \
+  --limit 900 --out outputs/pe_ft/eval_canon6_mlp2_a1_official900 2>&1 | grep -E "Clean AUROC"
+echo "########## IDEA B vs IDEA A vs no consistency — same 900 images, same cut-off rule"
+python -m scripts.slices \
+  outputs/pe_ft/eval_canon6_mlp_official \
+  outputs/pe_ft/eval_canon6_mlp_consist_official \
+  outputs/pe_ft/eval_canon6_mlp2_a1_official900 2>&1 | tail -45
+python -m scripts.wild_eval --model "$SPEC" --grid --quiet 2>&1 | head -7
+echo B_DONE $(date)

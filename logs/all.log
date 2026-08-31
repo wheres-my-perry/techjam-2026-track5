@@ -1,0 +1,221 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== 1. CLEAN vs AUGMENTED vs 50/50 (from saved scores, no GPU)  Mon Aug 31 14:55:16 UTC 2026
+########## canon6_mlp   (outputs/pe_ft/eval_canon6_mlp_official/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9987   cut-off 0.2969
+      actually AI    -> AI    566   -> real      8
+      actually real  -> AI      4   -> real    322
+      recall  98.6%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9966   cut-off 0.6230
+      actually AI    -> AI   7782   -> real    254
+      actually real  -> AI     46   -> real   4518
+      recall  96.8%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9981   cut-off 0.5139
+      actually AI    -> AI   1138   -> real     17
+      actually real  -> AI      7   -> real    638
+      recall  98.5%   false-alarm 1.09%
+
+########## canon6_mlp_consist   (outputs/pe_ft/eval_canon6_mlp_consist_official/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9989   cut-off 0.1311
+      actually AI    -> AI    568   -> real      6
+      actually real  -> AI      4   -> real    322
+      recall  99.0%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9955   cut-off 0.5142
+      actually AI    -> AI   7655   -> real    381
+      actually real  -> AI     46   -> real   4518
+      recall  95.3%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9984   cut-off 0.3948
+      actually AI    -> AI   1128   -> real     27
+      actually real  -> AI      7   -> real    638
+      recall  97.7%   false-alarm 1.09%
+
+===== 2. linear head on the SAME 900 subsample  Mon Aug 31 14:55:17 UTC 2026
+**Clean AUROC:** 0.9995 · **Mean transformed:** 0.9978 · **Worst:** 0.9933 (jpeg_q70)
+########## canon6   (outputs/pe_ft/eval_canon6_official/scores.npz, 24 transformed conditions)
+  CLEAN only         n=  1500 (555 real / 945 AI)  AUROC 0.9996   cut-off 0.3786
+      actually AI    -> AI    942   -> real      3
+      actually real  -> AI      6   -> real    549
+      recall  99.7%   false-alarm 1.08%
+  AUGMENTED only     n= 36000 (13320 real / 22680 AI)  AUROC 0.9907   cut-off 0.6518
+      actually AI    -> AI  19414   -> real   3266
+      actually real  -> AI    134   -> real  13186
+      recall  85.6%   false-alarm 1.01%
+  50/50 judges' mix  n=  3000 (1088 real / 1912 AI)  AUROC 0.9953   cut-off 0.7056
+      actually AI    -> AI   1747   -> real    165
+      actually real  -> AI     11   -> real   1077
+      recall  91.4%   false-alarm 1.01%
+
+===== 3. hack set UNDER THE TRANSFORM GRID  Mon Aug 31 15:04:23 UTC 2026
+##### canon6
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9364
+ONE GLOBAL CUT-OFF = 0.3285  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               265                35
+  actually real               1                74
+  recall 88.3%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+  per condition (AUROC | mean P real | mean P fake):
+    clean            0.890 | 0.05 | 0.73
+    jpeg_q90         0.940 | 0.05 | 0.77
+    jpeg_q70         1.000 | 0.08 | 0.91
+    jpeg_q50         1.000 | 0.07 | 0.95
+    jpeg_q30         1.000 | 0.09 | 0.96
+    blur_s0.5        0.890 | 0.05 | 0.73
+    blur_s1.0        0.890 | 0.05 | 0.73
+    blur_s2.0        0.890 | 0.05 | 0.71
+    resize_0.5x      0.890 | 0.05 | 0.73
+    resize_0.25x     0.880 | 0.05 | 0.69
+    noise_s0.02      0.930 | 0.04 | 0.71
+    noise_s0.05      0.950 | 0.02 | 0.79
+    noise_s0.10      0.980 | 0.01 | 0.82
+    jitter_20        0.940 | 0.07 | 0.68
+    crop_80          0.950 | 0.05 | 0.73
+  [vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+##### canon6_mlp
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9319
+ONE GLOBAL CUT-OFF = 0.1581  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               262                38
+  actually real               1                74
+  recall 87.3%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+  per condition (AUROC | mean P real | mean P fake):
+    clean            0.920 | 0.04 | 0.75
+    jpeg_q90         0.920 | 0.04 | 0.78
+    jpeg_q70         0.990 | 0.05 | 0.87
+    jpeg_q50         1.000 | 0.06 | 0.88
+    jpeg_q30         0.980 | 0.07 | 0.88
+    blur_s0.5        0.920 | 0.04 | 0.75
+    blur_s1.0        0.910 | 0.04 | 0.76
+    blur_s2.0        0.910 | 0.04 | 0.76
+    resize_0.5x      0.910 | 0.04 | 0.76
+    resize_0.25x     0.910 | 0.04 | 0.77
+    noise_s0.02      0.930 | 0.03 | 0.74
+    noise_s0.05      0.950 | 0.03 | 0.77
+    noise_s0.10      0.950 | 0.03 | 0.80
+    jitter_20        0.920 | 0.06 | 0.76
+    crop_80          0.920 | 0.02 | 0.79
+  [vote(L=320)+pe_ft:outputs/pe_ft/canon6_mlp.pt]
+##### canon6_mlp_consist
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9016
+ONE GLOBAL CUT-OFF = 0.2256  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               255                45
+  actually real               1                74
+  recall 85.0%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+  per condition (AUROC | mean P real | mean P fake):
+    clean            0.870 | 0.02 | 0.69
+    jpeg_q90         0.910 | 0.02 | 0.74
+    jpeg_q70         0.960 | 0.03 | 0.78
+    jpeg_q50         0.930 | 0.06 | 0.80
+    jpeg_q30         0.910 | 0.08 | 0.82
+    blur_s0.5        0.870 | 0.02 | 0.69
+    blur_s1.0        0.870 | 0.02 | 0.69
+    blur_s2.0        0.890 | 0.02 | 0.69
+    resize_0.5x      0.870 | 0.02 | 0.69
+    resize_0.25x     0.870 | 0.02 | 0.69
+    noise_s0.02      0.880 | 0.02 | 0.68
+    noise_s0.05      0.940 | 0.01 | 0.77
+    noise_s0.10      0.960 | 0.02 | 0.81
+    jitter_20        0.870 | 0.03 | 0.68
+    crop_80          0.910 | 0.02 | 0.67
+  [vote(L=320)+pe_ft:outputs/pe_ft/canon6_mlp_consist.pt]
+===== 4. partial-edit experiment  Mon Aug 31 15:08:02 UTC 2026
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== 0. fix the section 4.1 caveat: linear head on the SAME 900 subsample  Mon Aug 31 15:08:02 UTC 2026
+**Clean AUROC:** 0.9995 · **Mean transformed:** 0.9978 · **Worst:** 0.9933 (jpeg_q70)
+POOLED ACROSS ALL 15 CONDITIONS (blur_s0.5, blur_s1.0, blur_s2.0, clean, crop_80, jitter_20, ...)
+outputs/pe_ft/eval_linear_official900/scores.npz   condition=ALL POOLED
+
+POOLED  AUROC 0.9973   n=13500 (4890 real / 8610 AI)
+ONE GLOBAL CUT-OFF = 0.7203  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI             8192               418
+  actually real             49              4841
+
+  precision 99.4%   recall 95.1%   false-alarm rate 1.00%   accuracy 96.5%
+  In words: of 8610 AI images 8192 are caught and 418 slip through; of 4890 real photos 49 are wrongly flagged.
+
+===== 1. BASELINE canon6_mlp on the partial-edit set (trained on NO partial edits)  Mon Aug 31 15:17:08 UTC 2026
+ValueError: zero-size array to reduction operation minimum which has no identity
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 162, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 80, in main
+    o = np.load(a.npz, allow_pickle=True)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'outputs/pe_ft/eval_mlp_edits/scores.npz'
+===== 2. TRAIN canon6pe_mlp — identical hyperparameters to canon6_mlp  Mon Aug 31 15:18:02 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+loss: BCE with real_weight=2.0
+epoch 1: loss=0.3658 val_auroc=0.9810 (227s)
+epoch 2: loss=0.2565 val_auroc=0.9861 (225s)
+epoch 3: loss=0.2198 val_auroc=0.9917 (227s)
+epoch 4: loss=0.1928 val_auroc=0.9923 (226s)
+best val AUROC 0.9923; weights -> outputs/pe_ft/canon6pe_mlp.pt
+PE_TRAIN_DONE Mon Aug 31 15:33:24 UTC 2026
+===== 3. THE GAIN: same partial-edit set, same cut-off rule  Mon Aug 31 15:33:24 UTC 2026
+ValueError: zero-size array to reduction operation minimum which has no identity
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 162, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 80, in main
+    o = np.load(a.npz, allow_pickle=True)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'outputs/pe_ft/eval_pe_edits/scores.npz'
+===== 4. THE COST A: judges' set, pooled over 15 conditions, same 900 subsample  Mon Aug 31 15:34:19 UTC 2026
+**Clean AUROC:** 0.9995 · **Mean transformed:** 0.9973 · **Worst:** 0.9907 (noise_s0.10)
+POOLED ACROSS ALL 15 CONDITIONS (blur_s0.5, blur_s1.0, blur_s2.0, clean, crop_80, jitter_20, ...)
+outputs/pe_ft/eval_pe_official/scores.npz   condition=ALL POOLED
+
+POOLED  AUROC 0.9973   n=13500 (4890 real / 8610 AI)
+ONE GLOBAL CUT-OFF = 0.6844  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI             8330               280
+  actually real             49              4841
+
+  precision 99.4%   recall 96.7%   false-alarm rate 1.00%   accuracy 97.6%
+  In words: of 8610 AI images 8330 are caught and 280 slip through; of 4890 real photos 49 are wrongly flagged.
+
+===== 5. THE COST B: hack set (25 real-world files)  Mon Aug 31 15:43:01 UTC 2026
+HACK SET  n=25 (real 5, fake 20)  CLEAN ONLY (pass --grid for the transform grid)  acc@0.5=0.84  AUROC=0.940  real mean P=0.05  fake mean P=0.75  [vote(L=320)+pe_ft:outputs/pe_ft/canon6pe_mlp.pt]
+===== 6. THE COST C: held-out whole-image generators  Mon Aug 31 15:43:12 UTC 2026
+**Clean AUROC:** 0.9827 · **Mean transformed:** 0.9710 · **Worst:** 0.9420 (resize_0.25x)
+POOLED ACROSS ALL 15 CONDITIONS (blur_s0.5, blur_s1.0, blur_s2.0, clean, crop_80, jitter_20, ...)
+outputs/pe_ft/eval_pe_test/scores.npz   condition=ALL POOLED
+
+POOLED  AUROC 0.9728   n=45000 (22365 real / 22635 AI)
+ONE GLOBAL CUT-OFF = 0.7685  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI            16572              6063
+  actually real            224             22141
+
+  precision 98.7%   recall 73.2%   false-alarm rate 1.00%   accuracy 86.0%
+  In words: of 22635 AI images 16572 are caught and 6063 slip through; of 22365 real photos 224 are wrongly flagged.
+
+===== 7. style reliance sanity check  Mon Aug 31 15:57:56 UTC 2026
+  greyscale  AUROC 0.9714   delta vs clean -0.0246
+  bgr_swap   AUROC 0.9864   delta vs clean -0.0096
+  rbg_swap   AUROC 0.9835   delta vs clean -0.0124
+
+  Reading: if greyscale and the channel swaps hold up, the decision is not colour/palette. A large drop under greyscale would mean colour statistics were doing the work -- i.e. the style canary's warning had teeth.
+PE_ALL_DONE Mon Aug 31 16:00:18 UTC 2026
+ALL_DONE Mon Aug 31 16:00:18 UTC 2026

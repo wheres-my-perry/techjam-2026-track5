@@ -37,6 +37,9 @@ def pick_device() -> str:
 HEAD_HIDDEN = 64   # MLP head width. Thinh's friend measured 1024 -> 64 -> 1 as optimal (2026-08-31).
 
 
+HEAD2_WIDE, HEAD2_NARROW = 256, 32  # "mlp2": 1024 -> 256 -> 32 -> 1 (Thinh, 2026-08-31)
+
+
 def make_head(kind: str = "linear"):
     """Classifier on top of the pooled 1024-d trunk embedding.
 
@@ -46,6 +49,15 @@ def make_head(kind: str = "linear"):
     """
     if kind == "mlp":
         return nn.Sequential(nn.Linear(EMB, HEAD_HIDDEN), nn.GELU(), nn.Linear(HEAD_HIDDEN, 1))
+    if kind == "mlp2":
+        # Deeper head whose FIRST activation is a second, head-owned embedding. Thinh's idea
+        # (2026-08-31): the augmentation-consistency constraint failed when it was applied to the
+        # trunk's 1024-d embedding because it altered the pretrained model we are fine-tuning.
+        # Applying it here instead closes the clean/augmented gap in a representation we own,
+        # leaving the trunk to be trained by BCE alone. See train.py --consist-at head.
+        return nn.Sequential(nn.Linear(EMB, HEAD2_WIDE), nn.GELU(),
+                             nn.Linear(HEAD2_WIDE, HEAD2_NARROW), nn.GELU(),
+                             nn.Linear(HEAD2_NARROW, 1))
     return nn.Linear(EMB, 1)
 
 
@@ -62,8 +74,14 @@ class PENet(nn.Module):
     def load_state_dict(self, sd, strict=True):
         # A linear-head checkpoint has head.weight; an MLP one has head.0.weight. Rebuild the head
         # to match the checkpoint so old and new weights both load with no caller change.
-        want = "mlp" if any(k.startswith("head.0.") for k in sd) else "linear"
-        have = "mlp" if isinstance(self.head, nn.Sequential) else "linear"
+        # Which head shape does this checkpoint carry? head.weight -> linear; head.0.weight with
+        # 64 rows -> mlp; with 256 rows -> mlp2. Read it off the tensor, never from a flag.
+        def _kind_of(w):
+            if w is None:
+                return "linear"
+            return "mlp2" if w.shape[0] == HEAD2_WIDE else "mlp"
+        want = _kind_of(sd.get("head.0.weight"))
+        have = _kind_of(self.head[0].weight if isinstance(self.head, nn.Sequential) else None)
         if want != have:
             self.head = make_head(want).to(next(self.parameters()).device)
         return super().load_state_dict(sd, strict=strict)
@@ -76,6 +94,19 @@ class PENet(nn.Module):
         Used by the augmentation-consistency loss (Thinh, 2026-08-30)."""
         e = self.trunk(x)
         return e, self.head(e)
+
+    def forward_feat_head(self, x):
+        """(head embedding, logit) for --consist-at head (Thinh, 2026-08-31).
+
+        The head embedding is computed from a DETACHED trunk output, so the agreement loss can
+        only update the head's first layer. Without the detach its gradient would flow straight
+        back into the trunk and alter the pretrained model -- which is the failure this idea
+        exists to avoid, so the detach is the whole point, not an optimisation.
+        """
+        e = self.trunk(x)
+        logit = self.head(e)
+        h = self.head[1](self.head[0](e.detach()))   # Linear -> GELU, head-owned embedding
+        return h, logit
 
 
 def build_net(pretrained: bool = True, head: str = "linear") -> nn.Module:

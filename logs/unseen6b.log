@@ -1,0 +1,29 @@
+  mobius            704 images  (label 1, generator mobius)
+  realvisxl         746 images  (label 1, generator realvis_xl)
+  bmdiffusion       744 images  (label 1, generator bm_diffusion)
+  ldm_face         6000 images  (label 1, generator ldm_diffface)
+  flux_celeba      6000 images  (label 1, generator flux1_dev)
+  flux_coco        6000 images  (label 1, generator flux1_dev)
+  real_bm          6000 images  (label 0, generator -)
+  real_diffface    6000 images  (label 0, generator -)
+
+32194 rows (12000 real / 20194 fake) -> /workspace/techjam-2026-track5/data/manifests/raw_unseen6.csv
+      61  near-duplicate of train (unseen_mobius)
+      57  near-duplicate of train (unseen_realvisxl)
+      55  near-duplicate of train (unseen_bmdiffusion)
+      54  near-duplicate of train (unseen_ldm_face)
+       6  near-duplicate of train (unseen_flux_coco)
+       3  near-duplicate of train (unseen_flux_celeba)
+
+kept 30879 of 32194 (10921 real / 19958 fake) -> data/manifests/raw_unseen6b_unique.csv
+  unseen_bmdiffusion        689
+  unseen_flux_celeba       5997
+  unseen_flux_coco         5994
+  unseen_ldm_face          5946
+  unseen_mobius             643
+  unseen_real_bm           5834
+  unseen_real_diffface     5087
+  unseen_realvisxl          689
+30000/30879 (344/s, eta 0m)
+30766 rows -> data/manifests/canon_unseen6b.csv
+UNSEEN6B_READY

@@ -1,0 +1,18 @@
+skip ./data/unseen6/img/real_bm/real_bm_001232.jpg: smaller than crop (320x124)
+8000/9278 (151/s, eta 0m)
+9236 rows -> data/manifests/canon_unseen6.csv
+GATES
+metadata-only AUROC: 0.6171  [MILD LEAK — caveat results]  (3000 rows, data/manifests/canon_unseen6.csv)
+
+canary audit — data/manifests/canon_unseen6.csv  (3000 rows, 910 real / 2090 fake)
+
+  style    ( 12d)  AUROC 0.7307   FAIL — classes differ in content, not just in being fake
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/canary_audit.py", line 172, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/canary_audit.py", line 163, in main
+    print(f"             vs real: {g:16s} {a_g:.3f}  (n={k})")
+BrokenPipeError: [Errno 32] Broken pipe
+UNSEEN6_READY

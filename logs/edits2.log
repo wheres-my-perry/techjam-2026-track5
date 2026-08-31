@@ -1,0 +1,33 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== partial-edit set: does training on edits help?  Mon Aug 31 16:00:25 UTC 2026
+########## canon6_mlp
+Traceback (most recent call last):
+TypeError: unsupported format string passed to NoneType.__format__
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 162, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 80, in main
+    o = np.load(a.npz, allow_pickle=True)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'outputs/pe_ft/edits_canon6_mlp/scores.npz'
+########## canon6pe_mlp
+Traceback (most recent call last):
+TypeError: unsupported format string passed to NoneType.__format__
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 162, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 80, in main
+    o = np.load(a.npz, allow_pickle=True)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'outputs/pe_ft/edits_canon6pe_mlp/scores.npz'
+EDITS2_DONE Mon Aug 31 16:02:35 UTC 2026

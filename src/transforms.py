@@ -104,12 +104,32 @@ def _stack(im, k, rng=None):
     return im
 
 
+def stack_no_geometry(im, k, rng=None):
+    """k DISTINCT transforms that all preserve image size, for consistency-training views.
+
+    The K views of one crop are stacked into a single tensor, so they must come out the same size;
+    that rules out centre-crop and caps the depth at the five size-preserving families. Added
+    2026-09-01 after --stack-aug was found to have no effect in consistency mode.
+    """
+    rng = rng if rng is not None else _seeded(im)
+    pool = [lambda i: jpeg_compress(i, rng.choice([90, 70, 50, 30])),
+            lambda i: gaussian_blur(i, rng.choice([0.5, 1.0, 2.0])),
+            lambda i: resize_down_up(i, rng.choice([0.5, 0.25])),
+            lambda i: gaussian_noise(i, rng.choice([0.02, 0.05, 0.10])),
+            lambda i: color_jitter(i, 0.20)]
+    for op in rng.sample(pool, min(k, len(pool))):
+        im = op(im)
+    return im
+
+
 EXTRA_GRID = [
     _named("chain_repost", lambda im: jpeg_compress(resize_down_up(jpeg_compress(im, 70), 0.5), 50)),
     _named("jpeg_twice", lambda im: jpeg_compress(jpeg_compress(im, 50), 50)),
     _named("blur1_jpeg70", lambda im: jpeg_compress(gaussian_blur(im, 1.0), 70)),
     _named("noise05_jpeg70", lambda im: jpeg_compress(gaussian_noise(im, 0.05), 70)),
     _named("crop80_resize05", lambda im: resize_down_up(center_crop(im, 0.80), 0.5)),
+    # depth 1 completes the ladder clean -> 1 -> ... -> 6 for scripts.depth_ladder
+    _named("stack1_rand", lambda im: _stack(im, 1)),
     _named("stack2_rand", lambda im: _stack(im, 2)),
     _named("stack3_rand", lambda im: _stack(im, 3)),
     # 2026-08-31 (Thinh): "a subset of the following augmentations" limits WHICH of the six

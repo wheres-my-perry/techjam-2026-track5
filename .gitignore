@@ -43,3 +43,13 @@ HANDOFF_COWORK.md
 
 # Submission working files — kept local
 deliverables/
+
+# Training artifacts: 48 GB of checkpoints and eval dumps. *.pt was already ignored but the
+# surrounding tree was not, so a blind "git add -A" would have tried to commit gigabytes.
+# The measured NUMBERS live in logs/ and docs/, which are committed. (2026-09-01)
+outputs/
+
+# Training artifacts: 48 GB of checkpoints and eval dumps. *.pt was already ignored but the
+# surrounding tree was not, so a blind "git add -A" would have tried to commit gigabytes.
+# The measured NUMBERS live in logs/ and docs/, which are committed. (2026-09-01)
+outputs/

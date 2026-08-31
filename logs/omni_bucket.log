@@ -1,0 +1,19 @@
+== train
+  OK   bucket 342-512   real    9000 fake    9000 ratio 1.00
+  OK   bucket 513-768   real     422 fake     422 ratio 1.00
+  OK   bucket 769-1024  real    9000 fake    9000 ratio 1.00
+  OK   bucket <=341     real     954 fake     954 ratio 1.00
+  OK   bucket >1024     real    6654 fake    6654 ratio 1.00
+== val
+  OK   bucket 342-512   real    1125 fake    1125 ratio 1.00
+  OK   bucket 513-768   real      48 fake      48 ratio 1.00
+  OK   bucket 769-1024  real    1125 fake    1125 ratio 1.00
+  OK   bucket <=341     real     120 fake     120 ratio 1.00
+  OK   bucket >1024     real     817 fake     817 ratio 1.00
+== test
+  OK   bucket 342-512   real    6933 fake    8593 ratio 1.24
+  warn bucket 513-768   real   27816 fake      48 ratio 579.50
+  warn bucket 769-1024  real   17861 fake   29724 ratio 1.66
+  warn bucket <=341     real     122 fake   20262 ratio 166.08
+  warn bucket >1024     real    2156 fake     814 ratio 2.65
+BUCKET AUDIT: CLEAN

@@ -1,0 +1,21 @@
+hashing 140390 training originals and 9694 unseen images (24 workers)...
+  hashed 140390 train / 9694 unseen
+
+DROPPED:
+     229  near-duplicate of train (unseen_real_diffface)
+      61  near-duplicate of train (unseen_mobius)
+      57  near-duplicate of train (unseen_realvisxl)
+      55  near-duplicate of train (unseen_bmdiffusion)
+      12  near-duplicate of train (unseen_ldm_face)
+       2  near-duplicate of train (unseen_real_bm)
+
+kept 9278 of 9694 (2769 real / 6509 fake) -> data/manifests/raw_unseen6_unique.csv
+  unseen_bmdiffusion        689
+  unseen_flux_celeba       1500
+  unseen_flux_coco         1500
+  unseen_ldm_face          1488
+  unseen_mobius             643
+  unseen_real_bm           1498
+  unseen_real_diffface     1271
+  unseen_realvisxl          689
+DEDUP_DONE

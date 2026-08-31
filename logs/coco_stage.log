@@ -1,0 +1,10 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+waiting for COCO download...
+extracting 20000 COCO train2017 originals  Mon Aug 31 08:28:17 UTC 2026
+118287 in zip, extracting 20000
+manifest written
+canonicalizing COCO  Mon Aug 31 08:28:20 UTC 2026
+skip ./data/coco/train2017/000000141240.jpg: smaller than crop (320x157)
+20000/20000 (504/s, eta 0m)
+19640 rows -> data/manifests/canon_coco640.csv
+COCO_STAGE_DONE  Mon Aug 31 08:29:00 UTC 2026

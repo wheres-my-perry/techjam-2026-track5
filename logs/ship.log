@@ -1,0 +1,106 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== rebuild canon6 manifests (same inputs, same seed)  Mon Aug 31 12:30:24 UTC 2026
+  val   bucket 769-1024  real    1246 fake    1117 -> keep   1117 each (129 to test)
+  val   bucket <=341     real    8114 fake    4080 -> keep   4080 each (4034 to test)
+  val   bucket >1024     real       1 fake       0 -> keep      0 each (1 to test)
+data/manifests/canon6_train.csv: 100204 rows (50102 real / 50102 fake), 25 fake generators
+data/manifests/canon6_val.csv: 12502 rows (6251 real / 6251 fake), 25 fake generators
+data/manifests/canon6_test.csv: 157673 rows (76535 real / 81138 fake), 33 fake generators
+===== GATES  Mon Aug 31 12:30:26 UTC 2026
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6_train.csv           CAVEAT   AUROC 0.6285 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6_train.csv          CAVEAT   worst 0.6508 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6_train.csv                    PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6_train.csv                   PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket canon6_train.csv    WARN     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+data/manifests/canon6_train.csv  (100204 rows)
+  subject                real     fake  fake:real  flag
+  other                 10450    18040       1.73  
+  general scenes        15710    10510       0.67  
+  faces                  8677    13078       1.51  
+  animals                5954     1567       0.26  
+  church                 2720     1346       0.49  
+  voc objects            1750     1295       0.74  
+  painting               1450     1326       0.91  
+  landscape              1772      832       0.47  
+  bedroom                 967     1418       1.47  
+  vehicles/street         652      690       1.06  
+
+VERDICT: every subject has both classes
+# Data state — `data/manifests/canon6`
+
+| split | total | real | fake | fake generators |
+|---|---|---|---|---|
+| **train** | 100,204 | 50,102 | 50,102 | 25 |
+| **val** | 12,502 | 6,251 | 6,251 | 25 |
+| **test** | 157,673 | 76,535 | 81,138 | 33 |
+
+===== JUDGES SET (DALL-E-3 vs COCO val2017, original files)  Mon Aug 31 12:32:04 UTC 2026
+**Clean AUROC:** 0.9996 · **Mean transformed:** 0.9977 · **Worst:** 0.9927 (jpeg_q70)
+Saved to outputs/pe_ft/eval_ship_official/
+===== HELD-OUT TEST (33 generators incl. ddim/ddpm hold-out)  Mon Aug 31 12:53:31 UTC 2026
+**Clean AUROC:** 0.9670 · **Mean transformed:** 0.9508 · **Worst:** 0.9212 (resize_0.25x)
+Saved to outputs/pe_ft/eval_ship_test/
+===== WILD  Mon Aug 31 13:13:06 UTC 2026
+  ok  DALL E  bing_7.jpg                         (1248, 832)   P(AI)=0.709
+  ok  DALL E  bing_8.jpg                         (1248, 832)   P(AI)=0.641
+WILD  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.890  real mean P=0.05  fake mean P=0.73  [vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+===== STYLE RELIANCE  Mon Aug 31 13:13:18 UTC 2026
+  clean      AUROC 0.9984   delta vs clean +0.0000
+  greyscale  AUROC 0.9736   delta vs clean -0.0248
+  bgr_swap   AUROC 0.9946   delta vs clean -0.0038
+  rbg_swap   AUROC 0.9874   delta vs clean -0.0110
+
+  Reading: if greyscale and the channel swaps hold up, the decision is not colour/palette. A large drop under greyscale would mean colour statistics were doing the work -- i.e. the style canary's warning had teeth.
+===== GLOBAL AUROC + CONFUSION MATRIX  Mon Aug 31 13:15:10 UTC 2026
+########## official
+outputs/pe_ft/eval_ship_official/scores.npz   condition=clean
+
+POOLED  AUROC 0.9996   n=1500 (529 real / 971 AI)
+ONE GLOBAL CUT-OFF = 0.2158  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI              966                 5
+  actually real              6               523
+
+  precision 99.4%   recall 99.5%   false-alarm rate 1.13%   accuracy 99.3%
+  In words: of 971 AI images 966 are caught and 5 slip through; of 529 real photos 6 are wrongly flagged.
+
+BY GENERATOR (each vs ALL 529 reals, same global cut-off)
+
+  slice                            n    AUROC |      TP     FP      TN     FN |     prec   recall    FPR |  own thr
+  ------------------------------------------------------------------------------------------------------------
+  dalle_advanced                1500   0.9996 |     966      6     523      5 |    99.4%    99.5%    1.1% |   0.2158 
+
+  Sorted by recall: the generators at the top are the ones that slip through.
+########## test
+outputs/pe_ft/eval_ship_test/scores.npz   condition=clean
+
+POOLED  AUROC 0.9670   n=3000 (1491 real / 1509 AI)
+ONE GLOBAL CUT-OFF = 0.4540  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI             1190               319
+  actually real             15              1476
+
+  precision 98.8%   recall 78.9%   false-alarm rate 1.01%   accuracy 88.9%
+  In words: of 1509 AI images 1190 are caught and 319 slip through; of 1491 real photos 15 are wrongly flagged.
+
+BY GENERATOR (each vs ALL 1491 reals, same global cut-off)
+
+  slice                            n    AUROC |      TP     FP      TN     FN |     prec   recall    FPR |  own thr
+  ------------------------------------------------------------------------------------------------------------
+  generative_inpainting         1537   0.8175 |      13     15    1476     33 |    46.4%    28.3%    1.0% |   0.4540 
+  sid_tampered                  1529   0.7806 |      13     15    1476     25 |    46.4%    34.2%    1.0% |   0.4540 
+  lama                          1524   0.9040 |      16     15    1476     17 |    51.6%    48.5%    1.0% |   0.4540 
+  mat                           1531   0.9389 |      27     15    1476     13 |    64.3%    67.5%    1.0% |   0.4540 
+  ddpm                          2070   0.9675 |     425     15    1476    154 |    96.6%    73.4%    1.0% |   0.4540 
+SHIP_ALL_DONE Mon Aug 31 13:15:13 UTC 2026

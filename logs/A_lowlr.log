@@ -1,0 +1,78 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+GPU free  Mon Aug 31 16:57:44 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+loss: BCE with real_weight=2.0 + 3.0 * cos agreement over 2 views/image
+epoch 1: loss=0.3340 agree=0.0065 share=5.8% val_auroc=0.9931 (374s)
+epoch 2: loss=0.2042 agree=0.0026 share=3.8% val_auroc=0.9961 (366s)
+epoch 3: loss=0.1639 agree=0.0018 share=3.3% val_auroc=0.9973 (365s)
+epoch 4: loss=0.1366 agree=0.0013 share=2.9% val_auroc=0.9969 (368s)
+best val AUROC 0.9973; weights -> outputs/pe_ft/canon6_mlp_consist_lowlr.pt
+A_LOWLR_TRAIN_DONE Mon Aug 31 17:22:36 UTC 2026
+**Clean AUROC:** 1.0000 · **Mean transformed:** 0.9995 · **Worst:** 0.9986 (noise_s0.10)
+########## A+lowLR vs A vs B vs no consistency — same 900 images, same cut-off rule
+########## outputs/pe_ft/eval_canon6_mlp_official   (outputs/pe_ft/eval_canon6_mlp_official/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9987   cut-off 0.2969
+      actually AI    -> AI    566   -> real      8
+      actually real  -> AI      4   -> real    322
+      recall  98.6%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9966   cut-off 0.6230
+      actually AI    -> AI   7782   -> real    254
+      actually real  -> AI     46   -> real   4518
+      recall  96.8%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9981   cut-off 0.5139
+      actually AI    -> AI   1138   -> real     17
+      actually real  -> AI      7   -> real    638
+      recall  98.5%   false-alarm 1.09%
+
+########## outputs/pe_ft/eval_canon6_mlp_consist_official   (outputs/pe_ft/eval_canon6_mlp_consist_official/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9989   cut-off 0.1311
+      actually AI    -> AI    568   -> real      6
+      actually real  -> AI      4   -> real    322
+      recall  99.0%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9955   cut-off 0.5142
+      actually AI    -> AI   7655   -> real    381
+      actually real  -> AI     46   -> real   4518
+      recall  95.3%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9984   cut-off 0.3948
+      actually AI    -> AI   1128   -> real     27
+      actually real  -> AI      7   -> real    638
+      recall  97.7%   false-alarm 1.09%
+
+########## outputs/pe_ft/eval_canon6_mlp2_a1_official900   (outputs/pe_ft/eval_canon6_mlp2_a1_official900/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9997   cut-off 0.0960
+      actually AI    -> AI    570   -> real      4
+      actually real  -> AI      4   -> real    322
+      recall  99.3%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9977   cut-off 0.4282
+      actually AI    -> AI   7773   -> real    263
+      actually real  -> AI     46   -> real   4518
+      recall  96.7%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9992   cut-off 0.3303
+      actually AI    -> AI   1135   -> real     20
+      actually real  -> AI      7   -> real    638
+      recall  98.3%   false-alarm 1.09%
+
+########## outputs/pe_ft/eval_canon6_mlp_consist_lowlr_official900   (outputs/pe_ft/eval_canon6_mlp_consist_lowlr_official900/scores.npz, 14 transformed conditions)
+  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 1.0000   cut-off 0.0910
+      actually AI    -> AI    574   -> real      0
+      actually real  -> AI      4   -> real    322
+      recall 100.0%   false-alarm 1.23%
+  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9995   cut-off 0.4659
+      actually AI    -> AI   7938   -> real     98
+      actually real  -> AI     46   -> real   4518
+      recall  98.8%   false-alarm 1.01%
+  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9998   cut-off 0.3899
+      actually AI    -> AI   1149   -> real      6
+      actually real  -> AI      7   -> real    638
+      recall  99.5%   false-alarm 1.09%
+
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9824
+ONE GLOBAL CUT-OFF = 0.1622  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               287                13
+  actually real               1                74
+  recall 95.7%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+A_LOWLR_DONE Mon Aug 31 17:32:59 UTC 2026

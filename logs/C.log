@@ -1,0 +1,12 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+GPU free  Mon Aug 31 17:33:05 UTC 2026
+########## C  retrain block23 -> head, LR ladder, similarity on the final embedding, alpha 3.0  Mon Aug 31 17:33:05 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,168,321
+trunk: top 1 of 24 blocks + norm + attn_pool trainable (25,193,472 params); 290,909,184 frozen
+  lr ladder: block23    lr=2.000e-06  (12,596,224 params)
+  lr ladder: norm       lr=4.472e-06  (2,048 params)
+  lr ladder: attn_pool  lr=1.000e-05  (12,595,200 params)
+  lr ladder: head       lr=1.000e-03  (65,665 params, fresh weights, off the ladder)
+loss: BCE with real_weight=2.0 + 3.0 * cos agreement over 2 views/image

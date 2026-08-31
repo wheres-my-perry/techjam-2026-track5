@@ -1,0 +1,25 @@
+train: 124792 rows
+val: 15598 rows
+test: 131684 rows
+
+probing 272074 canonical files (24 workers)...
+
+1/5. DEGENERATE & UNREADABLE
+  unreadable files : 0
+  flat/blank images: 12
+    by split/label: {('train', '1'): 5, ('val', '0'): 1, ('test', '1'): 6}
+    e.g. ['data/canon/artifact/1b22ff0b28be24dc.png', 'data/canon/artifact/3ea60fe24f382bfe.png', 'data/canon/artifact/6de018b67e36d485.png']
+    -> DROP these rows before training (canon5 had 78 such PNGs under BOTH labels)
+
+2/3. BYTE DUPLICATES
+  duplicate copies within a split: {'train': 4, 'test': 2}
+  files appearing in >1 split    : 4
+  byte-identical LABEL CONFLICTS : 0
+    -> cross-split duplicates leak train into val/test; label conflicts are unlabelable
+
+4. PERCEPTUAL NEAR-DUPLICATES (dHash Hamming <= 2, flat images excluded)
+  val: 12 of 15598 rows (0.08%) are near-copies of a TRAIN image
+  test: 107 of 131684 rows (0.08%) are near-copies of a TRAIN image
+
+VERDICT: 2 PROBLEM AREA(S) — fix before training
+CORPUS_AUDIT_EXIT=1

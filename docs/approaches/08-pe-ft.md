@@ -39,3 +39,18 @@ Unseen school per generator (clean / mean-TF): ddim 0.825/0.805, ddpm 0.845/0.81
 Official (DALL·E) 0.661/0.620/worst 0.561. GENERAL 0.716.
 Reading: diffusion_gan and vq_diffusion still ~0.99 because they are GAN/token hybrids (decoder is a GAN / VQ codebook) — the "school" label is by name, the detector follows the decoder. Pixel-space diffusion with no adversarial decoder (glide, stable_diffusion, ddpm) is the actually-new thing and lands 0.59-0.81.
 Consequence: cross-family generalization is the weak spot; the tell is decoder-type, not "diffusion". Any future lever should be judged on this LOFO harness, not on ddpm-holdout.
+
+
+## 2026-08-31 — head shape, val augmentation, consistency loss
+
+* **MLP head `1024 -> 64 -> 1` beats `Linear(1024, 1)`** (teammate's proposal, measured here).
+  Judges' set pooled over 15 transform conditions at a 1%-false-alarm cut-off: recall 97.0% vs
+  94.9%; hack set AUROC 0.920 vs 0.890. +65,600 params on 316.2M. SHIPPED. Full numbers and
+  caveats in docs/REPORT.md section 4.1.
+* **Clean val is the wrong criterion.** val ran un-augmented while train and test were augmented,
+  so checkpoint selection was blind to robustness — and it called the head change a tie. Added
+  `--val-augment`. See docs/REPORT.md section 4.2.
+* **Augmentation-consistency loss: negative.** MLP head + `--consist 2 --consist-loss cos
+  --alpha 1.0` gives the best clean val of anything we trained (0.9973) and the worst hack-set
+  score (0.870 vs 0.920). Invariance to corruption appears to suppress the very cues that survive
+  corruption. Not shipped. See docs/REPORT.md section 4.3.

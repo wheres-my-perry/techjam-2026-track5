@@ -1,4 +1,34 @@
-# Progress Log
+# Progress
+
+## 2026-08-31 23:00 SGT — freeze for the night
+
+**Shipping candidate: `outputs/pe_ft/canon6_mlp.pt`** (PE-Core-L14-336 + MLP head 1024->64->1,
+trained on canon6, 4 epochs). Judges' set pooled over 15 transform conditions, one global cut-off
+at 1% false alarms: **AUROC 0.9968, recall 97.0% (8,350 of 8,610), 49 of 4,890 reals flagged**.
+Hack set AUROC 0.920.
+
+Decided tonight:
+* MLP head 1024->64->1 **in** — +2.1 points of recall over the linear head at the same 1% false
+  alarms, +0.03 hack-set AUROC. docs/REPORT.md section 4.1.
+* Augmentation-consistency loss **out** — best clean val (0.9973) of anything we trained, worst
+  hack set (0.870), and 134 more AI images missed on the judges' set at the same false-alarm rate.
+  docs/REPORT.md section 4.3.
+* **Val was scored on clean images** while train and test were augmented; `--val-augment` added.
+  docs/REPORT.md section 4.2. Nothing shipped was mis-selected by it (both runs' best val was the
+  final epoch) but the consistency run came within 0.0005 of saving epoch 2.
+
+Open, ready to resume (CPU half already done and on disk):
+* **Partial-edit training experiment.** `data/manifests/canon6pe_{train,val,test}.csv` built
+  (115,416 train rows; all four native buckets 1.00:1; all seven gates pass) and
+  `data/manifests/edits_eval.csv` (2,364 rows, 1,182 real / 1,182 partial edits, size-bucket
+  matched, leak-checked against BOTH models' train+val). The control build proves
+  `--train-partial-edits 0` reproduces canon6_train.csv byte-for-byte. Remaining: ~30 min of GPU,
+  scripted in `run_pe2.sh` from step 5 onward.
+* Re-run the linear-head judges' eval at `--limit 900` so section 4.1's two rows use the same
+  subsample size.
+* Re-run the shipping model with `--val-augment` and see whether it changes the selected epoch.
+
+ Log
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 

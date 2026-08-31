@@ -1,0 +1,99 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== waiting for LSUN bedroom  Mon Aug 31 09:26:43 UTC 2026
+===== pass 1: assemble with bedrooms  Mon Aug 31 09:28:03 UTC 2026
+  train bucket 513-768   real   13478 fake    4227 -> keep   4227 each (9251 to test)
+  train bucket 769-1024  real   16005 fake    8948 -> keep   8948 each (7057 to test)
+  train bucket <=341     real   72784 fake   56720 -> keep  45000 each (39504 to test)
+  train bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+  val   bucket 342-512   real    2937 fake     542 -> keep    542 each (2395 to test)
+  val   bucket 513-768   real    1701 fake     514 -> keep    514 each (1187 to test)
+  val   bucket 769-1024  real    1998 fake    1118 -> keep   1118 each (880 to test)
+  val   bucket <=341     real    9178 fake    7080 -> keep   5625 each (5008 to test)
+  val   bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+data/manifests/canon6_train.csv: 124792 rows (62396 real / 62396 fake), 26 fake generators
+data/manifests/canon6_val.csv: 15598 rows (7799 real / 7799 fake), 26 fake generators
+data/manifests/canon6_test.csv: 155381 rows (88017 real / 67364 fake), 33 fake generators
+===== corpus audit -> drop list  Mon Aug 31 09:28:05 UTC 2026
+1/5. DEGENERATE & UNREADABLE
+  unreadable files : 0
+  flat/blank images: 12
+    by split/label: {('train', '1'): 6, ('test', '1'): 5, ('test', '0'): 1}
+    e.g. ['data/canon/artifact/07b7dc10d4b61ecb.png', 'data/canon/artifact/c646f4d5055bdaff.png', 'data/canon/artifact/2ed0d41812dab243.png']
+    -> DROP these rows before training (canon5 had 78 such PNGs under BOTH labels)
+
+2/3. BYTE DUPLICATES
+  duplicate copies within a split: {'train': 5, 'test': 1}
+  files appearing in >1 split    : 4
+  byte-identical LABEL CONFLICTS : 0
+    -> cross-split duplicates leak train into val/test; label conflicts are unlabelable
+
+4. PERCEPTUAL NEAR-DUPLICATES (dHash Hamming <= 2, flat images excluded)
+  val: 11 of 15598 rows (0.07%) are near-copies of a TRAIN image
+  test: 117 of 155381 rows (0.08%) are near-copies of a TRAIN image
+
+  wrote 143 paths to drop -> data/manifests/canon6_drop.txt
+
+VERDICT: 2 PROBLEM AREA(S) — fix before training
+===== pass 2: reassemble without the flagged rows  Mon Aug 31 09:29:00 UTC 2026
+  val   bucket 342-512   real    2947 fake     558 -> keep    558 each (2389 to test)
+  val   bucket 513-768   real    1691 fake     496 -> keep    496 each (1195 to test)
+  val   bucket 769-1024  real    2001 fake    1117 -> keep   1117 each (884 to test)
+  val   bucket <=341     real    9167 fake    7079 -> keep   5625 each (4996 to test)
+  val   bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+data/manifests/canon6_train.csv: 124772 rows (62386 real / 62386 fake), 26 fake generators
+data/manifests/canon6_val.csv: 15592 rows (7796 real / 7796 fake), 26 fake generators
+data/manifests/canon6_test.csv: 155264 rows (87955 real / 67309 fake), 33 fake generators
+===== GATES  Mon Aug 31 09:29:02 UTC 2026
+  769-1024   real    8943 fake    8943     1.00:1
+  real native long: min 200 median 200 max 1024
+  fake native long: min 200 median 256 max 1024
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6_train.csv           CAVEAT   AUROC 0.6085 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6_train.csv          CAVEAT   worst 0.6714 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6_train.csv                    PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6_train.csv                   PASS     the one no canonical-pixel audit can do
+
+Any CAVEAT must appear beside every number reported from this manifest.
+----- content
+  subject                real     fake  fake:real  flag
+  general scenes        18249    12763       0.70  
+  faces                 13261    10380       0.78  
+  bedroom                7318    15694       2.14  
+  other                  4925    17924       3.64  
+  animals                8457     1244       0.15  
+  church                 3340     1086       0.33  
+  voc objects            2177     1038       0.48  
+  painting               1774     1051       0.59  
+  landscape              2127      653       0.31  
+  vehicles/street         758      553       0.73  
+
+data/manifests/canon6_val.csv  (15592 rows)
+  subject                real     fake  fake:real  flag
+  general scenes         2207     1599       0.72  
+  bedroom                 999     1984       1.99  
+  faces                  1601     1315       0.82  
+  other                   622     2227       3.58  
+  animals                1106      145       0.13  
+  church                  414      127       0.31  
+  voc objects             265      133       0.50  
+  painting                232      121       0.52  
+  landscape               253       76       0.30  
+  vehicles/street          97       69       0.71  
+
+VERDICT: every subject has both classes
+===== RETRAIN  Mon Aug 31 09:29:52 UTC 2026
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+== GATES  Mon Aug 31 09:29:52 UTC 2026
+LABEL PROVENANCE: CLEAN
+BUCKET AUDIT: CLEAN
+metadata-only AUROC: 0.6085  [MILD LEAK — caveat results]  (3000 rows, data/manifests/canon6_train.csv)
+WORST CANARY: 0.6714  [FAIL — classes differ in content, not just in being fake]
+== TRAIN canon6 epochs=4 real_weight=2 stack_aug=0.4  Mon Aug 31 09:30:28 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+params: 316,103,681
+loss: BCE with real_weight=2.0
+Terminated

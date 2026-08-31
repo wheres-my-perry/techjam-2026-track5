@@ -1,0 +1,153 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== A) flag OFF must reproduce canon6 exactly  Mon Aug 31 14:21:49 UTC 2026
+  val   bucket <=341     real    8114 fake    4080 -> keep    496 each (11202 to test)
+  val   bucket >1024     real       1 fake       0 -> keep      0 each (1 to test)
+data/manifests/canon6chk_train.csv: 33864 rows (16932 real / 16932 fake), 26 fake generators
+data/manifests/canon6chk_val.csv: 3968 rows (1984 real / 1984 fake), 26 fake generators
+data/manifests/canon6chk_test.csv: 242867 rows (113972 real / 128895 fake), 34 fake generators
+  ***DIFFERS*** train  (canon6chk 33865 vs canon6 100205)
+  ***DIFFERS*** val  (canon6chk 3969 vs canon6 12503)
+  ***DIFFERS*** test  (canon6chk 242868 vs canon6 157674)
+===== B) build canon6pe (ALL partial edits train-eligible)  Mon Aug 31 14:21:51 UTC 2026
+  source cap: celebahq_1024 9000 -> 1500 (subject-balance cap, see CAP_SOURCE)
+  source cap: lsun_bedroom 23697 -> 3000 (subject-balance cap, see CAP_SOURCE)
+  ('artifact', 'ddpm')                           n=    895 -> TEST ONLY (HOLD-OUT)
+  ('artifact', 'generative_inpainting')          n=   2043 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('artifact', 'lama')                           n=   2046 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('artifact', 'mat')                            n=   2043 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('artifact', 'palette')                        n=   2046 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('elsa_deepfloyd_if', 'deepfloyd_if')          n=   3508 -> TEST ONLY (test-only)
+  ('sid_tampered', 'sid_tampered')               n=   2289 -> TRAIN-ELIGIBLE partial-edit (100%; 0 held back TEST ONLY)
+  ('wildfake', 'ddim')                           n=  29995 -> TEST ONLY (HOLD-OUT)
+  ('wildfake', 'ddpm')                           n=  29982 -> TEST ONLY (HOLD-OUT)
+pre-balance: train 173031 val 21610 test 86058
+balance (per native-size bucket, larger class subsampled):
+  train: EQUAL buckets -> 4233 per class per bucket (buckets supplying >=50: 4)
+  train bucket 342-512   real   17874 fake   12466 -> keep   4233 each (21874 to test)
+  train bucket 513-768   real   13462 fake    4233 -> keep   4233 each (9229 to test)
+  train bucket 769-1024  real   10009 fake   10774 -> keep   4233 each (12317 to test)
+  train bucket <=341     real   64953 fake   39256 -> keep   4233 each (95743 to test)
+  train bucket >1024     real       4 fake       0 -> keep      0 each (4 to test)
+  val: EQUAL buckets -> 496 per class per bucket (buckets supplying >=50: 4)
+  val   bucket 342-512   real    2225 fake    1590 -> keep    496 each (2823 to test)
+  val   bucket 513-768   real    1697 fake     496 -> keep    496 each (1201 to test)
+  val   bucket 769-1024  real    1246 fake    1345 -> keep    496 each (1599 to test)
+  val   bucket <=341     real    8114 fake    4896 -> keep    496 each (12018 to test)
+  val   bucket >1024     real       1 fake       0 -> keep      0 each (1 to test)
+data/manifests/canon6pe_train.csv: 33864 rows (16932 real / 16932 fake), 31 fake generators
+data/manifests/canon6pe_val.csv: 3968 rows (1984 real / 1984 fake), 31 fake generators
+data/manifests/canon6pe_test.csv: 242867 rows (113972 real / 128895 fake), 34 fake generators
+===== C) GATES on canon6pe  Mon Aug 31 14:21:53 UTC 2026
+
+native-size distribution — data/manifests/canon6pe_train.csv
+  <=341      real    4233 fake    4233     1.00:1
+  342-512    real    4233 fake    4233     1.00:1
+  513-768    real    4233 fake    4233     1.00:1
+  769-1024   real    4233 fake    4233     1.00:1
+  real native long: min 200 median 519 max 1024
+  fake native long: min 200 median 640 max 1024
+
+content within each size bucket — data/manifests/canon6pe_train.csv
+  <=341      n=   8466  sources mixed
+  342-512    n=   8466  sources mixed
+  513-768    n=   8466  real 100% from 'coco_640'
+      subject 'general scenes': 4220 real / 0 fake  ONE-SIDED INSIDE THIS BUCKET
+  769-1024   n=   8466  real 70% from 'openimages_1024'
+  => LOOK AT THIS BUCKET before trusting it: build a montage of its reals and
+     its fakes and read them. This is a WARNING, not a failure, because the
+     tagger is a PATH REGEX and cannot settle content: COCO tags as 'general
+     scenes' while ELSA/Midjourney/flux tag as 'other', so a bucket whose two
+     sides are both diverse still reads as one-sided. Verified by eye on
+     513-768 (both sides diverse: false alarm) and on 342-512 (reals were
+     10/12 animal close-ups: a REAL confound, fixed by capping afhq_512 and
+     adding flickr30k_web). Settling this automatically needs image-content
+     embeddings, not path rules.
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6pe_train.csv         CAVEAT   AUROC 0.6072 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6pe_train.csv        CAVEAT   worst 0.6572 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6pe_train.csv                  PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6pe_train.csv                 PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket canon6pe_train.csv  WARN     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+AUDIT_ALL_EXIT=0
+===== D) CONTENT (theme) on canon6pe train+val  Mon Aug 31 14:22:38 UTC 2026
+  vehicles/street          61       70       1.15  
+
+data/manifests/canon6pe_val.csv  (3968 rows)
+  subject                real     fake  fake:real  flag
+  other                   760     1515       1.99  
+  general scenes          719      162       0.23  
+  faces                   173      186       1.08  
+  animals                 163       23       0.14  
+  bedroom                  52       18       0.35  
+  voc objects              32       22       0.69  
+  church                   33       16       0.48  
+  landscape                26       20       0.77  
+  painting                 15       16       1.07  
+  vehicles/street          11        6       0.55  
+
+VERDICT: every subject has both classes
+===== E) DUPLICATES / cross-split leakage on canon6pe  Mon Aug 31 14:22:43 UTC 2026
+1/5. DEGENERATE & UNREADABLE
+  unreadable files : 0
+  flat/blank images: 0
+
+2/3. BYTE DUPLICATES
+  duplicate copies within a split: {'test': 1}
+  files appearing in >1 split    : 0
+  byte-identical LABEL CONFLICTS : 0
+
+4. PERCEPTUAL NEAR-DUPLICATES (dHash Hamming <= 2, flat images excluded)
+  val: 1 of 3968 rows (0.03%) are near-copies of a TRAIN image
+  test: 30 of 242867 rows (0.01%) are near-copies of a TRAIN image
+
+  wrote 31 paths to drop -> data/manifests/canon6pe_drop.txt
+
+VERDICT: CLEAN
+===== F) DATA REPORT  Mon Aug 31 14:24:08 UTC 2026
+# Data state — `data/manifests/canon6pe`
+
+| split | total | real | fake | fake generators |
+|---|---|---|---|---|
+| **train** | 33,864 | 16,932 | 16,932 | 31 |
+| **val** | 3,968 | 1,984 | 1,984 | 31 |
+| **test** | 242,867 | 113,972 | 128,895 | 34 |
+
+**Images actually pushed into training (train + val): 37,832** (33,864 train / 3,968 val). Test is never trained on.
+
+## train — by native-size bucket
+
+### <=341 px — 8,466 images · 4,233 real / 4,233 fake (1.00:1)
+
+| | sources / generators | subjects |
+|---|---|---|
+| **REAL** | wildfake 1,566, artifact_afhq 307, artifact_celebahq 297, artifact_ffhq 295, artifact_cycle_gan 289, artifact_pro_gan 277 | general scenes 1,443, faces 972, animals 672, church 340 |
+| **AI** | lama 202, gansformer 196, sfhq 194, generative_inpainting 193, palette 192, projected_gan 190 | faces 1,549, general scenes 1,403, other 260, landscape 180 |
+
+### 342-512 px — 8,466 images · 4,233 real / 4,233 fake (1.00:1)
+
+| | sources / generators | subjects |
+|---|---|---|
+| **REAL** | flickr30k_web 2,588, afhq_512 783, coco_640 556, lsun_bedroom 306 | other 2,588, animals 783, general scenes 556, bedroom 306 |
+| **AI** | wukong 2,809, sd14 507, sdxl 486, sd21 431 | other 4,233 |
+
+### 513-768 px — 8,466 images · 4,233 real / 4,233 fake (1.00:1)
+
+| | sources / generators | subjects |
+|---|---|---|
+| **REAL** | coco_640 4,220, openimages_1024 13 | general scenes 4,220, other 13 |
+| **AI** | sd21 1,536, sdxl 1,384, sd14 1,313 | other 4,233 |
+
+### 769-1024 px — 8,466 images · 4,233 real / 4,233 fake (1.00:1)
+
+| | sources / generators | subjects |
+|---|---|---|
+| **REAL** | openimages_1024 2,976, sid_real 749, celebahq_1024 508 | other 3,725, faces 508 |
+| **AI** | midjourney_v6 2,848, sid_tampered 717, flux_sid 668 | other 4,233 |
+
+PE_DATA_DONE Mon Aug 31 14:24:13 UTC 2026

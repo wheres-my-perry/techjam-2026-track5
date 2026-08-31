@@ -1,0 +1,13 @@
+hashing 112706 training originals and 175923 unseen images (24 workers)...
+  hashed 112706 train / 175923 unseen
+
+DROPPED:
+     491  byte-identical to train (omnifake_real)
+     107  near-duplicate of train (omnifake_real)
+      95  near-duplicate of train (omnifake)
+      64  byte-identical to train (omnifake)
+
+kept 175166 of 175923 (85674 real / 89492 fake) -> data/manifests/omnifake_bench.csv
+  omnifake                89492
+  omnifake_real           85674
+OMNIBENCH_DEDUP_DONE

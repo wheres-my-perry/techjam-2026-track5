@@ -1,0 +1,12 @@
+artifact metadata targets loaded: 2496738
+
+rows by resolution rule:
+     88706  omnifake:val/<generator>
+     84153  omnifake:val/real
+
+LABEL DISAGREEMENTS (manifest label != authoritative): 0
+UNRESOLVED rows (no authoritative label found): 0
+files carrying two labels: 0
+files present in two splits: 0
+
+LABEL PROVENANCE: CLEAN

@@ -1,0 +1,7 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+GPU free  Mon Aug 31 15:58:09 UTC 2026
+########## A) CONTROL: head 1024->256->32->1, no consistency  Mon Aug 31 15:58:09 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,373,313
+loss: BCE with real_weight=2.0

@@ -1,0 +1,8 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files:  25%|██▌       | 1/4 [00:04<00:12,  4.30s/it]Fetching 4 files:  50%|█████     | 2/4 [00:10<00:10,  5.25s/it]Fetching 4 files:  75%|███████▌  | 3/4 [00:10<00:02,  2.99s/it]Fetching 4 files: 100%|██████████| 4/4 [00:12<00:00,  2.59s/it]Fetching 4 files: 100%|██████████| 4/4 [00:12<00:00,  3.12s/it]
+FLICKR_DL_DONE
+14128 real web photos
+native long side: [(500, 13991), (400, 112), (300, 20), (200, 5)]
+14000/14128 (578/s, eta 0m)
+13948 rows -> data/manifests/canon_flickr30k.csv
+FLICKR_READY Mon Aug 31 09:48:28 UTC 2026

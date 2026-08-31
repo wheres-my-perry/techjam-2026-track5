@@ -1,0 +1,47 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+########## vote(L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.890  real mean P=0.05  fake mean P=0.73  [vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(t=1,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.900  real mean P=0.05  fake mean P=0.72  [vote(t=1,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(t=1,n=5,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.900  real mean P=0.05  fake mean P=0.73  [vote(t=1,n=5,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(t=1,n=6,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.900  real mean P=0.05  fake mean P=0.73  [vote(t=1,n=6,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## per-crop dump for WEIGHTED aggregation
+gemini                           12 images       560 crops so far
+real                              5 images       715 crops so far
+saved /tmp/dump_part.npz: 25 images, 715 crops
+gemini                           12 images       540 crops so far
+real                              5 images       675 crops so far
+saved /tmp/dump_grid.npz: 25 images, 675 crops
+   rule       AUROC   caught@1%FA  caught@5%FA
+/venv/main/lib/python3.12/site-packages/sklearn/metrics/_ranking.py:469: UndefinedMetricWarning: Only one class is present in y_true. ROC AUC score is not defined in that case.
+  warnings.warn(
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/crop_agg.py", line 100, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/crop_agg.py", line 90, in main
+    res = evaluate(S[k], labels, a.fa)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/techjam-2026-track5/scripts/crop_agg.py", line 61, in evaluate
+    t = np.quantile(r, 1 - fa); res.append((f >= t).mean())
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py", line 4508, in quantile
+    return _quantile_unchecked(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py", line 4522, in _quantile_unchecked
+    return _ureduce(a,
+           ^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py", line 3892, in _ureduce
+    r = func(a, **kwargs)
+        ^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py", line 4681, in _quantile_ureduce_func
+    result = _quantile(arr,
+             ^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py", line 4805, in _quantile
+    slices_having_nans = np.isnan(arr[-1, ...])
+                                  ~~~^^^^^^^^^
+IndexError: index -1 is out of bounds for axis 0 with size 0
+PARTITION_DONE

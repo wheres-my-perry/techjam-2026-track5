@@ -1,0 +1,61 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== assemble  Mon Aug 31 09:33:18 UTC 2026
+  ('wildfake', 'ddpm')                           n=  29982 -> TEST ONLY (HOLD-OUT)
+pre-balance: train 157646 val 19690 test 118292
+balance (per native-size bucket, larger class subsampled):
+  train bucket 342-512   real   14230 fake    4210 -> keep   4210 each (10020 to test)
+  train bucket 513-768   real   13471 fake    4233 -> keep   4233 each (9238 to test)
+  train bucket 769-1024  real   16002 fake    8943 -> keep   8943 each (7059 to test)
+  train bucket <=341     real   63839 fake   32716 -> keep  32716 each (31123 to test)
+  train bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+  val   bucket 342-512   real    1771 fake     558 -> keep    558 each (1213 to test)
+  val   bucket 513-768   real    1691 fake     496 -> keep    496 each (1195 to test)
+  val   bucket 769-1024  real    2001 fake    1117 -> keep   1117 each (884 to test)
+  val   bucket <=341     real    7974 fake    4080 -> keep   4080 each (3894 to test)
+  val   bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+data/manifests/canon6_train.csv: 100204 rows (50102 real / 50102 fake), 25 fake generators
+data/manifests/canon6_val.csv: 12502 rows (6251 real / 6251 fake), 25 fake generators
+data/manifests/canon6_test.csv: 182922 rows (101784 real / 81138 fake), 33 fake generators
+===== GATES  Mon Aug 31 09:33:20 UTC 2026
+  fake native long: min 200 median 200 max 1024
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6_train.csv           PASS     AUROC 0.5882 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6_train.csv          CAVEAT   worst 0.6611 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6_train.csv                    PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6_train.csv                   PASS     the one no canonical-pixel audit can do
+
+Any CAVEAT must appear beside every number reported from this manifest.
+===== CONTENT  Mon Aug 31 09:33:58 UTC 2026
+
+data/manifests/canon6_train.csv  (100204 rows)
+  subject                real     fake  fake:real  flag
+  general scenes        16158    10510       0.65  
+  faces                 11669    13078       1.12  
+  other                  4937    18040       3.65  
+  animals                8776     1567       0.18  
+  church                 2709     1346       0.50  
+  voc objects            1793     1295       0.72  
+  painting               1487     1326       0.89  
+  landscape              1803      832       0.46  
+  bedroom                 113     1418      12.55  ONE-SIDED -> 'bedroom = fake'
+  vehicles/street         657      690       1.05  
+
+data/manifests/canon6_val.csv  (12502 rows)
+  subject                real     fake  fake:real  flag
+  general scenes         1957     1310       0.67  
+  faces                  1435     1669       1.16  
+  other                   617     2246       3.64  
+  animals                1183      182       0.15  
+  church                  337      154       0.46  
+  voc objects             229      169       0.74  
+  painting                186      156       0.84  
+  landscape               204       94       0.46  
+  bedroom                  19      180       9.47  
+  vehicles/street          84       91       1.08  
+
+VERDICT: ONE-SIDED SUBJECTS FOUND — fix the data
+CONTENT_AUDIT_STILL_FAILS — not training

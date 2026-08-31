@@ -1,0 +1,78 @@
+extract start Mon Aug 31 11:16:01 UTC 2026; free: 152G
+
+7-Zip 23.01 (x64) : Copyright (c) 1999-2023 Igor Pavlov : 2023-06-20
+ 64-bit locale=C.UTF-8 Threads:32 OPEN_MAX:1024
+
+Scanning the drive for archives:
+1 file, 2474618737 bytes (2360 MiB)
+
+Extracting archive: val.zip
+--
+Path = val.zip
+Type = zip
+Physical Size = 2474618737
+Embedded Stub Size = 4
+64-bit = +
+Characteristics = Zip64
+Total Physical Size = 88373964657
+Multivolume = +
+Volume Index = 16
+Volumes = 17
+
+Everything is Ok
+
+Folders: 47
+Files: 180000
+Size:       88854714610
+Compressed: 88373964657
+7z exit=0  Mon Aug 31 11:20:06 UTC 2026
+parts deleted; free: 152G
+top-level: 46 dirs
+ADM
+BAGEL
+BLIP3_o
+BRIA_3_2
+CogView_2
+CogView_4
+DALLE_2
+DALLE_3
+DDIM
+DDPM
+DF_GAN
+DiT_XL
+FLUX_Dev
+GALIP
+GLIDE
+GPT4_o
+GigaGAN
+HiDream_I1_Dev
+Hunyuan_DiT
+IF
+Ideogram
+Imagen
+Infinity
+Janus_Pro
+Leonardo_Phoenix
+LlamaGen
+Lumina_Image_2_0
+Midjourney_V_4
+Midjourney_V_5
+Midjourney_V_6
+Muse
+OmniGen
+OmniGen_2
+Ovis_U_1
+PixArt_Alpha
+Playground_V_2_5
+SANA_V_1_5
+SDXL
+Show_O
+Stable_Diffusion_3_Medium
+Stable_Diffusion_V_1_5
+StyleGAN_3
+UniWorld_V_1
+VQDM
+VQVAE
+real
+total files: 180000
+OMNIVAL_READY Mon Aug 31 11:20:08 UTC 2026

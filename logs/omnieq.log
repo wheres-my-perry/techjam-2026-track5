@@ -1,0 +1,84 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== assemble with EQUAL buckets  Mon Aug 31 12:24:16 UTC 2026
+total 172859 rows from 1 manifests (3064 dropped by --exclude)
+pre-balance: train 138276 val 17263 test 17320
+balance (per native-size bucket, larger class subsampled):
+  train: EQUAL buckets -> 422 per class per bucket (buckets supplying >=50: 5)
+  train bucket 342-512   real   13606 fake   14970 -> keep    422 each (27732 to test)
+  train bucket 513-768   real   22653 fake     422 -> keep    422 each (22231 to test)
+  train bucket 769-1024  real   22409 fake   31845 -> keep    422 each (53410 to test)
+  train bucket <=341     real     954 fake   17063 -> keep    422 each (17173 to test)
+  train bucket >1024     real    7700 fake    6654 -> keep    422 each (13510 to test)
+  val: EQUAL buckets -> 120 per class per bucket (buckets supplying >=50: 4)
+  val   bucket 342-512   real    1744 fake    1859 -> keep    120 each (3363 to test)
+  val   bucket 513-768   real    2821 fake      48 -> keep      0 each (2869 to test)
+  val   bucket 769-1024  real    2764 fake    3990 -> keep    120 each (6514 to test)
+  val   bucket <=341     real     120 fake    2134 -> keep    120 each (2014 to test)
+  val   bucket >1024     real     966 fake     817 -> keep    120 each (1543 to test)
+data/manifests/omnieq_train.csv: 4220 rows (2110 real / 2110 fake), 45 fake generators
+data/manifests/omnieq_val.csv: 960 rows (480 real / 480 fake), 45 fake generators
+data/manifests/omnieq_test.csv: 167679 rows (81563 real / 86116 fake), 45 fake generators
+===== GATES  Mon Aug 31 12:24:17 UTC 2026
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) omnieq_train.csv           PASS     AUROC 0.5033 — canonical files only: BLIND to native size
+canary (dumb pixels) omnieq_train.csv          CAVEAT   worst 0.7077 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit omnieq_train.csv                    PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size omnieq_train.csv                   PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket omnieq_train.csv    PASS     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+
+data/manifests/omnieq_train.csv  (4220 rows)
+  subject                real     fake  fake:real  flag
+  other                  1327     1875       1.41  
+  general scenes          724      110       0.15  
+  faces                    59       68       1.15  
+  bedroom                   0       45        inf  
+  animals                   0        5        inf  
+  landscape                 0        4        inf  
+  painting                  0        3        inf  
+
+VERDICT: every subject has both classes
+===== DATA REPORT  Mon Aug 31 12:25:40 UTC 2026
+# Data state — `data/manifests/omnieq`
+
+| split | total | real | fake | fake generators |
+|---|---|---|---|---|
+| **train** | 4,220 | 2,110 | 2,110 | 45 |
+| **val** | 960 | 480 | 480 | 45 |
+| **test** | 167,679 | 81,563 | 86,116 | 45 |
+
+===== TRAIN  Mon Aug 31 12:25:45 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,103,681
+loss: BCE with real_weight=2.0
+epoch 1: loss=0.4462 val_auroc=0.9656 (15s)
+epoch 2: loss=0.3208 val_auroc=0.9772 (17s)
+epoch 3: loss=0.2687 val_auroc=0.9772 (17s)
+epoch 4: loss=0.2145 val_auroc=0.9763 (17s)
+best val AUROC 0.9772; weights -> outputs/pe_ft/omnieq.pt
+OMNIEQ_TRAIN_DONE  Mon Aug 31 12:27:09 UTC 2026
+===== VAL BY BUCKET (pooled + one global cut-off)  Mon Aug 31 12:27:09 UTC 2026
+model: vote(L=320)+pe_ft:outputs/pe_ft/omnieq.pt
+val: data/manifests/omnieq_val.csv
+
+POOLED OVER THE WHOLE SET   AUROC 0.9831   n=960 (480 real / 480 fake)
+ONE GLOBAL CUT-OFF at 1% false alarms on ALL reals = 0.6420  <- this is what a deployed product uses
+  at that cut-off, over the whole set: 81.7% of AI caught, 1.0% of reals flagged
+
+bucket        train      n    AUROC |      AT THE GLOBAL CUT-OFF |     (at its own cut-off)
+                                    |       caught      flagged |    cut-off       caught
+--------------------------------------------------------------------------------------------------------
+<=341           844    240   0.9663 |        69.2%         1.7% |     0.6496        68.3%
+342-512         844    240   0.9828 |        78.3%         0.8% |     0.5587        81.7%
+769-1024        844    240   0.9951 |        96.7%         1.7% |     0.6510        95.0%
+>1024           844    240   0.9879 |        82.5%         0.0% |     0.3549        91.7%
+
+  best 769-1024 0.9951   worst <=341 0.9663   spread 0.0288
+  per-bucket optimal cut-offs span 0.296 (0.355-0.651); that spread is exactly what one fixed threshold has to absorb.
+  If the worst bucket is also the one with the fewest training images, more data there should help; if not, it is intrinsically harder and more data will not fix it.

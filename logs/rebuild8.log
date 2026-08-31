@@ -1,0 +1,107 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== assemble  Mon Aug 31 09:36:10 UTC 2026
+  ('wildfake', 'ddpm')                           n=  29982 -> TEST ONLY (HOLD-OUT)
+pre-balance: train 160046 val 19990 test 94895
+balance (per native-size bucket, larger class subsampled):
+  train bucket 342-512   real   15502 fake    4210 -> keep   4210 each (11292 to test)
+  train bucket 513-768   real   13471 fake    4233 -> keep   4233 each (9238 to test)
+  train bucket 769-1024  real   16002 fake    8943 -> keep   8943 each (7059 to test)
+  train bucket <=341     real   64967 fake   32716 -> keep  32716 each (32251 to test)
+  train bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+  val   bucket 342-512   real    1936 fake     558 -> keep    558 each (1378 to test)
+  val   bucket 513-768   real    1691 fake     496 -> keep    496 each (1195 to test)
+  val   bucket 769-1024  real    2001 fake    1117 -> keep   1117 each (884 to test)
+  val   bucket <=341     real    8109 fake    4080 -> keep   4080 each (4029 to test)
+  val   bucket >1024     real       2 fake       0 -> keep      0 each (2 to test)
+data/manifests/canon6_train.csv: 100204 rows (50102 real / 50102 fake), 25 fake generators
+data/manifests/canon6_val.csv: 12502 rows (6251 real / 6251 fake), 25 fake generators
+data/manifests/canon6_test.csv: 162225 rows (81087 real / 81138 fake), 33 fake generators
+===== GATES  Mon Aug 31 09:36:12 UTC 2026
+  fake native long: min 200 median 200 max 1024
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6_train.csv           CAVEAT   AUROC 0.6260 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6_train.csv          CAVEAT   worst 0.6788 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6_train.csv                    PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6_train.csv                   PASS     the one no canonical-pixel audit can do
+
+Any CAVEAT must appear beside every number reported from this manifest.
+===== CONTENT  Mon Aug 31 09:36:50 UTC 2026
+
+data/manifests/canon6_train.csv  (100204 rows)
+  subject                real     fake  fake:real  flag
+  general scenes        15805    10510       0.66  
+  faces                 11536    13078       1.13  
+  other                  4978    18040       3.62  
+  animals                8423     1567       0.19  
+  church                 2727     1346       0.49  
+  voc objects            1747     1295       0.74  
+  painting               1454     1326       0.91  
+  landscape              1754      832       0.47  
+  bedroom                1042     1418       1.36  
+  vehicles/street         636      690       1.08  
+
+data/manifests/canon6_val.csv  (12502 rows)
+  subject                real     fake  fake:real  flag
+  general scenes         1909     1310       0.69  
+  faces                  1392     1669       1.20  
+  other                   621     2246       3.62  
+  animals                1135      182       0.16  
+  church                  353      154       0.44  
+  voc objects             229      169       0.74  
+  painting                181      156       0.86  
+  bedroom                 149      180       1.21  
+  landscape               202       94       0.47  
+  vehicles/street          80       91       1.14  
+
+VERDICT: every subject has both classes
+===== RETRAIN  Mon Aug 31 09:37:01 UTC 2026
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+== GATES  Mon Aug 31 09:37:01 UTC 2026
+LABEL PROVENANCE: CLEAN
+BUCKET AUDIT: CLEAN
+metadata-only AUROC: 0.6260  [MILD LEAK — caveat results]  (3000 rows, data/manifests/canon6_train.csv)
+WORST CANARY: 0.6788  [FAIL — classes differ in content, not just in being fake]
+== TRAIN canon6 epochs=4 real_weight=2 stack_aug=0.4  Mon Aug 31 09:37:37 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+params: 316,103,681
+loss: BCE with real_weight=2.0
+epoch 1: loss=0.3193 val_auroc=0.9918 (193s)
+epoch 2: loss=0.2157 val_auroc=0.9953 (304s)
+Terminated
+===== EVAL  Mon Aug 31 09:49:20 UTC 2026
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+########## WILD (5 iPhone + 5 Gemini + 8 DALL-E, never trained on)  Mon Aug 31 09:49:20 UTC 2026
+  ok  real    IMG_4074.jpeg                      (4284, 5712)  P(AI)=0.002
+  ok  real    IMG_4075.jpeg                      (5712, 4284)  P(AI)=0.208
+  ok  real    IMG_4076.jpeg                      (4284, 5712)  P(AI)=0.080
+  ok  real    IMG_4077.jpeg                      (4284, 5712)  P(AI)=0.017
+  ok  gemini  gemini_1.jpeg                      (1024, 559)   P(AI)=0.999
+  ok  gemini  gemini_10.jpeg                     (1408, 768)   P(AI)=0.999
+  ok  gemini  gemini_11.jpeg                     (1408, 768)   P(AI)=0.999
+  ok  gemini  gemini_12.jpeg                     (1408, 768)   P(AI)=0.995
+  ok  gemini  gemini_2.jpeg                      (1408, 768)   P(AI)=0.987
+  ok  gemini  gemini_3.jpeg                      (1408, 768)   P(AI)=0.995
+  ok  gemini  gemini_4.jpeg                      (1408, 768)   P(AI)=0.871
+  ok  gemini  gemini_5.jpeg                      (1408, 768)   P(AI)=0.652
+  ok  gemini  gemini_6.jpeg                      (1408, 768)   P(AI)=0.515
+  XX  gemini  gemini_7.jpeg                      (1408, 768)   P(AI)=0.001
+  XX  gemini  gemini_8.jpeg                      (1408, 768)   P(AI)=0.004
+  XX  gemini  gemini_9.jpeg                      (1408, 768)   P(AI)=0.005
+  ok  DALL E  bing_1.jpg                         (1248, 832)   P(AI)=0.971
+  ok  DALL E  bing_2.jpg                         (1248, 832)   P(AI)=0.882
+  ok  DALL E  bing_3.jpg                         (1248, 832)   P(AI)=0.964
+  ok  DALL E  bing_4.jpg                         (1248, 832)   P(AI)=0.986
+  ok  DALL E  bing_5.jpg                         (1248, 832)   P(AI)=0.761
+  ok  DALL E  bing_6.jpg                         (1248, 832)   P(AI)=0.976
+  ok  DALL E  bing_7.jpg                         (1248, 832)   P(AI)=0.990
+  ok  DALL E  bing_8.jpg                         (1248, 832)   P(AI)=0.990
+WILD  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.870  real mean P=0.07  fake mean P=0.78  [vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## STYLE RELIANCE (greyscale / channel swaps)  Mon Aug 31 09:49:34 UTC 2026
+Terminated
+data/manifests/canon6_test.csv: n=1200 (615 real / 585 fake)
+model: vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt
+

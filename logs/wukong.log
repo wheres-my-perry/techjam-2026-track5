@@ -1,0 +1,9 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+shards: 157 taking 10
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  10%|█         | 1/10 [00:09<01:29,  9.99s/it]Fetching 10 files:  20%|██        | 2/10 [00:14<00:55,  6.94s/it]Fetching 10 files:  30%|███       | 3/10 [00:16<00:32,  4.71s/it]Fetching 10 files:  40%|████      | 4/10 [00:17<00:18,  3.13s/it]Fetching 10 files:  50%|█████     | 5/10 [00:17<00:10,  2.11s/it]Fetching 10 files:  60%|██████    | 6/10 [00:19<00:07,  1.89s/it]Fetching 10 files:  80%|████████  | 8/10 [00:19<00:02,  1.06s/it]Fetching 10 files:  90%|█████████ | 9/10 [00:19<00:00,  1.21it/s]Fetching 10 files: 100%|██████████| 10/10 [00:20<00:00,  1.40it/s]Fetching 10 files: 100%|██████████| 10/10 [00:20<00:00,  2.03s/it]
+WUKONG_DL_DONE
+10320 wukong fakes
+native long side: [(512, 10320)]
+10000/10320 (304/s, eta 0m)
+10320 rows -> data/manifests/canon_wukong.csv
+WUKONG_READY Mon Aug 31 10:12:32 UTC 2026

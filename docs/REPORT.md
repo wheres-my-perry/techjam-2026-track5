@@ -195,6 +195,89 @@ supervised by SID_Set's pixel masks; image score = mean of the top 5% patch logi
 pooling is learned inside the transformer with full attention context instead of crop voting.
 Mask-aware training crops; one crop size and one shrink factor for both classes.
 
+### 4.1 Critical finding: the classifier head must be an MLP, not a single linear layer
+
+Credit: proposed by a teammate of Thinh's from their own experiments (`1024 -> 64 -> 1`), measured
+here on our data on 2026-08-31.
+
+The head sitting on the pooled 1024-d trunk embedding was a single `Linear(1024, 1)`. We replaced
+it with `Linear(1024, 64) -> GELU -> Linear(64, 1)` and changed **nothing else**: same corpus
+(`canon6`, 100,204 train rows), same 4 epochs, same seed, same augmentation, same `vote(L=320)`
+27-crop inference, same cut-off rule (one global threshold set at 1% false alarms on that set's
+reals). Cost: 65,600 extra parameters on a 316.2M-parameter model, and no measurable extra
+compute.
+
+**Augmentation ledger for both runs** — train: 40% of images take a stack of 2-6 transforms drawn
+from the contest grid, the other 60% take the mild chain (at most 2 transforms); val: NONE, fixed
+140 px crop (see the caveat below); test: all 15 contest conditions, reported pooled into one set.
+
+**Judges' set (DALL-E-3 Advanced vs COCO val2017, never trained on), pooled over all 15 transform
+conditions, one global cut-off:**
+
+| head | pooled AUROC | cut-off | recall | false alarms | AI caught | AI missed | reals flagged |
+|---|---|---|---|---|---|---|---|
+| `Linear(1024, 1)` | 0.9972 | 0.7169 | 94.9% | 1.01% | 13,815 / 14,565 | 750 | 80 / 7,935 |
+| `1024 -> 64 -> 1` MLP | 0.9968 | 0.5999 | **97.0%** | 1.00% | 8,350 / 8,610 | 260 | 49 / 4,890 |
+
+Confusion matrix for the MLP head at its cut-off — counts, not rates:
+
+```
+                       predicted AI    predicted real
+  actually AI             8350               260
+  actually real             49              4841
+  precision 99.4%   recall 97.0%   false-alarm 1.00%   accuracy 97.7%
+```
+
+**+2.1 points of recall at the same 1% false-alarm rate**, for free. On the hack set (25 held-out
+phone photos and modern-generator images, never trained on, no relation to any of our corpora)
+the same ordering holds: AUROC **0.920** for the MLP head vs 0.890 for the linear one, with the
+real photos scoring even lower (mean P(AI) 0.04) — the gain is not bought with false alarms.
+
+Two honest caveats on the table above:
+
+1. **The two rows are different-sized seeded subsamples** of the same manifest (`--limit 1500` vs
+   `--limit 900`), so the recall gap is measured on overlapping but not identical images. The
+   hack-set comparison (identical 25 files for both) is the cleaner one, and it agrees.
+2. **Validation could not have told us this.** Clean-image val AUROC was 0.9965 (linear) vs 0.9959
+   (MLP) — a tie, pointing the wrong way. See the val caveat in section 4.2.
+
+### 4.2 Caveat found while writing this up: validation was scored on clean images
+
+`train.py` built the val loader with augmentation OFF while train and test were both augmented, so
+every `val_auroc` — and therefore every "best val AUROC -> save these weights" decision — was made
+on clean images only. A clean val is structurally blind to robustness under transforms, which is
+the entire property this track is about. It is why val called the head change a tie while the
+pooled 15-condition benchmark separated the two heads by 2.1 points of recall.
+
+It came within 0.0005 of costing us a checkpoint: the consistency-loss run's clean val peaked at
+epoch 2 (0.9968), dipped at epoch 3, and only recovered at epoch 4 (0.9973). Fixed by adding
+`--val-augment`, which augments val exactly like train. Left OFF by default only so that a run
+being compared against an earlier checkpoint keeps one variable; it should be ON for any run that
+selects a checkpoint.
+
+### 4.3 Negative result: augmentation-consistency loss did not help
+
+Idea (Thinh): fine-tune so the 1024-d embedding barely moves when an augmentation is applied —
+K corrupted views of the same crop, loss = BCE(all views) + alpha * cosine agreement. Run WITH the
+MLP head, so this is the head model plus the loss, and everything else identical (`--consist 2
+--consist-loss cos --alpha 1.0`).
+
+| model | clean val AUROC | judges' set pooled AUROC | recall @ 1% false alarms | hack set AUROC |
+|---|---|---|---|---|
+| MLP head | 0.9959 | **0.9968** | **97.0%** (8,350 / 8,610) | **0.920** |
+| MLP head + consistency loss | **0.9973** | 0.9957 | 95.4% (8,216 / 8,610) | 0.870 |
+
+Identical evaluation on both rows: same 900-image seeded subsample of the judges' manifest, same
+15 conditions pooled, same 1%-false-alarm rule (49 of 4,890 reals flagged in both cases). The
+consistency loss misses **134 more AI images** out of 8,610 for exactly the same false alarms.
+
+The agreement term does what it says — mean cosine disagreement falls 0.0084 -> 0.0015 over four
+epochs — and it gives the best clean val AUROC of any model we trained. It is also the worst of
+the three on the hack set, below even the linear head (0.890). Same direction as the earlier
+canon4 consistency run. Reading: forcing the embedding to be invariant under corruption also
+suppresses the high-frequency evidence that survives corruption and carries the label. Not shipped.
+
+
 ## 5. Results
 
 > **Correction (2026-08-30 evening).** A teammate's audit found that every WildFake "GAN" row in our

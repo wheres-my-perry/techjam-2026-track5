@@ -1,0 +1,27 @@
+artifact metadata targets loaded: 2496738
+
+rows by resolution rule:
+     99756  artifact:metadata target
+     59977  wildfake:generator folder
+     29978  wildfake:Real folder
+     19631  ext:coco_640
+     13948  ext:flickr30k_web
+      8997  ext:midjourney_v6
+      8825  ext:openimages_1024
+      4000  ext:afhq_512
+      3520  ext:elsa_sd21
+      3518  ext:elsa_sd14
+      3517  ext:elsa_sdxl
+      3508  ext:elsa_deepfloyd_if
+      3000  lsun
+      2289  ext:sid_tampered
+      2232  ext:sid_real
+      2183  ext:sid_fake
+      1500  ext:celebahq_1024
+
+LABEL DISAGREEMENTS (manifest label != authoritative): 0
+UNRESOLVED rows (no authoritative label found): 0
+files carrying two labels: 0
+files present in two splits: 0
+
+LABEL PROVENANCE: CLEAN

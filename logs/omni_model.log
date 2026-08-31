@@ -1,0 +1,130 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== reassemble without church  Mon Aug 31 11:37:31 UTC 2026
+  train bucket 513-768   real   22653 fake     422 -> keep    422 each (22231 to test)
+  train bucket 769-1024  real   22409 fake   31845 -> keep   9000 each (36254 to test)
+  train bucket <=341     real     954 fake   17063 -> keep    954 each (16109 to test)
+  train bucket >1024     real    7700 fake    6654 -> keep   6654 each (1046 to test)
+  val   bucket 342-512   real    1744 fake    1859 -> keep   1125 each (1353 to test)
+  val   bucket 513-768   real    2821 fake      48 -> keep     48 each (2773 to test)
+  val   bucket 769-1024  real    2764 fake    3990 -> keep   1125 each (4504 to test)
+  val   bucket <=341     real     120 fake    2134 -> keep    120 each (2014 to test)
+  val   bucket >1024     real     966 fake     817 -> keep    817 each (149 to test)
+data/manifests/omni_train.csv: 52060 rows (26030 real / 26030 fake), 45 fake generators
+data/manifests/omni_val.csv: 6470 rows (3235 real / 3235 fake), 45 fake generators
+data/manifests/omni_test.csv: 114329 rows (54888 real / 59441 fake), 45 fake generators
+===== CONTENT (must pass)  Mon Aug 31 11:37:32 UTC 2026
+
+data/manifests/omni_train.csv  (52060 rows)
+  subject                real     fake  fake:real  flag
+  other                 17137    24126       1.41  
+  general scenes         7489     1561       0.21  
+  faces                  1404      168       0.12  
+  bedroom                   0      108        inf  
+  painting                  0       31        inf  
+  landscape                 0       22        inf  
+  animals                   0       14        inf  
+
+data/manifests/omni_val.csv  (6470 rows)
+  subject                real     fake  fake:real  flag
+  other                  2103     3012       1.43  
+  general scenes          944      188       0.20  
+  faces                   188       17       0.09  
+  bedroom                   0       11        inf  
+  painting                  0        4        inf  
+  animals                   0        2        inf  
+  landscape                 0        1        inf  
+
+VERDICT: every subject has both classes
+===== GATES  Mon Aug 31 11:37:42 UTC 2026
+  769-1024   n=  18000  real 100% from 'omnifake_real'
+  >1024      n=  13308  real 100% from 'omnifake_real'
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) omni_train.csv             PASS     AUROC 0.5004 — canonical files only: BLIND to native size
+canary (dumb pixels) omni_train.csv            CAVEAT   worst 0.7024 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit omni_train.csv                      PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size omni_train.csv                     PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket omni_train.csv      PASS     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+===== DATA REPORT  Mon Aug 31 11:38:23 UTC 2026
+# Data state — `data/manifests/omni`
+
+| split | total | real | fake | fake generators |
+|---|---|---|---|---|
+| **train** | 52,060 | 26,030 | 26,030 | 45 |
+| **val** | 6,470 | 3,235 | 3,235 | 45 |
+| **test** | 114,329 | 54,888 | 59,441 | 45 |
+
+**Images actually pushed into training (train + val): 58,530** (52,060 train / 6,470 val). Test is never trained on.
+
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== GATES (must pass before training)  Mon Aug 31 11:38:29 UTC 2026
+LABEL PROVENANCE: CLEAN
+BUCKET AUDIT: CLEAN
+===== TRAIN omni  epochs=4 real_weight=2 stack_aug=0.4 stack_max=6  Mon Aug 31 11:38:34 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,103,681
+loss: BCE with real_weight=2.0
+epoch 1: loss=0.2930 val_auroc=0.9955 (103s)
+epoch 2: loss=0.2111 val_auroc=0.9962 (103s)
+epoch 3: loss=0.1736 val_auroc=0.9976 (102s)
+epoch 4: loss=0.1459 val_auroc=0.9974 (102s)
+best val AUROC 0.9976; weights -> outputs/pe_ft/omni.pt
+OMNI_TRAIN_DONE  Mon Aug 31 11:45:44 UTC 2026
+===== VAL BY BUCKET  Mon Aug 31 11:45:44 UTC 2026
+model: vote(L=320)+pe_ft:outputs/pe_ft/omni.pt
+val: data/manifests/omni_val.csv
+
+bucket      train imgs   val n    AUROC  cut-off   caught  flagged
+----------------------------------------------------------------------
+===== BUILD THE DECOUPLED BENCHMARK  Mon Aug 31 11:45:50 UTC 2026
+/venv/main/bin/python: No module named scripts.build_benchmark
+===== BENCHMARK: original files, production path  Mon Aug 31 11:45:50 UTC 2026
+FileNotFoundError: [Errno 2] No such file or directory: 'data/manifests/benchmark.csv'
+===== JUDGES SET  Mon Aug 31 11:45:51 UTC 2026
+| condition | AUROC | fakes caught @thr | reals flagged @thr | accuracy @thr | bal.acc @thr | FPR@95%TPR | n |
+|---|---|---|---|---|---|---|---|
+| clean | 0.9871 | 93.7% | 4.9% | 94.2% | 0.9440 | 0.0718 | 1500 |
+| jpeg_q90 | 0.9951 | 93.3% | 0.9% | 95.3% | 0.9618 | 0.0170 | 1500 |
+| jpeg_q70 | 0.9959 | 86.1% | 0.4% | 90.9% | 0.9286 | 0.0170 | 1500 |
+| jpeg_q50 | 0.9877 | 82.3% | 0.8% | 88.3% | 0.9077 | 0.0662 | 1500 |
+| jpeg_q30 | 0.9930 | 91.6% | 1.3% | 94.1% | 0.9512 | 0.0340 | 1500 |
+| blur_s0.5 | 0.9806 | 94.0% | 8.9% | 93.0% | 0.9257 | 0.1210 | 1500 |
+| blur_s1.0 | 0.9643 | 96.4% | 24.0% | 89.2% | 0.8619 | 0.2004 | 1500 |
+| blur_s2.0 | 0.9799 | 97.8% | 20.8% | 91.3% | 0.8852 | 0.1002 | 1500 |
+| resize_0.5x | 0.9746 | 96.7% | 21.7% | 90.2% | 0.8748 | 0.1380 | 1500 |
+| resize_0.25x | 0.9862 | 98.0% | 16.6% | 92.9% | 0.9070 | 0.0699 | 1500 |
+| noise_s0.02 | 0.9976 | 99.0% | 7.0% | 96.9% | 0.9599 | 0.0057 | 1500 |
+| noise_s0.05 | 0.9979 | 99.4% | 9.8% | 96.1% | 0.9478 | 0.0095 | 1500 |
+| noise_s0.10 | 0.9981 | 99.8% | 12.9% | 95.3% | 0.9347 | 0.0038 | 1500 |
+| jitter_20 | 0.9828 | 94.0% | 7.6% | 93.5% | 0.9323 | 0.0888 | 1500 |
+| crop_80 | 0.9810 | 89.2% | 4.5% | 91.4% | 0.9232 | 0.1096 | 1500 |
+**Clean AUROC:** 0.9871 · **Mean transformed:** 0.9868 · **Worst:** 0.9643 (blur_s1.0)
+| generator | n fake | clean AUROC | mean transformed | worst | caught @thr clean | caught @thr mean TF | caught @thr worst TF |
+|---|---|---|---|---|---|---|---|
+| dalle_advanced | 971 | 0.9871 | 0.9868 | 0.9643 | 93.7% | 94.1% | 82.3% |
+Saved to outputs/pe_ft/eval_omni_official/
+===== WILD  Mon Aug 31 12:05:39 UTC 2026
+  XX  DALL E  bing_2.jpg                         (1248, 832)   P(AI)=0.373
+  ok  DALL E  bing_3.jpg                         (1248, 832)   P(AI)=0.683
+  ok  DALL E  bing_4.jpg                         (1248, 832)   P(AI)=0.715
+  XX  DALL E  bing_5.jpg                         (1248, 832)   P(AI)=0.181
+  XX  DALL E  bing_6.jpg                         (1248, 832)   P(AI)=0.237
+  XX  DALL E  bing_7.jpg                         (1248, 832)   P(AI)=0.186
+  XX  DALL E  bing_8.jpg                         (1248, 832)   P(AI)=0.295
+WILD  n=25 (real 5, fake 20)  acc@0.5=0.76  AUROC=0.760  real mean P=0.46  fake mean P=0.77  [vote(L=320)+pe_ft:outputs/pe_ft/omni.pt]
+===== STYLE RELIANCE (greyscale / channel swaps)  Mon Aug 31 12:05:54 UTC 2026
+model: vote(L=320)+pe_ft:outputs/pe_ft/omni.pt
+
+  clean      AUROC 0.9977   delta vs clean +0.0000
+  greyscale  AUROC 0.9830   delta vs clean -0.0147
+  bgr_swap   AUROC 0.9956   delta vs clean -0.0021
+  rbg_swap   AUROC 0.9938   delta vs clean -0.0039
+
+  Reading: if greyscale and the channel swaps hold up, the decision is not colour/palette. A large drop under greyscale would mean colour statistics were doing the work -- i.e. the style canary's warning had teeth.
+OMNI_ALL_DONE  Mon Aug 31 12:08:41 UTC 2026

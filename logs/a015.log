@@ -1,0 +1,5 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+GPU free  Mon Aug 31 16:09:17 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+params: 316,168,321
+loss: BCE with real_weight=2.0 + 0.15 * cos agreement over 2 views/image

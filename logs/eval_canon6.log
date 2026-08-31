@@ -1,0 +1,39 @@
+training done, starting evals
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+########## WILD (5 iPhone + 5 Gemini + 8 DALL-E, never trained on)  Mon Aug 31 09:08:27 UTC 2026
+  ok  real    IMG_4074.jpeg                      (4284, 5712)  P(AI)=0.017
+  ok  real    IMG_4075.jpeg                      (5712, 4284)  P(AI)=0.129
+  ok  real    IMG_4076.jpeg                      (4284, 5712)  P(AI)=0.063
+  ok  real    IMG_4077.jpeg                      (4284, 5712)  P(AI)=0.038
+  ok  gemini  gemini_1.jpeg                      (1024, 559)   P(AI)=0.923
+  ok  gemini  gemini_10.jpeg                     (1408, 768)   P(AI)=1.000
+  ok  gemini  gemini_11.jpeg                     (1408, 768)   P(AI)=0.999
+  ok  gemini  gemini_12.jpeg                     (1408, 768)   P(AI)=0.999
+  ok  gemini  gemini_2.jpeg                      (1408, 768)   P(AI)=0.968
+  ok  gemini  gemini_3.jpeg                      (1408, 768)   P(AI)=0.954
+  ok  gemini  gemini_4.jpeg                      (1408, 768)   P(AI)=0.679
+  ok  gemini  gemini_5.jpeg                      (1408, 768)   P(AI)=0.571
+  ok  gemini  gemini_6.jpeg                      (1408, 768)   P(AI)=0.631
+  XX  gemini  gemini_7.jpeg                      (1408, 768)   P(AI)=0.003
+  XX  gemini  gemini_8.jpeg                      (1408, 768)   P(AI)=0.003
+  XX  gemini  gemini_9.jpeg                      (1408, 768)   P(AI)=0.008
+  ok  DALL E  bing_1.jpg                         (1248, 832)   P(AI)=0.826
+  ok  DALL E  bing_2.jpg                         (1248, 832)   P(AI)=0.884
+  ok  DALL E  bing_3.jpg                         (1248, 832)   P(AI)=0.834
+  ok  DALL E  bing_4.jpg                         (1248, 832)   P(AI)=0.967
+  XX  DALL E  bing_5.jpg                         (1248, 832)   P(AI)=0.451
+  ok  DALL E  bing_6.jpg                         (1248, 832)   P(AI)=0.915
+  ok  DALL E  bing_7.jpg                         (1248, 832)   P(AI)=0.815
+  ok  DALL E  bing_8.jpg                         (1248, 832)   P(AI)=0.749
+WILD  n=25 (real 5, fake 20)  acc@0.5=0.84  AUROC=0.850  real mean P=0.06  fake mean P=0.71  [vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## STYLE RELIANCE (greyscale / channel swaps)  Mon Aug 31 09:09:20 UTC 2026
+data/manifests/canon6_test.csv: n=1200 (588 real / 612 fake)
+model: vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt
+
+  clean      AUROC 0.9752   delta vs clean +0.0000
+  greyscale  AUROC 0.9330   delta vs clean -0.0422
+  bgr_swap   AUROC 0.9687   delta vs clean -0.0064
+  rbg_swap   AUROC 0.9469   delta vs clean -0.0282
+
+  Reading: if greyscale and the channel swaps hold up, the decision is not colour/palette. A large drop under greyscale would mean colour statistics were doing the work -- i.e. the style canary's warning had teeth.
+########## UNSEEN GENERATORS (5 generators absent from train, deduped)  Mon Aug 31 09:13:12 UTC 2026

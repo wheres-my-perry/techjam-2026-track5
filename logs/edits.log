@@ -1,0 +1,37 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== partial-edit set, MLP model  Mon Aug 31 14:25:18 UTC 2026
+path,orig,label,generator,source,long
+3001 data/manifests/partial_edits.csv
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/src/evaluate.py", line 223, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/src/evaluate.py", line 204, in main
+    results, summary, errors, per_generator, scores_dump = evaluate(
+                                                           ^^^^^^^^^
+  File "/workspace/techjam-2026-track5/src/evaluate.py", line 83, in evaluate
+    "worst_transformed_tpr@thr": float(np.nanmin(tprs)),
+                                       ^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_nanfunctions_impl.py", line 363, in nanmin
+    res = np.amin(a, axis=axis, out=out, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 3316, in amin
+    return _wrapreduction(a, np.minimum, 'min', axis, None, out,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 83, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: zero-size array to reduction operation minimum which has no identity
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 162, in <module>
+    main()
+  File "/workspace/techjam-2026-track5/scripts/confusion.py", line 80, in main
+    o = np.load(a.npz, allow_pickle=True)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'outputs/pe_ft/eval_mlp_edits/scores.npz'
+EDITS_DONE Mon Aug 31 14:27:22 UTC 2026

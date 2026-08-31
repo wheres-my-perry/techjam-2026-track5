@@ -1,0 +1,13 @@
+ffhq_1024: nothing landed yet
+afhq_512           n= 15000  label=0  gen=-              sizes=[(512, 512)]
+celebahq_1024      n=  9000  label=0  gen=-              sizes=[(1024, 1024)]
+elsa_deepfloyd_if  n=  3520  label=1  gen=deepfloyd_if   sizes=[(256, 256)]
+elsa_sd14          n=  3520  label=1  gen=sd14           sizes=[(512, 512), (640, 360), (640, 480)]
+elsa_sd21          n=  3520  label=1  gen=sd21           sizes=[(512, 512), (640, 360), (640, 480)]
+elsa_sdxl          n=  3520  label=1  gen=sdxl           sizes=[(512, 512), (640, 360), (640, 480)]
+midjourney_v6      n=  9000  label=1  gen=midjourney_v6  sizes=[(1024, 1024)]
+openimages_1024    n=  9000  label=0  gen=-              sizes=[(361, 1024), (372, 1024), (374, 1024), (402, 1024)]
+sid_fake           n=  2185  label=1  gen=flux_sid       sizes=[(1024, 1024)]
+sid_real           n=  2273  label=0  gen=-              sizes=[(338, 1024), (405, 1024), (419, 1024), (451, 1024)]
+sid_tampered       n=  2294  label=1  gen=sid_tampered   sizes=[(1003, 1003), (1024, 1024)]
+62832 rows -> data/manifests/raw_ext.csv

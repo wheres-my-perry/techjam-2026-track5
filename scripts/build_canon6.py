@@ -141,6 +141,14 @@ def main():
                     help="file of canonical paths to drop (from corpus_audit --write-drop): "
                          "blank/flat images, cross-split byte duplicates, and val/test rows that "
                          "are perceptual copies of a training image")
+    ap.add_argument("--train-partial-edits", type=float, default=0.0, metavar="FRAC",
+                    help="EXPERIMENT ONLY (2026-08-31, Thinh). Route this fraction of the "
+                         "partial-edit generators through the normal 80/10/10 split instead of "
+                         "holding them all out for test. 0 = off, the shipped behaviour. These "
+                         "images are MOSTLY authentic photography with a localized inpainted "
+                         "region, so a whole-image fake label is partly wrong -- that is exactly "
+                         "what this flag exists to measure. Never use it on the shipped canon6 "
+                         "prefix.")
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
 
@@ -188,11 +196,23 @@ def main():
             print(f"  {str(key):46s} n={len(rs):7d} -> TEST ONLY (source paired with a held-out generator)")
             continue
         if gen in TEST_ONLY_GEN:
-            te += rs
-            why = "HOLD-OUT" if gen in HOLDOUT else (
-                  "partial-edit" if gen in PARTIAL_EDIT else "test-only")
-            print(f"  {str(key):46s} n={len(rs):7d} -> TEST ONLY ({why})")
-            continue
+            frac = a.train_partial_edits if gen in PARTIAL_EDIT else 0.0
+            if frac <= 0:
+                te += rs
+                why = "HOLD-OUT" if gen in HOLDOUT else (
+                      "partial-edit" if gen in PARTIAL_EDIT else "test-only")
+                print(f"  {str(key):46s} n={len(rs):7d} -> TEST ONLY ({why})")
+                continue
+            # --train-partial-edits: a seeded FRAC of this generator becomes train-eligible and
+            # falls through to the normal split below; the remainder stays test-only so an UNSEEN
+            # partial-edit evaluation set still exists for the experiment AND for the baseline.
+            pool = rs[:]
+            random.Random(a.seed + 500 + i).shuffle(pool)
+            k = int(len(pool) * min(1.0, frac))
+            te += pool[k:]
+            rs = pool[:k]
+            print(f"  {str(key):46s} n={len(rs):7d} -> TRAIN-ELIGIBLE partial-edit "
+                  f"({frac:.0%}; {len(pool) - k} held back TEST ONLY)")
         rs = rs[:]
         random.Random(a.seed + i).shuffle(rs)
         n = len(rs)

@@ -1,0 +1,17 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+== GATES  Mon Aug 31 08:48:09 UTC 2026
+LABEL PROVENANCE: CLEAN
+BUCKET AUDIT: CLEAN
+metadata-only AUROC: 0.6292  [MILD LEAK — caveat results]  (3000 rows, data/manifests/canon6_train.csv)
+WORST CANARY: 0.6875  [FAIL — classes differ in content, not just in being fake]
+== TRAIN canon6 epochs=4 real_weight=2 stack_aug=0.4  Mon Aug 31 08:48:45 UTC 2026
+device=cuda augment=True blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+params: 316,103,681
+loss: BCE with real_weight=2.0
+epoch 1: loss=0.2907 val_auroc=0.9919 (245s)
+epoch 2: loss=0.2001 val_auroc=0.9948 (357s)
+epoch 3: loss=0.1644 val_auroc=0.9963 (243s)
+epoch 4: loss=0.1419 val_auroc=0.9953 (299s)
+best val AUROC 0.9963; weights -> outputs/pe_ft/canon6.pt
+CANON6_TRAIN_DONE  Mon Aug 31 09:08:15 UTC 2026

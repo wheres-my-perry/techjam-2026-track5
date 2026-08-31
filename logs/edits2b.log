@@ -1,0 +1,35 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== partial-edit set: does training on edits help?  Mon Aug 31 16:07:10 UTC 2026
+########## canon6_mlp
+**Clean AUROC:** 0.8374 · **Mean transformed:** n/a · **Worst:** n/a (None)
+outputs/pe_ft/edits_canon6_mlp/scores.npz   condition=clean
+
+POOLED  AUROC 0.8374   n=2364 (1182 real / 1182 AI)
+ONE GLOBAL CUT-OFF = 0.7455  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI              275               907
+  actually real             12              1170
+
+  precision 95.8%   recall 23.3%   false-alarm rate 1.02%   accuracy 61.1%
+  In words: of 1182 AI images 275 are caught and 907 slip through; of 1182 real photos 12 are wrongly flagged.
+
+BY GENERATOR (each vs ALL 1182 reals, same global cut-off)
+########## canon6pe_mlp
+**Clean AUROC:** 0.9788 · **Mean transformed:** n/a · **Worst:** n/a (None)
+outputs/pe_ft/edits_canon6pe_mlp/scores.npz   condition=clean
+
+POOLED  AUROC 0.9788   n=2364 (1182 real / 1182 AI)
+ONE GLOBAL CUT-OFF = 0.7955  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI              852               330
+  actually real             12              1170
+
+  precision 98.6%   recall 72.1%   false-alarm rate 1.02%   accuracy 85.5%
+  In words: of 1182 AI images 852 are caught and 330 slip through; of 1182 real photos 12 are wrongly flagged.
+
+BY GENERATOR (each vs ALL 1182 reals, same global cut-off)
+EDITS2_DONE Mon Aug 31 16:08:59 UTC 2026

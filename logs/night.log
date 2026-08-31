@@ -1,0 +1,9 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+GPU free, starting fixed re-runs  Mon Aug 31 17:34:47 UTC 2026
+########## canon6_B  Mon Aug 31 17:34:47 UTC 2026
+device=cuda augment=True VAL_AUGMENT=False blur_boost=False hard_aug=0.0 stack_aug=0.4 crop=random 112-168 (val fixed 140)
+params: 316,373,313
+loss: BCE with real_weight=2.0 + 1.0 * cos agreement over 2 views/image
+epoch 1: loss=0.3374 agree=0.0115 share=3.4% val_auroc=0.9928 (371s)
+epoch 2: loss=0.2242 agree=0.0047 share=2.1% val_auroc=0.9955 (370s)
+epoch 3: loss=0.1834 agree=0.0034 share=1.9% val_auroc=0.9966 (368s)

@@ -1,0 +1,14 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+########## vote(L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.890  real mean P=0.05  fake mean P=0.73  [vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(t=2,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.900  real mean P=0.05  fake mean P=0.72  [vote(t=2,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(t=3,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.940  real mean P=0.05  fake mean P=0.71  [vote(t=3,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(r=100,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.84  AUROC=0.920  real mean P=0.05  fake mean P=0.70  [vote(r=100,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(r=200,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.80  AUROC=0.930  real mean P=0.04  fake mean P=0.70  [vote(r=200,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+########## vote(k=3,L=320)
+HACK SET  n=25 (real 5, fake 20)  acc@0.5=0.88  AUROC=0.900  real mean P=0.20  fake mean P=0.89  [vote(k=3,L=320)+pe_ft:outputs/pe_ft/canon6.pt]
+AGG_DONE

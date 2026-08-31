@@ -1,0 +1,13 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+waiting for DALLE download+extract...
+building official_val manifest  Mon Aug 31 09:06:23 UTC 2026
+official val: 0/8843 fakes and 4998/4998 reals on disk (missing: 8843 fake, 0 real)
+wrote /workspace/techjam-2026-track5/data/manifests/official_val.csv: 4998 rows
+canonicalizing judges set (band 375-640 -> crop 320)  Mon Aug 31 09:06:35 UTC 2026
+skip ./data/wildfake/raw/Images/Real/coco/coco/coco2017/val2017/img159574.jpg: smaller than crop (200x200)
+skip ./data/wildfake/raw/Images/Real/coco/coco/coco2017/val2017/img161258.jpg: smaller than crop (200x200)
+0 rows -> data/manifests/canon_official.csv
+gates on the judges set  Mon Aug 31 09:06:35 UTC 2026
+    raise ValueError(
+ValueError: Found array with 0 sample(s) (shape=(0,)) while a minimum of 1 is required.
+OFFICIAL_READY  Mon Aug 31 09:06:38 UTC 2026

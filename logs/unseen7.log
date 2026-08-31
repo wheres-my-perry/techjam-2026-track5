@@ -1,0 +1,104 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== fetch  Mon Aug 31 09:40:55 UTC 2026
+=== bitmind/MS-COCO-unique___FLUX.1-dev -> flux_coco (2 shards)
+=== DONE bitmind/MS-COCO-unique___FLUX.1-dev
+=== bitmind/bm-real -> real_bm (3 shards)
+=== DONE bitmind/bm-real
+=== bitmind/DiffFace-Real -> real_diffface (2 shards)
+=== DONE bitmind/DiffFace-Real
+=== diffusers-parti-prompts/karlo-v1 -> parti_karlo (1 shards)
+=== DONE diffusers-parti-prompts/karlo-v1
+=== diffusers-parti-prompts/kandinsky-2-2 -> parti_kandinsky (1 shards)
+=== DONE diffusers-parti-prompts/kandinsky-2-2
+=== diffusers-parti-prompts/wuerstchen -> parti_wuerstchen (1 shards)
+=== DONE diffusers-parti-prompts/wuerstchen
+=== diffusers-parti-prompts/muse512 -> parti_muse512 (1 shards)
+=== DONE diffusers-parti-prompts/muse512
+=== diffusers-parti-prompts/muse256 -> parti_muse256 (1 shards)
+=== DONE diffusers-parti-prompts/muse256
+=== diffusers-parti-prompts/if-v-1.0 -> parti_if (1 shards)
+=== DONE diffusers-parti-prompts/if-v-1.0
+=== diffusers-parti-prompts/sd-v1-5 -> parti_sd15 (1 shards)
+=== DONE diffusers-parti-prompts/sd-v1-5
+=== diffusers-parti-prompts/sd-v2.1 -> parti_sd21 (1 shards)
+=== DONE diffusers-parti-prompts/sd-v2.1
+=== diffusers-parti-prompts/sdxl-0.9 -> parti_sdxl09 (1 shards)
+=== DONE diffusers-parti-prompts/sdxl-0.9
+=== diffusers-parti-prompts/sdxl-0.9-refiner -> parti_sdxl09_ref (1 shards)
+=== DONE diffusers-parti-prompts/sdxl-0.9-refiner
+=== diffusers-parti-prompts/sdxl-1.0 -> parti_sdxl10 (1 shards)
+=== DONE diffusers-parti-prompts/sdxl-1.0
+=== diffusers-parti-prompts/sdxl-1.0-refiner -> parti_sdxl10_ref (1 shards)
+=== DONE diffusers-parti-prompts/sdxl-1.0-refiner
+===== extract  Mon Aug 31 09:42:34 UTC 2026
+  parti_kandinsky: no image column in train-00000-of-00001-69a24a8d24b60482.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_kandinsky      0 images  (label 1, generator kandinsky)
+  parti_wuerstchen: no image column in train-00000-of-00001-c435dab4ad4f52e0.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_wuerstchen      0 images  (label 1, generator wuerstchen)
+  parti_muse512: no image column in train-00000-of-00001-d56c6394e70cbcea.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_muse512       0 images  (label 1, generator muse512)
+  parti_muse256: no image column in train-00000-of-00001-0828b9d377762368.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_muse256       0 images  (label 1, generator muse256)
+  parti_if: no image column in train-00000-of-00001-1e8a663fc632cf8c.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_if            0 images  (label 1, generator if)
+  parti_sd15: no image column in train-00000-of-00001-29ffce9e106b3d01.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_sd15          0 images  (label 1, generator sd15)
+  parti_sd21: no image column in train-00000-of-00001-7e3b224a19473aa0.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_sd21          0 images  (label 1, generator sd21)
+  parti_sdxl09: no image column in train-00000-of-00001-ea5cf2c1c45d3a69.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_sdxl09        0 images  (label 1, generator sdxl09)
+  parti_sdxl09_ref: no image column in train-00000-of-00001-30b047871e21d29d.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_sdxl09_ref      0 images  (label 1, generator sdxl09_ref)
+  parti_sdxl10: no image column in train-00000-of-00001-0d968551ce00a658.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_sdxl10        0 images  (label 1, generator sdxl10)
+  parti_sdxl10_ref: no image column in train-00000-of-00001-0d968551ce00a658.parquet (cols=['Prompt', 'Category', 'Challenge', 'Note', 'images', 'model_name'])
+  parti_sdxl10_ref      0 images  (label 1, generator sdxl10_ref)
+
+32194 rows (12000 real / 20194 fake) -> /workspace/techjam-2026-track5/data/manifests/raw_unseen6.csv
+===== dedup against canon6 train/val  Mon Aug 31 09:42:55 UTC 2026
+hashing 112706 training originals and 32194 unseen images (16 workers)...
+  hashed 112706 train / 32194 unseen
+
+DROPPED:
+     911  near-duplicate of train (unseen_real_diffface)
+     176  near-duplicate of train (unseen_real_bm)
+      61  near-duplicate of train (unseen_mobius)
+      57  near-duplicate of train (unseen_realvisxl)
+      56  near-duplicate of train (unseen_bmdiffusion)
+      55  near-duplicate of train (unseen_ldm_face)
+       2  near-duplicate of train (unseen_flux_celeba)
+       2  near-duplicate of train (unseen_flux_coco)
+
+kept 30874 of 32194 (10913 real / 19961 fake) -> data/manifests/raw_unseen7_unique.csv
+  unseen_bmdiffusion        688
+  unseen_flux_celeba       5998
+  unseen_flux_coco         5998
+  unseen_ldm_face          5945
+  unseen_mobius             643
+  unseen_real_bm           5824
+  unseen_real_diffface     5089
+  unseen_realvisxl          689
+===== canonicalize  Mon Aug 31 09:45:20 UTC 2026
+30000/30874 (240/s, eta 0m)
+30761 rows -> data/manifests/canon_unseen7.csv
+===== gates  Mon Aug 31 09:47:27 UTC 2026
+
+native-size distribution — data/manifests/canon_unseen7.csv
+  <=341      real    5097 fake   17941     0.28:1   SKEWED
+  342-512    real      41 fake       0   ONE CLASS ONLY
+  513-768    real     348 fake       0   ONE CLASS ONLY
+  769-1024   real    1407 fake    2020     0.70:1   SKEWED
+  >1024      real    3907 fake       0   ONE CLASS ONLY
+  real native long: min 256 median 640 max 7712
+  fake native long: min 256 median 256 max 1024
+  => EVAL SET: report SIZE-MATCHED only (python -m scripts.size_matched ...). A pooled number over these buckets is partly a measurement of image size.
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+shortcut (metadata) canon_unseen7.csv          CAVEAT   AUROC 0.6048 — canonical files only: BLIND to native size
+canary (dumb pixels) canon_unseen7.csv         CAVEAT   worst 0.7112 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon_unseen7.csv                   PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon_unseen7.csv                  CAVEAT   the one no canonical-pixel audit can do
+
+Any CAVEAT must appear beside every number reported from this manifest.
+UNSEEN7_READY Mon Aug 31 09:48:02 UTC 2026
