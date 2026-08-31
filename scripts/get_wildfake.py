@@ -107,14 +107,54 @@ def download(includes, extract_filters=(), delete_zips=False):
 
 # ------------------------------------------------- disk index + csv reading
 
+def norm_key(p):
+    """Normalize any path into the WildFake CSV key space (no './', no 'Images/')."""
+    p = p.replace(os.sep, "/")
+    while p.startswith("./"):
+        p = p[2:]
+    while p.startswith("Images/"):
+        p = p[len("Images/"):]
+    return p
+
+
 def disk_index():
-    """basename -> repo-relative path for every image file under LOCAL_DIR."""
+    """suffix -> [repo-relative paths] for every image file under LOCAL_DIR.
+
+    Keyed by FULL PATH SUFFIXES, never by basename (fixed 2026-08-31). Every
+    real_*.csv names its files img000000.jpg, so church/imagenet/ffhq/afhq/
+    celebahq collide on basename; the old basename index silently kept one
+    arbitrary winner per name, which is how 24.5% of claimed training fakes
+    turned out to be real photos (docs/LESSONS_FOR_TEAMMATES.md S1).
+
+    Every suffix of >=2 components is registered, so an extra directory level
+    introduced by zip extraction still resolves, and any csv path that matches
+    more than one file on disk is reported as AMBIGUOUS and dropped rather than
+    guessed at.
+    """
     idx = {}
     for dirpath, _, files in os.walk(LOCAL_DIR):
         for fn in files:
-            if os.path.splitext(fn)[1].lower() in IMG_EXTS:
-                idx[fn] = os.path.relpath(os.path.join(dirpath, fn), ROOT)
+            if os.path.splitext(fn)[1].lower() not in IMG_EXTS:
+                continue
+            full = os.path.join(dirpath, fn)
+            rel = os.path.relpath(full, ROOT)
+            parts = norm_key(os.path.relpath(full, LOCAL_DIR)).split("/")
+            for i in range(len(parts) - 1, -1, -1):
+                idx.setdefault("/".join(parts[i:]), []).append(rel)
     return idx
+
+
+def lookup(idx, image_path):
+    """Resolve one csv Image_path to a unique file on disk, or None."""
+    hits = idx.get(norm_key(image_path))
+    if not hits:
+        return None
+    if len(hits) > 1:
+        return AMBIGUOUS
+    return hits[0]
+
+
+AMBIGUOUS = object()
 
 
 def read_label_csv(path):
@@ -131,7 +171,7 @@ def build_manifests(val_frac=0.1, test_frac=0.1, seed=0, cap_per_group=20000,
     idx = disk_index()
     print(f"disk index: {len(idx)} images under {LOCAL_DIR}")
 
-    rows, missing = [], 0
+    rows, missing, ambiguous = [], 0, 0
     for csv_name in sorted(os.listdir(LABEL_DIR)):
         if not csv_name.endswith(".csv"):
             continue
@@ -143,18 +183,21 @@ def build_manifests(val_frac=0.1, test_frac=0.1, seed=0, cap_per_group=20000,
             ip = r.get("Image_path", "")
             if gen == "real_coco" and VAL2017_MARKER in ip.lower():
                 continue  # official benchmark reals
-            base = os.path.basename(ip)
-            local = idx.get(base)
+            local = lookup(idx, ip)
             if local is None:
                 missing += 1
                 continue
             # BUG FIX 2026-08-30: filenames are NOT unique across WildFake (GAN images and the
             # real AFHQ/FFHQ photos are both img000000.jpg...). Matching by basename alone turned
             # every not-downloaded GAN row into a real photo labelled fake (24% of canon2..4
-            # "fakes"). Require the CSV's top-level folder to appear in the local path.
-            top = ip.lstrip("./").split("/")[0]
-            if top and f"/{top}/" not in local.replace("\\", "/"):
-                missing += 1
+            # "fakes"). The 08-30 fix required the CSV's top-level folder to appear in the local
+            # path; that stops fake-vs-real cross-matching but NOT collisions inside Real/, where
+            # church/imagenet/ffhq/afhq/celebahq all ship img000000.jpg and the basename index
+            # silently kept one arbitrary winner per name. Superseded 2026-08-31: lookup() now
+            # resolves the FULL csv path against a suffix index, so a row either resolves to
+            # exactly one file or is reported AMBIGUOUS and dropped.
+            if local is AMBIGUOUS:
+                ambiguous += 1
                 continue
             label = int(r.get("IsFake", "1"))
             rows.append({"path": local, "label": label,
@@ -167,6 +210,9 @@ def build_manifests(val_frac=0.1, test_frac=0.1, seed=0, cap_per_group=20000,
         sys.exit("No labeled images found on disk — download some Images/ zips first.")
     print(f"{len(rows)} usable rows ({missing} csv rows not on disk — fine if "
           "you only downloaded some zips)")
+    if ambiguous:
+        print(f"WARNING: {ambiguous} csv rows matched >1 file on disk and were "
+              "DROPPED (ambiguous label). Investigate before training.")
 
     rng = random.Random(seed)
     by_group: dict[tuple, list] = {}
@@ -214,8 +260,8 @@ def build_official_val_manifest():
     p3 = os.path.join(LABEL_DIR, "dalle3.csv")
     pc = os.path.join(LABEL_DIR, "real_coco.csv")
     for r in read_label_csv(p3):
-        local = idx.get(os.path.basename(r.get("Image_path", "")))
-        if local is None:
+        local = lookup(idx, r.get("Image_path", ""))
+        if local is None or local is AMBIGUOUS:
             miss_fake += 1
             continue
         rows.append({"path": local, "label": 1, "generator": "dalle_advanced",
@@ -224,8 +270,8 @@ def build_official_val_manifest():
         ip = r.get("Image_path", "")
         if VAL2017_MARKER not in ip.lower():
             continue
-        local = idx.get(os.path.basename(ip))
-        if local is None:
+        local = lookup(idx, ip)
+        if local is None or local is AMBIGUOUS:
             miss_real += 1
             continue
         rows.append({"path": local, "label": 0, "generator": "",
