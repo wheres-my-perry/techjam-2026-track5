@@ -32,7 +32,7 @@ CROP_MIN, CROP_MAX, CROP_STEP = 112, 168, 14
 
 
 class ManifestDataset(Dataset):
-    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False, hard_aug=0.0, raw=False, stack_aug=0.0):
+    def __init__(self, manifest_csv, augment=False, crop=224, blur_boost=False, style=False, hard_aug=0.0, raw=False, stack_aug=0.0, stack_max=3):
         self.samples = load_manifest(manifest_csv)
         self.augment = augment
         self.crop = crop
@@ -40,7 +40,8 @@ class ManifestDataset(Dataset):
         self.style = style            # label-neutral style randomisation (both classes)
         self.hard_aug = hard_aug      # prob of ONE extreme corruption instead of the mild chain (both classes)
         self.raw = raw                # consistency mode: return the un-augmented image; views are made in the collate
-        self.stack_aug = stack_aug    # prob of a random 2-or-3 transform STACK from the brief's grid (both classes; Thinh 2026-08-30)
+        self.stack_aug = stack_aug    # prob of a random transform STACK from the brief's grid (both classes; Thinh 2026-08-30)
+        self.stack_max = stack_max    # deepest stack drawn; 3 = the original 2-or-3 behaviour
 
     def __len__(self):
         return len(self.samples)
@@ -53,7 +54,9 @@ class ManifestDataset(Dataset):
         if self.raw:
             return img, float(s.label)
         if self.stack_aug and random.random() < self.stack_aug:
-            img = stack_transform(img, random.choice((2, 3)), random.Random())
+            # depth drawn over 2..stack_max (Thinh 2026-08-31: a "subset" of the six transform
+            # families can be any size, so training must cover deep stacks, not just 2-3).
+            img = stack_transform(img, random.randint(2, self.stack_max), random.Random())
         elif self.hard_aug and random.random() < self.hard_aug:
             img = hard_train_transform(img, random.Random())
         elif self.augment:
@@ -179,6 +182,9 @@ def main():
     ap.add_argument("--stack-aug", type=float, default=0.0,
                     help="probability that a sample gets a random 2-or-3 transform stack from the brief's grid "
                          "instead of the mild chain; both classes alike (Thinh: repost chains, 2026-08-30)")
+    ap.add_argument("--stack-max", type=int, default=3,
+                    help="deepest stack drawn when --stack-aug fires (default 3 = the original "
+                         "2-or-3 behaviour; 6 covers every transform family at once)")
     ap.add_argument("--consist", type=int, default=0,
                     help="K>0: augmentation-consistency training (Thinh): K corrupted views of the same "
                          "crop per image; loss = BCE(all views) + alpha * agreement loss")

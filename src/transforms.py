@@ -112,6 +112,12 @@ EXTRA_GRID = [
     _named("crop80_resize05", lambda im: resize_down_up(center_crop(im, 0.80), 0.5)),
     _named("stack2_rand", lambda im: _stack(im, 2)),
     _named("stack3_rand", lambda im: _stack(im, 3)),
+    # 2026-08-31 (Thinh): "a subset of the following augmentations" limits WHICH of the six
+    # transform families may be used, not how many are composed on one image -- so a subset can
+    # be any size up to all six. Depths 4-6 report the far end of that reading.
+    _named("stack4_rand", lambda im: _stack(im, 4)),
+    _named("stack5_rand", lambda im: _stack(im, 5)),
+    _named("stack6_rand", lambda im: _stack(im, 6)),
 ]
 
 
