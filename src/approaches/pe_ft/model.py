@@ -34,15 +34,39 @@ def pick_device() -> str:
     return "cpu"
 
 
-class PENet(nn.Module):
-    """PE trunk (pooled 1024-d) + linear head -> 1 logit."""
+HEAD_HIDDEN = 64   # MLP head width. Thinh's friend measured 1024 -> 64 -> 1 as optimal (2026-08-31).
 
-    def __init__(self, pretrained: bool = True):
+
+def make_head(kind: str = "linear"):
+    """Classifier on top of the pooled 1024-d trunk embedding.
+
+    "linear" is the original single projection; "mlp" is 1024 -> 64 -> 1, which Thinh's friend
+    found optimal experimentally. Checkpoints record which one they used through their state_dict
+    key names, so both load without a flag (see PENet.load_state_dict below).
+    """
+    if kind == "mlp":
+        return nn.Sequential(nn.Linear(EMB, HEAD_HIDDEN), nn.GELU(), nn.Linear(HEAD_HIDDEN, 1))
+    return nn.Linear(EMB, 1)
+
+
+class PENet(nn.Module):
+    """PE trunk (pooled 1024-d) + head -> 1 logit."""
+
+    def __init__(self, pretrained: bool = True, head: str = "linear"):
         super().__init__()
         import timm
         self.trunk = timm.create_model(TIMM_NAME, pretrained=pretrained,
                                        num_classes=0, dynamic_img_size=True)
-        self.head = nn.Linear(EMB, 1)
+        self.head = make_head(head)
+
+    def load_state_dict(self, sd, strict=True):
+        # A linear-head checkpoint has head.weight; an MLP one has head.0.weight. Rebuild the head
+        # to match the checkpoint so old and new weights both load with no caller change.
+        want = "mlp" if any(k.startswith("head.0.") for k in sd) else "linear"
+        have = "mlp" if isinstance(self.head, nn.Sequential) else "linear"
+        if want != have:
+            self.head = make_head(want).to(next(self.parameters()).device)
+        return super().load_state_dict(sd, strict=strict)
 
     def forward(self, x):
         return self.head(self.trunk(x))
@@ -54,8 +78,8 @@ class PENet(nn.Module):
         return e, self.head(e)
 
 
-def build_net(pretrained: bool = True) -> nn.Module:
-    return PENet(pretrained=pretrained)
+def build_net(pretrained: bool = True, head: str = "linear") -> nn.Module:
+    return PENet(pretrained=pretrained, head=head)
 
 
 def to_tensor(images) -> torch.Tensor:

@@ -201,6 +201,9 @@ def main():
                          "per-crop verdicts must be conservative so an any-crop rule is safe.")
     ap.add_argument("--limit-train", type=int, default=0,
                     help="seeded subsample of the train manifest (small-dataset trials)")
+    ap.add_argument("--head", default="linear", choices=["linear", "mlp"],
+                    help="classifier on the 1024-d embedding. linear = single projection (shipped); "
+                         "mlp = 1024->64->1, measured optimal by Thinh's friend")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -238,7 +241,7 @@ def main():
                         batch_size=args.batch, shuffle=False, num_workers=args.workers,
                         collate_fn=make_collate(cmin, cmax, fixed=vfixed))
 
-    net = build_net(pretrained=True).to(device)
+    net = build_net(pretrained=True, head=args.head).to(device)
     print(f"params: {sum(p.numel() for p in net.parameters()):,}", flush=True)
     opt = torch.optim.AdamW(
         [{"params": net.trunk.parameters(), "lr": args.lr},
