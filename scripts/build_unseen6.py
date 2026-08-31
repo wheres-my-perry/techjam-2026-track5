@@ -80,8 +80,13 @@ def fetch():
 
 
 def _image_column(tbl):
-    for c in tbl.column_names:
-        if c in ("image", "img", "jpg", "png"):
+    """Name of the binary-image column.
+
+    "images" (plural) matters: every diffusers-parti-prompts repo uses it, and without it all
+    twelve generators silently extracted zero images while the run still reported success.
+    """
+    for c in ("image", "images", "img", "jpg", "png", "image_bytes"):
+        if c in tbl.column_names:
             return c
     return None
 
@@ -91,7 +96,7 @@ def extract(cap_per_source):
     import pyarrow.parquet as pq
     from PIL import Image
 
-    rows = []
+    rows, missing_col = [], []
     for name, (repo, _, label, gen) in SOURCES.items():
         shards = sorted(glob.glob(os.path.join(ROOT, "data/unseen6/raw", name, "data", "*.parquet")))
         out_dir = os.path.join(ROOT, OUT_ROOT, name)
@@ -103,8 +108,10 @@ def extract(cap_per_source):
             t = pq.read_table(shard)
             col = _image_column(t)
             if col is None:
-                print(f"  {name}: no image column in {os.path.basename(shard)} "
-                      f"(cols={t.column_names[:6]})", flush=True)
+                print(f"  !! {name}: NO IMAGE COLUMN in {os.path.basename(shard)} "
+                      f"(cols={t.column_names[:8]}) -- this source contributes NOTHING",
+                      flush=True)
+                missing_col.append(name)
                 break
             for rec in t.column(col).to_pylist():
                 if n >= cap_per_source:
@@ -133,6 +140,12 @@ def extract(cap_per_source):
         w.writeheader(); w.writerows(rows)
     nr = sum(1 for r in rows if r["label"] == 0)
     print(f"\n{len(rows)} rows ({nr} real / {len(rows)-nr} fake) -> {out}")
+    got = {r["source"].replace("unseen_", "") for r in rows}
+    empty = [n for n in SOURCES if n not in got]
+    if empty:
+        print(f"!! {len(empty)} source(s) produced NO images: {empty}")
+    if missing_col:
+        print(f"!! unrecognised image column in: {missing_col}")
 
 
 def main():
