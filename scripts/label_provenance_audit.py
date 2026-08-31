@@ -22,7 +22,11 @@ from __future__ import annotations
 import argparse, csv, os, sys
 from collections import Counter, defaultdict
 
-REAL_EXT = {"afhq_512", "celebahq_1024", "openimages_1024", "ffhq_1024", "coco_640", "sid_real", "real"}
+# Real-photo ext sources. A source missing from this set is re-derived as FAKE and the gate
+# FAILS -- which is what happened when flickr30k_web was added without updating it. Add the
+# source here in the same commit that adds it to the corpus.
+REAL_EXT = {"afhq_512", "celebahq_1024", "openimages_1024", "ffhq_1024", "coco_640", "sid_real",
+            "real", "flickr30k_web"}
 
 
 def load_artifact_targets():

@@ -34,7 +34,7 @@ import os
 import re
 import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 ORDER = ["<=341", "342-512", "513-768", "769-1024", ">1024"]
 
