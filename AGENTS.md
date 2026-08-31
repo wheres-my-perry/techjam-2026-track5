@@ -32,7 +32,37 @@ suspect size bucket, and read them. Things found only by looking, never by a scr
   category — a 3.6:1 ratio there was a tagger artifact and would have sent me fetching 4 GB of
   the wrong data if I had trusted it.
 
-### 1.2 One-sided content: TEST ONLY, NEVER TRAIN
+### 1.2 EQUAL NUMBER OF IMAGES IN EVERY NATIVE-SIZE BUCKET
+> "I want the buckets to have same numbers of images also; reason is that from different buckets we
+> have to scale up and down and the model will receive photos with different characteristics"
+
+Agreed, and the mechanism is sharper than the phrasing suggests. `canonicalize --long 320` only
+shrinks images ABOVE 320, so:
+
+| bucket | what happens to it before the model sees it |
+|---|---|
+| <=341     | essentially **NOT rescaled** — native pixels |
+| 342-512   | shrunk ~1.1-1.6x |
+| 513-768   | shrunk ~1.6-2.4x |
+| 769-1024  | shrunk ~2.4-3.2x |
+
+Downscaling attenuates high-frequency detail, and high-frequency structure is precisely what
+separates generated images from photographs. So each bucket presents a DIFFERENT forensic regime.
+canon6 was 65% <=341, meaning the model was mostly trained on un-rescaled thumbnails and learned
+cues that are partly destroyed in every large image it will meet in deployment. This is the same
+failure family as canon2 scoring 0/10 on wild photos.
+
+**Rule: train and val hold the SAME number of images in every native-size bucket, per class.**
+Set by `splits.equal_bucket` in configs/canon6.yaml and enforced by tests/test_corpus_config.py.
+The binding constraint is always the FAKE side — measured pool: <=341 40,920 · 342-512 5,288 ·
+513-768 5,272 · 769-1024 11,185, so the middle buckets decide the corpus size and are the ones to
+grow (they are fed by ELSA alone, of which we had pulled 8 of 5,239 shards).
+
+**Known consequence to state, not hide:** nothing we have generates at 342-768 except the SD family,
+so those buckets are ~100% sd14/sd21/sdxl. "Mid-resolution" and "SD-family" are therefore partly
+confounded in this corpus.
+
+### 1.3 One-sided content: TEST ONLY, NEVER TRAIN
 > "dirty data like fully bedroom and church and so on can be retained for testing, but definitely
 > not for training"
 > "if you train on bedroom only, the model would excel at classifying bedroom photos, and NOTHING
@@ -49,7 +79,7 @@ church 23.6% — 100% in two subjects. It is now held out (`configs/canon6.yaml`
 only reached 2.14:1, and removing ddim while keeping those reals flipped it to 12.55:1 the other
 way. Both sides of a one-sided axis must move together.
 
-### 1.3 Know what each gate CANNOT see
+### 1.4 Know what each gate CANNOT see
 A gate that passes may be blind rather than clean. `shortcut_audit` and `size_audit` read the
 CANONICAL files, which are all 176x176 after canonicalization, so they see constant
 width/height/format and are structurally incapable of seeing NATIVE size. `canon_unseen6` passed
@@ -57,7 +87,7 @@ width/height/format and are structurally incapable of seeing NATIVE size. `canon
 reals ran to 7712px against fakes capped at 1024. Always ask: *what can this check physically not
 see?* — then check that separately.
 
-### 1.4 Audit it yourself; do not take a green tick as truth
+### 1.5 Audit it yourself; do not take a green tick as truth
 > "I said you audit the dataset, and by that I don't mean just run the scripts, please check by
 > yourself also"
 

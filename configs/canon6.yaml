@@ -57,9 +57,13 @@ routing:
 splits:
   train_frac: 0.8
   val_frac: 0.1
-  # Per class per native-size bucket in train. Stops the 200px ArtiFact/WildFake thumbnails
-  # from crowding out the large-image buckets that give the model real-photo competence.
+  # Per class per native-size bucket in train.
   cap_bucket: 45000
+  # EQUAL images per native-size bucket (Thinh, 2026-08-31). --long 320 only shrinks images above
+  # 320, so <=341 reaches the model un-rescaled while 769-1024 is downscaled 2.4-3.2x, and
+  # downscaling attenuates the high-frequency structure detection depends on. An unequal split
+  # (canon6 was 65% <=341) trains the model mostly in one forensic regime. null = disabled.
+  equal_bucket: null
   seed: 0
 
 # Never used for training under any circumstances. The brief: "Do not use the following data

@@ -38,6 +38,12 @@ You are joining mid-project. Team lead: Thinh (GitHub natsupercell). Deadline: S
   the manifest's `long` column for exactly this reason. Evaluation sets with one-class size
   buckets are reported SIZE-MATCHED only (scripts/size_matched.py).
   Too-good results (>=0.99) trigger a shortcut hunt, never celebration.
+- Native-size buckets carry EQUAL image counts in train and val (Thinh, 2026-08-31).
+  `canonicalize --long 320` only shrinks images above 320, so <=341 images reach the model
+  un-rescaled while 769-1024 images are downscaled 2.4-3.2x — and downscaling attenuates the
+  high-frequency structure detection depends on. An unequal split (canon6 was 65% <=341) trains
+  the model mostly in one forensic regime. The FAKE side always binds; grow the starved middle
+  buckets rather than capping down to them. See AGENTS.md 1.2.
 - Git topology (CHANGED 2026-08-28, Thinh's call — server is now primary): the SERVER clone
   (~/techjam-2026-track5 on chim@157.66.47.161:2205) is the WORKING clone; commit and push from
   there. The Mac clone (~/Documents/code/hackathon/techjam-2026-track5) is now a read-only
