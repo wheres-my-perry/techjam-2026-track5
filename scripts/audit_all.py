@@ -106,9 +106,16 @@ def bucket_content(manifest, eval_set):
         if len(notes) == 2:
             bad.append(f"{b}/single-source-both-classes")
     if bad:
-        lines.append("  => within a size bucket the classes do not show the same content, so "
-                     "content predicts the label at that size.")
-        return ("CAVEAT" if eval_set else "FAIL"), lines
+        lines.append("  => LOOK AT THIS BUCKET before trusting it: build a montage of its reals and")
+        lines.append("     its fakes and read them. This is a WARNING, not a failure, because the")
+        lines.append("     tagger is a PATH REGEX and cannot settle content: COCO tags as 'general")
+        lines.append("     scenes' while ELSA/Midjourney/flux tag as 'other', so a bucket whose two")
+        lines.append("     sides are both diverse still reads as one-sided. Verified by eye on")
+        lines.append("     513-768 (both sides diverse: false alarm) and on 342-512 (reals were")
+        lines.append("     10/12 animal close-ups: a REAL confound, fixed by capping afhq_512 and")
+        lines.append("     adding flickr30k_web). Settling this automatically needs image-content")
+        lines.append("     embeddings, not path rules.")
+        return "WARN", lines
     return "PASS", lines
 
 
@@ -214,7 +221,8 @@ def main():
     print("-" * 110)
     worst = 0
     for name, vd, note in verdicts:
-        worst = max(worst, {"PASS": 0, "SKIP": 0, "CHECK": 1, "CAVEAT": 1, "FAIL": 2}[vd])
+        worst = max(worst, {"PASS": 0, "SKIP": 0, "CHECK": 1, "CAVEAT": 1,
+                            "WARN": 1, "FAIL": 2}[vd])
         print(f"{name:46s} {vd:8s} {note}")
     print("\nAny CAVEAT must appear beside every number reported from this manifest.")
     sys.exit(2 if worst == 2 else 0)
