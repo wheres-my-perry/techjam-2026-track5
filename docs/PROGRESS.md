@@ -2,7 +2,41 @@
 
 Brief, current-state tracking. Newest entries first. Keep entries to 1–3 lines.
 
-## Status: 🟡 canon2 corpus rebuilt honest (labels, balance, ddpm holdout, content matching); trunks retraining
+## Status (2026-08-31): 🟠 mio03 LOST — corpus + checkpoint rebuilt from zero on a new box
+
+**mio03 is down indefinitely and took everything with it**: canon5, canon4.pt, every checkpoint. GitHub
+had only code and text; no weights existed off-box anywhere, and no teammate had a copy. Rebuilt on a
+fresh vast.ai instance (RTX 5090 32 GB, 500 GB disk, no Slurm — jobs run under nohup/setsid).
+
+**canon6 = the canon5 METHOD rebuilt from re-fetched sources. It is not bit-identical to canon5** and no
+canon5/canon4 number carries over. train 124,792 (62,396 real / 62,396 fake, 26 fake generators) · val
+15,598 · test 131,684 (33 generators, held-out ddpm 30,896 + DeepFloyd-IF 3,520 + partial-edit sets).
+Gates: label provenance CLEAN · bucket CLEAN · metadata-only 0.6292 (mild; canon5 0.6313) · style canary
+0.6875 (FAIL; canon5 0.6795 — same known property, checked on the checkpoint via greyscale/channel-swap).
+
+**Training = canon5_stack (job 194, queued on mio03 but never run): pe_ft 4 epochs, real_weight 2,
+`--stack-aug 0.4`.** canon5's `--stack-aug 0` was the baseline, not the intended recipe; robustness under
+chained transforms sits inside the 35% technical-execution weight.
+
+**Known differences from canon5, recorded so nobody quotes across them:**
+- LSUN bedroom/church and FFHQ-1024 omitted (content match still covered: artifact_lsun 3,087 + WildFake
+  church reals). ArtiFact caps water-filled at 50K/50K (canon5 used ~11.5K per real source / ~5K per generator).
+- `huggan/AFHQv2` and `mattymchen/celeba-hq` are best-guess repo matches — the originals were fetched by
+  hand on the dead server and never scripted (now recorded in scripts/get_ext.py).
+- WildFake GAN_based.zip abandoned (download collapsed to 445 kB/s, 27 h ETA); ArtiFact supplies 12 GAN
+  generators instead.
+- **The unseen-64 benchmark (randtest_eq) cannot be rebuilt** — its 64 sources are documented by category
+  only and extract_randtest.py is not in the repo. canon4's "0.9955 AUROC / 94% caught @1% FA" is therefore
+  NOT re-measurable and must not be quoted for canon6.
+
+**Live bug caught during the rebuild:** the WildFake basename collision is worse than documented —
+`img000000.jpg` resolves to SIX different files across church/imagenet/ffhq/afhq/celebahq/coco. The 08-30
+top-level-folder guard does not cover collisions inside Real/. Full-path suffix matching now resolves all
+613,195 rows of the 8 downloaded sources with zero ambiguity and catches all 154,995 rows of the four
+not-downloaded GAN/VQVAE csvs — the exact rows that became "fakes pointing at real photos" in canon2..4.
+Also dropped 184 COCO val2017 rows found inside ArtiFact's coco folder (judges' real class).
+
+## Previous status: 🟡 canon2 corpus rebuilt honest (labels, balance, ddpm holdout, content matching); trunks retraining
 
 **Queue 2026-08-30 22:15 (physical GPU 0, all sbatch): 158 nce evals (Thinh's friend's consistency loss; so far worse than canon4) → 180 cos evals → 192 canon4 + nce re-eval on the FINAL unseen set (randtest_eq: 342–1024 px only, square-cropped, canonicalised, JPEG-equalised; metadata 0.67 / style 0.75 recorded) → 178 canon5 clean retrain (label bug removed) → 194 canon5_stack = Thinh's stacked-augmentation idea (40% of samples get a random 2-or-3 transform stack, both classes) + stacked-corruption stress. Decision after 194: freeze the best candidate at its own 1%-FA cut-off.**
 **DATA BUG (2026-08-30 ~20:00, found by the teammate's audit): all WildFake GAN rows (stylegan/vqvae/biggan/stargan) are real AFHQ/FFHQ photos labelled fake — 24.5% of claimed training fakes — because get_wildfake.py matched CSV rows to disk by basename. All GAN cells ever quoted are void; DALL·E / unseen-64 / wild numbers unaffected. Fixed builder; canon5 manifests (fix_canon5.py: drop, dedup, rebalance; bucket CLEAN, metadata 0.63 mild, style canary 0.68 = over line, recorded). canon5 retrain = job 178 (after the consistency job 158). B1/B2 (real_weight 4 / hard-aug) both failed to beat moving the cut-off; job 158 = Thinh's embedding-consistency loss (cos, nce). FINDINGS.**

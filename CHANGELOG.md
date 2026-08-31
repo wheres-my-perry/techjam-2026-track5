@@ -3,6 +3,46 @@
 Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
 design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
 
+## 2026-08-31 (server loss — corpus and checkpoint rebuilt from scratch on a new box)
+- **mio03 died with every checkpoint and all of canon5 on it.** GitHub had only code and text, so
+  there was nothing to restore: no weights existed anywhere off-box. Rebuilt on a fresh vast.ai
+  instance (RTX 5090, 500 GB) rather than shipping a pre-confound Aug-26 checkpoint.
+- **scripts/get_wildfake.py — label matching rewritten to full-path suffix resolution.** The 08-30 fix
+  guarded only the csv's TOP-LEVEL folder, which stops fakes matching real photos but not collisions
+  inside Real/: church/imagenet/ffhq/afhq/celebahq all name their files img000000.jpg. Measured on the
+  live tree, that basename alone resolves to SIX different files. lookup() now takes the longest path
+  suffix that exists on disk and reports AMBIGUOUS rather than guessing.
+  Verification: all 8 downloaded sources resolve 613,195 rows with ZERO ambiguity, while the four
+  not-downloaded GAN/VQVAE csvs (styleGAN 80,000 · VQVAE 55,000 · BigGAN 10,000 · starGAN 9,995 =
+  154,995 rows) are all caught as ambiguous. Those are exactly the rows that became "fakes pointing at
+  real photos" in canon2..4 — the bug reproduced live and blocked.
+- **scripts/build_canon6.py** — assembles the corpus with the protocol enforced in code, not assumed:
+  generator hold-out keyed on NAME across all datasets (ddpm ships in both WildFake and ArtiFact),
+  partial edits test-only, splits over source files, per-native-size-bucket class balance.
+- **scripts/get_ext.py / extract_artifact_subset.py** — record the HF repo ids and shard slices for the
+  large-image sources, which had only ever been fetched by hand on the dead server. ArtiFact is
+  extracted in two phases (metadata, then only sampled images) instead of unpacking 2.5M members.
+- **canonicalize.py** now emits the native `long` side (measured before any resize) so the bucket gate
+  needs no second pass.
+- **Benchmark integrity: 184 COCO val2017 rows found inside ArtiFact's coco folder and dropped** before
+  training. That is the judges' real class; ArtiFact ships it under Real/coco (same class of leak as the
+  487 rows that reached canon2_train).
+- **canon6**: train 124,792 (62,396/62,396, 26 fake generators) · val 15,598 · test 131,684 (33 generators,
+  incl. held-out ddpm 30,896 + DeepFloyd-IF + partial-edit sets). Gates: label provenance CLEAN, bucket
+  CLEAN, metadata-only 0.6292 (mild, canon5 was 0.6313), style canary 0.6875 (FAIL, canon5 was 0.6795 —
+  same known property; checked on the checkpoint via greyscale/channel-swap instead).
+  Adding 19,640 COCO train2017 reals moved metadata 0.6585 FAIL -> 0.6292 and filled the 513-768 bucket
+  (37 -> 4,227 pairs), which is what let the 640px ELSA fakes train instead of being dumped to test.
+- **Training runs the canon5_stack recipe (job 194, queued on mio03 but never executed): --stack-aug 0.4**,
+  i.e. 40% of samples get a random 2-or-3 transform stack from the brief's grid, both classes. canon5's
+  own `--stack-aug 0` was the baseline, not the intended setting.
+- **docs/TRACK5_BRIEF_ORIGINAL.md** — the verbatim problem statement is now in the repo as the single
+  source of truth; docs/TRACK5_BRIEF.md is labelled as our interpretation. The condensation had claimed
+  the source "settles" that stacking is in scope; the original text does not say that.
+- NOT reproducible: the unseen-64 benchmark (randtest_eq). The docs describe its sources by category
+  only and extract_randtest.py is not in the repo, so canon4's "0.9955 AUROC / 94% caught" cannot be
+  re-measured. Unseen-generator claims now come from canon6's own held-out generators.
+
 ## 2026-08-30 (morning — crop-count / aggregation study)
 - vote(t=m) even-coverage tilings; scripts/crop_dump.py (per-crop scores + boxes, one GPU pass) and
   scripts/crop_agg.py (offline rules: mean/size/area/pixel/median/trim10/top3). Job 80: all layouts x
