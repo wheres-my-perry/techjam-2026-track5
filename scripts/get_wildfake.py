@@ -145,13 +145,22 @@ def disk_index():
 
 
 def lookup(idx, image_path):
-    """Resolve one csv Image_path to a unique file on disk, or None."""
-    hits = idx.get(norm_key(image_path))
-    if not hits:
-        return None
-    if len(hits) > 1:
-        return AMBIGUOUS
-    return hits[0]
+    """Resolve one csv Image_path to a unique file on disk, or None.
+
+    Matches the LONGEST path suffix that exists on disk, dropping leading
+    components until something hits. Unzipping inserts directory levels the
+    csv paths do not have (church.zip -> Real/church/ but the zip itself
+    contains church/church/train/..., so disk carries one more "church" than
+    the csv), so an exact full-path match finds nothing. The longest match is
+    the most specific one available; if even that is satisfied by more than
+    one file the row is AMBIGUOUS and gets dropped rather than guessed at.
+    """
+    parts = norm_key(image_path).split("/")
+    for i in range(len(parts)):
+        hits = idx.get("/".join(parts[i:]))
+        if hits:
+            return hits[0] if len(hits) == 1 else AMBIGUOUS
+    return None
 
 
 AMBIGUOUS = object()
