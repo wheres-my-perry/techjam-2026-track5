@@ -6,6 +6,31 @@ Project rules live in CLAUDE.md; per-approach conventions in .claude/skills/proj
 
 ---
 
+## 0. RULE ZERO — EVERYTHING THINH SAYS GOES INTO HARD MEMORY, IMMEDIATELY
+> "you also fucking write in hard memory that whatever I said you write in hard memory"
+> "I don't want to say that observation a second time, don't treat my words lightly; this is
+> compacted from 3 days of suffering"
+
+When Thinh states an observation, a rule, a correction or a preference:
+
+1. **Write it down BEFORE acting on it.** Not after the task, not "later when I document" — first.
+   An instruction that only lives in the chat is lost at the next context boundary, and he then has
+   to spend his time repeating what already cost him days to learn.
+2. **Write it in all three places:**
+   - `AGENTS.md` (this file) — the standing order, with the reason and the measurement behind it;
+   - `CLAUDE.md` — if it is binding on every session, as a rule;
+   - the session memory directory — so it survives beyond this repo checkout.
+   If it constrains the data or the training, also encode it in `configs/canon6.yaml` and add a
+   test in `tests/test_corpus_config.py`, because a rule in prose gets skipped and a rule in a gate
+   does not.
+3. **Record the REASON, not just the instruction.** "Equal buckets" is forgettable; "canonicalize
+   only rescales images above 320, so unequal buckets train one forensic regime" is not.
+4. **If you disagree, say so and argue** — he has explicitly invited that ("if not then fight back
+   and it's perfectly fine to do so"). Silent non-compliance is the only wrong answer.
+5. Never make him say it twice. If he repeats himself, that is a process failure, not a reminder.
+
+---
+
 ## 1. DATA IS PRIORITY ONE
 
 > "the data is top 1 priority, it has to be clean and flawless; much much more important than

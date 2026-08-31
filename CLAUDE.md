@@ -10,6 +10,10 @@ You are joining mid-project. Team lead: Thinh (GitHub natsupercell). Deadline: S
 5. docs/CHEATSHEET.md — server commands; docs/SERVER.md — GPU server handbook
 
 ## Non-negotiable rules (full list in the skill)
+- RULE ZERO: every observation, rule or correction Thinh gives is written into hard memory
+  (AGENTS.md + CLAUDE.md + the memory dir, plus configs/ and tests/ if it constrains data or
+  training) BEFORE acting on it, together with the REASON. Never make him state it twice.
+  Disagreement must be argued out loud, never handled by silently not doing it. See AGENTS.md 0.
 - ONE topic at a time. Correct Thinh when he is wrong. Explain simply when asked.
 - Command blocks must be zsh-paste-safe: no # comments inside blocks, include cd.
 - Benchmark integrity: every new/changed manifest passes ALL the gates BEFORE any result is
