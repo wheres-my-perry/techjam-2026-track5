@@ -246,6 +246,74 @@ All seven gates are now bound in CLAUDE.md and run by one command (`scripts/audi
 
 ---
 
+## PART 1c — OmniFake: a published dataset, audited like any other
+
+Design change (Thinh, 2026-08-31): **train on OmniFake only, benchmark on everything OmniFake does
+not cover.** Rationale in his words: "benchmark and production must be absolutely decoupled; that
+way we minimize the chance of flawed benchmark, and good numbers from that benchmark is more likely
+correlated to an actually good model." Our own held-out split shares sources, builder,
+canonicalization and seeds with training, so a good score there can reward the pipeline rather than
+the model.
+
+Source: `MoeNew/OmniFake` (OmniDFA, arXiv 2509.25682), 1.17M fakes + 1.17M matched reals, 45
+generators, MIT. We use its **val split** (17-part, 88 GB): 180,000 files = 90,000 real + 90,000
+fake, exactly 2,000 per generator. Its train split's real half is a 41-part 217 GB archive that
+does not fit here, and we are not comparing to the paper's numbers, so using their val split as our
+training data costs nothing.
+
+### 1.21 [VERIFIED] OmniFake carries the SAME size confound our own corpora had
+```
+native long side    real     fake   real:fake
+<=341              2,983   22,225      0.13   <- small => FAKE (88% of that bucket is fake)
+342-512           18,494   18,750      0.99
+513-768           29,147      532     54.79   <- mid   => REAL (98% of that bucket is real)
+769-1024          28,597   39,937      0.72
+>1024             10,779    8,556      1.26
+```
+A model trained naively on it would learn "small = fake, 600px = real". **A published dataset is
+not a clean dataset.** The same per-bucket balancing we apply to our own data is applied to theirs.
+Strict equal buckets are not supplyable here (513-768 has only 532 fakes), so each bucket is
+balanced 1:1 and capped at 9,000: the resulting scale mix is 6 / 34 / 2 / 34 / 25 %, no regime
+dominating.
+
+### 1.22 [VERIFIED] One-sided subject in OmniFake: "church = real"
+```
+subject     real    fake   fake:real
+church     1,275      59       0.05   ONE-SIDED -> 'church = real'
+```
+The mirror of the bedroom bug in our own corpus, and milder (2.5% of rows vs 30%), but the rule is
+the same: one-sided content may be kept for TESTING but never used for TRAINING. Both sides of the
+church axis were removed from omni_train/val (2,822 canonical rows) and remain in omni_test.
+
+### 1.23 Gate comparison — the corpus that trains the shipped model
+| gate | canon6 (ours) | omni (OmniFake, after fixes) |
+|---|---|---|
+| label provenance | CLEAN | **CLEAN** |
+| bucket balance | CLEAN | **CLEAN** |
+| metadata-only AUROC | 0.629 (mild leak) | **0.5004 (chance)** |
+| size audit | PASS | PASS |
+| native-size distribution | PASS | PASS |
+| content within each size bucket | WARN | **PASS** |
+| content overall | pass (after 3 fixes) | pass (after removing church) |
+| dumb-pixel canary | 0.651 | 0.702 (worse; checked on the CHECKPOINT) |
+| generators | 26 | **45** |
+
+Final: `omni_train` 52,060 (26,030 real / 26,030 fake) · `omni_val` 6,470 · `omni_test` 114,329.
+
+### 1.24 What the benchmark is, and why it is disjoint
+`scripts/build_benchmark.py` keeps only generators ABSENT from OmniFake (`cips`, `cycle_gan`,
+`denoising_diffusion_gan`, `diffusion_gan`, `face_synthetics`, `gansformer`, `gau_gan`,
+`latent_diffusion`, `pro_gan`, `projected_gan`, `sfhq`, `star_gan`, `stylegan1`, `stylegan2`,
+`taming_transformer`, `wukong`, plus the five partial-edit sets), points every row at the ORIGINAL
+file, and hash-deduplicates its reals against the training reals -- necessary because OmniFake's
+real half is drawn from the same public pools we hold (COCO / ImageNet / LAION / FFHQ).
+
+**The benchmark is scored through the production path (`vote(L=320)`, as `src/predict.py` scores a
+user file) and never through `scripts/canonicalize.py`.** Putting a benchmark through the
+training-data transformation would recouple the two.
+
+---
+
 ## PART 2 — The previous agent's findings, re-checked
 
 ### 2.1 [VERIFIED] — reproduced on canon6, independent of their data
