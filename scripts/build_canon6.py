@@ -58,7 +58,14 @@ TEST_ONLY_SOURCE = set()
 # 'bedroom = fake' 2.14:1 while ddim is present, and none gives 12.55:1 once it is removed. The
 # cap admits just enough real bedrooms to match the residual fake ones, so the subject is
 # two-sided without flooding the <=341 bucket and crowding out other content.
-CAP_SOURCE = {"lsun_bedroom": 3000}
+CAP_SOURCE = {
+    "lsun_bedroom": 3000,
+    # afhq_512 is 15,000 animal close-ups at native 512, i.e. the ENTIRE 342-512 real side.
+    # Sampling that bucket showed 10 of 12 reals were cat/dog faces while the fakes were diverse
+    # commercial scenes -- size-balanced (bucket_audit 1.00) and content-disjoint. Capped so the
+    # diverse web photos (flickr30k_web, native ~500x375) carry that bucket instead.
+    "afhq_512": 4000,
+}
 
 
 def bucket(long_side: int) -> str:

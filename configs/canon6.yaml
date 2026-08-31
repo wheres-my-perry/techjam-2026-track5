@@ -44,6 +44,12 @@ routing:
   # match them without flooding the <=341 bucket.
   cap_source:
     lsun_bedroom: 3000
+    # afhq_512 is 15,000 animal close-ups at native 512 and was the entire 342-512 real side:
+    # 10 of 12 sampled reals were cat/dog faces while that bucket's fakes were diverse commercial
+    # scenes. Size-balanced and content-disjoint -- passed bucket_audit AND content_audit, and was
+    # visible only by looking at the images. flickr30k_web (everyday photos, native ~500x375)
+    # carries the bucket instead.
+    afhq_512: 4000
 
 splits:
   train_frac: 0.8
