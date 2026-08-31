@@ -60,6 +60,13 @@ def authoritative(row, art):
         parts = p.split("/")
         return None, "artifact:no metadata match"
     if src.startswith("lsun"): return 0, "lsun"
+    # OmniFake (MoeNew/OmniFake val split): the archive's own directory layout is the authority --
+    # val/real/** are its matched real photographs, val/<Generator>/** are its synthetic images.
+    # Registered here in the same commit that adds the source, because an unregistered source is
+    # re-derived as FAKE and fails the gate (which is what flickr30k_web did).
+    if src.startswith("omnifake") or "/omnival/" in o:
+        if "/val/real/" in o or src == "omnifake_real": return 0, "omnifake:val/real"
+        return 1, "omnifake:val/<generator>"
     if src in REAL_EXT or "/ext/img/" in o:
         folder = o.split("/ext/img/")[-1].split("/")[0] if "/ext/img/" in o else src
         return (0 if folder in REAL_EXT or folder.startswith("real") else 1), f"ext:{folder}"
