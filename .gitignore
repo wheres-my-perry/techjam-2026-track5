@@ -35,3 +35,8 @@ data/*
 
 # embedding caches (regenerable, large)
 outputs/**/cache/
+
+# Local standing orders / private notes — never pushed (public repo)
+AGENTS.md
+HANDOFF.md
+HANDOFF_COWORK.md
