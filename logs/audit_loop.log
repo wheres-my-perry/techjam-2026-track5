@@ -249,3 +249,53 @@ VERDICT: every subject has both classes
   canon6pe_train: 0 overlap (must be 0)
   canon6pe_val: 0 overlap (must be 0)
 AUDIT_PASS_DONE Mon Aug 31 22:08:38 UTC 2026
+==================== AUDIT PASS Mon Aug 31 23:08:38 UTC 2026 ====================
+----- canon6 : seven gates
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6_train.csv           CAVEAT   AUROC 0.6285 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6_train.csv          CAVEAT   worst 0.6508 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6_train.csv                    PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6_train.csv                   PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket canon6_train.csv    WARN     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+----- canon6 : content (subjects on both sides)
+  bedroom                 967     1418       1.47  
+  vehicles/street         652      690       1.06  
+
+VERDICT: every subject has both classes
+----- canon6pe : seven gates
+
+gate                                           verdict  note
+--------------------------------------------------------------------------------------------------------------
+label provenance                               PASS     labels re-derived from source
+bucket balance                                 PASS     
+shortcut (metadata) canon6pe_train.csv         CAVEAT   AUROC 0.6090 — canonical files only: BLIND to native size
+canary (dumb pixels) canon6pe_train.csv        CAVEAT   worst 0.6780 — verify on the CHECKPOINT (scripts.style_check), not the manifest
+size_audit canon6pe_train.csv                  PASS     1 distinct canonical size(s): ['176x176']
+NATIVE size canon6pe_train.csv                 PASS     the one no canonical-pixel audit can do
+CONTENT within size bucket canon6pe_train.csv  WARN     same subjects on both sides INSIDE each bucket
+
+Any CAVEAT must appear beside every number reported from this manifest.
+----- canon6pe : content (subjects on both sides)
+  bedroom                1107     1418       1.28  
+  vehicles/street         776      690       0.89  
+
+VERDICT: every subject has both classes
+----- benchmark disjointness: judges' rows inside our splits (must be 0/0/0)
+  canon6_train: 0 judges' rows of 100204
+  canon6_val: 0 judges' rows of 12502
+  canon6_test: 0 judges' rows of 157673
+  canon6pe_train: 0 judges' rows of 115416
+  canon6pe_val: 0 judges' rows of 14392
+  canon6pe_test: 0 judges' rows of 140571
+----- partial-edit eval set: still unseen by every training manifest
+  canon6_train: 0 overlap (must be 0)
+  canon6_val: 0 overlap (must be 0)
+  canon6pe_train: 0 overlap (must be 0)
+  canon6pe_val: 0 overlap (must be 0)
+AUDIT_PASS_DONE Mon Aug 31 23:15:10 UTC 2026
