@@ -37,13 +37,39 @@ SOURCES = {
     "real_diffface": ("bitmind/DiffFace-Real",              2, 0, ""),
 }
 
+# diffusers-parti-prompts: one repo per NAMED generator, the same prompts rendered by each.
+# Ideal as an overfit checker (Thinh 2026-08-31): generators collected from the internet that
+# canon6 never trained on. Split deliberately into two kinds, because they answer different
+# questions and must not be pooled into one number:
+#   UNSEEN ARCHITECTURE       - a family canon6 has never seen at all (the real generalisation test)
+#   UNSEEN VERSION            - a different release of a family canon6 DOES train on (easier)
+PARTI_ARCH = {                       # unseen architecture
+    "parti_karlo":      "karlo-v1",
+    "parti_kandinsky":  "kandinsky-2-2",
+    "parti_wuerstchen": "wuerstchen",
+    "parti_muse512":    "muse512",
+    "parti_muse256":    "muse256",
+    "parti_if":         "if-v-1.0",          # DeepFloyd-IF: routed test-only in canon6
+}
+PARTI_VERSION = {                    # unseen version of a family canon6 trains on
+    "parti_sd15":          "sd-v1-5",
+    "parti_sd21":          "sd-v2.1",
+    "parti_sdxl09":        "sdxl-0.9",
+    "parti_sdxl09_ref":    "sdxl-0.9-refiner",
+    "parti_sdxl10":        "sdxl-1.0",
+    "parti_sdxl10_ref":    "sdxl-1.0-refiner",
+}
+for _tag, _repo in {**PARTI_ARCH, **PARTI_VERSION}.items():
+    SOURCES[_tag] = (f"diffusers-parti-prompts/{_repo}", 1, 1, _tag.replace("parti_", ""))
+
 
 def fetch():
     from huggingface_hub import snapshot_download
     for name, (repo, n, _, _) in SOURCES.items():
         d = os.path.join(ROOT, "data/unseen6/raw", name)
         os.makedirs(d, exist_ok=True)
-        pats = [f"data/train-{i:05d}-*.parquet" for i in range(n)]
+        pats = None if name.startswith("parti_") else \
+            [f"data/train-{i:05d}-*.parquet" for i in range(n)]
         print(f"=== {repo} -> {name} ({n} shards)", flush=True)
         try:
             snapshot_download(repo_id=repo, repo_type="dataset", local_dir=d,
