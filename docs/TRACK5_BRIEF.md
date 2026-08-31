@@ -1,4 +1,10 @@
-# Track 5 — Robust Detection of AI-Generated Images Under Real-World Transformations
+# Track 5 — OUR READING (interpretation, NOT the source)
+
+> **This file is our condensation and interpretation.** The authoritative text is
+> `docs/TRACK5_BRIEF_ORIGINAL.md` (verbatim, pasted by Thinh 2026-08-31). Where this
+> file and the original differ, the original wins. Sentences below marked "(Thinh)" or
+> framed as what the source "settles" are OUR inference, not quotations.
+
 
 Source: official TechJam 2026 Tracks & Problem Statements (Lark wiki, Early Bird, last updated Aug 26).
 Workshop webinar: **Aug 28, 5:00–5:45pm SGT**.
