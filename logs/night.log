@@ -74,3 +74,7 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 params: 316,168,321
 loss: BCE with real_weight=2.0 + 1.0 * cos agreement over 2 views/image
 epoch 1: loss=0.3363 agree=0.0081 share=2.4% val_auroc=0.9943 (369s)
+epoch 2: loss=0.2183 agree=0.0039 share=1.8% val_auroc=0.9963 (371s)
+epoch 3: loss=0.1773 agree=0.0027 share=1.5% val_auroc=0.9962 (370s)
+epoch 4: loss=0.1518 agree=0.0017 share=1.2% val_auroc=0.9968 (366s)
+best val AUROC 0.9968; weights -> outputs/pe_ft/canon6_A.pt
