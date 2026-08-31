@@ -43,7 +43,7 @@ mkdir -p outputs/pe_ft && curl -L -o outputs/pe_ft/canon6.pt \
 ```
 [Release page](https://github.com/wheres-my-perry/techjam-2026-track5/releases/tag/canon6-v1) ·
 1.26 GB · PE-Core-L14-336, 316.1M params (under the brief's 2B limit) ·
-sha256 `974fa78384c504341838f3a1c8f9df23...`
+sha256 `297d7b06d9f78b738eed38e19d773e77...`
 
 ## Run — the required directory → JSON script
 
