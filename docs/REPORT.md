@@ -8,12 +8,22 @@ above are kept current. Numbers are AUROC unless stated. Every number here passe
 
 A detector for AI-generated images that stays accurate under real-world post-processing (JPEG,
 blur, resize, noise, colour jitter, crop). Backbone: Meta's PE-Core-L14-336 vision transformer
-(316M params, < 2B limit) fine-tuned on ~340K images from public sets, scored on the contest's
-COCO-vs-DALL·E-3 reference benchmark **and** on a held-out "wild" set of unedited phone photos
-and modern-generator images. Alongside the detector we ship (a) a benchmark-integrity toolkit
-that catches dataset shortcuts before they become fake results, (b) a scale-neutral data recipe
-that fixed a complete failure on real phone photos, and (c) a per-patch head that localises the
-altered region in partially edited images.
+(316.1M params, under the 2B limit) fine-tuned on **canon6** — 100,204 audited images, 50,102 real
+/ 50,102 AI across 25 generators. Inference scores a 27-crop grid at the same crop sizes training
+used and averages them.
+
+Measured on the contest's COCO-vs-DALL·E-3 reference set it reaches **0.9972 pooled AUROC / 94.9%
+recall at 1% false alarms**, and stays flat under the brief's transforms (0.9977 mean AUROC over 14
+conditions). On a **held-out set of 25 real files** — five unedited iPhone photos and twenty images
+from Gemini and Bing/DALL·E — it catches 17 of 20 AI images with **zero false alarms**.
+
+Alongside the detector we ship the thing that made those numbers trustworthy: a **benchmark-integrity
+toolkit** that catches dataset shortcuts before they become fake results. It found four separate
+confounds in our own data and two more in a published dataset, every one of which passed the
+gates that existed before it was written.
+
+We also state where it fails: **32.1% recall on an independent 41-generator benchmark** of newer
+models, and partially generated images are out of scope.
 
 ## 2. Insight: why AIGC detectors lie, and how we stopped ours from lying
 
@@ -195,148 +205,87 @@ supervised by SID_Set's pixel masks; image score = mean of the top 5% patch logi
 pooling is learned inside the transformer with full attention context instead of crop voting.
 Mask-aware training crops; one crop size and one shrink factor for both classes.
 
-## 5. Results
+## 5. Results — canon6 (2026-08-31)
 
-> **Correction (2026-08-30 evening).** A teammate's audit found that every WildFake "GAN" row in our
-> data (stylegan, vqvae, biggan, stargan) was a real AFHQ/FFHQ photograph labelled fake — our builder
-> matched label CSVs to files by filename only, and the GAN images we never downloaded share names
-> with the real photos. 24 % of the training "fakes" in canon2–canon4 were real photos. **Every GAN
-> cell in this report is void**, canon2–4 validation AUROCs were not clean, and the model was
-> partly rewarded for calling real animal/face photos fake. The DALL·E benchmark, the 64 unseen
-> generators, the wild set and DIV2K contain none of these files and stand. Corrected manifests
-> (`canon5`) and a clean retrain are in progress; see docs/FINDINGS.md.
->
-> **Second correction (same evening, full audit — docs/DATA_AUDIT_2026-08-30.md).** The 64-source
-> unseen-generator set contained 31 % duplicate files (preference datasets reuse images across
-> rows); on unique images canon4 scores 0.9955 AUROC / 95.3 % caught / 1.0 % flagged, and the
-> "FLUX-2 Pro 10 %" figure was 1 image of 7 — withdrawn. The unseen manifest is also
-> metadata-separable (reals vs fakes differ in native size); the size-matched reading is in the
-> audit (§H). Sections 5.4 and 8 below still show the pre-audit numbers until the canon5 re-run
-> replaces them.
+Model `outputs/pe_ft/canon6.pt`: PE-Core-L14-336 (316.1M params) fine-tuned 4 epochs on **canon6**
+(100,204 images, 50,102 real / 50,102 AI, 25 generators), `--real-weight 2`,
+`--stack-aug 0.4 --stack-max 6` (40% of samples get a random stack of 2-6 transforms from the
+brief's grid, both classes). Inference `vote(L=320)`: shrink long side to 320, score a 27-crop grid
+(3x3 at 3 sizes, 112-168 px -- the same range training used), mean-aggregate. Shipped cut-off 0.5.
 
-### 5.1 Reference benchmark (COCO val2017 vs DALL·E-3, never trained on; 1,200-image seeded subsample)
+**Every number below is POOLED over the whole set and over all 15 transform conditions, read at ONE
+fixed cut-off, with counts.** Per-slice figures read at per-slice thresholds are not product
+numbers: measured here, per-bucket optimal cut-offs span 0.257-0.711.
 
-| transform | canon2 (old data) | canon3s (new data, 10-min trial) |
-|---|---|---|
-| clean | 0.985 | 0.985 |
-| jpeg q90 / 70 / 50 / 30 | 0.988 / 0.984 / 0.977 / 0.966 | 0.983 / 0.984 / 0.980 / 0.973 |
-| blur σ0.5 / 1.0 / 2.0 | 0.933 / 0.959 / 0.937 | 0.988 / 0.982 / 0.971 |
-| resize 0.5× / 0.25× | 0.948 / 0.910 | 0.979 / 0.960 |
-| noise σ0.02 / 0.05 / 0.10 | 0.976 / 0.961 / 0.925 | 0.979 / 0.967 / 0.938 |
-| colour jitter 20% | 0.972 | 0.971 |
-| centre crop 80% | 0.981 | 0.984 |
-| **mean / worst** | 0.958 / 0.910 | **0.974 / 0.938** |
+### 5.1 Headline
 
-Standing caveat: the reference set fails our colour canary (DALL·E palette ≠ COCO palette, 0.755
-from a 48-d colour model), so part of any score on it is palette. We report it because it is the
-contest's reference; we do not tune on it.
-
-### 5.1b Full retrain on canon3 (job 67, 4 epochs, 328K rows) — current model
-Three views of the same DALL·E-3 reference benchmark, same checkpoint (`vote(L=320)+pe_ft:canon3.pt`):
-
-| DALL·E-3 vs COCO set | n | clean | mean-TF (15 conditions) | worst |
+| set | what it tests | pooled AUROC | recall | false alarms |
 |---|---|---|---|---|
-| raw folder (contest files, 58% exact duplicates in the fake class) | 1,200 | 0.996 | 0.985 | 0.964 (resize 0.25x) |
-| de-duplicated (md5) | 1,200 | 0.997 | 0.988 | 0.969 (resize 0.25x) |
-| style-matched pairs (§2.1; 1,107 real/fake pairs) | 2,214 | 0.995 | 0.986 | 0.967 (resize 0.25x) |
+| **Judges' reference set** (DALL·E-3 vs COCO val2017, original files) | an unseen generator, contest data | **0.9972** | **94.9%** | 1.01% |
+| **Held-out test** (33 generators, 8 never trained on) | our own corpus, held out | 0.9520 | 70.0% | 1.00% |
+| **OmniFake** (41 unseen generators, independent dataset) | generalisation to other families | 0.9139 | **32.1%** | 1.00% |
+| **Hack set** (5 iPhone photos + 20 AI, real files) | real-world behaviour | 0.890 | 85.0% (17/20) | 0% (0/5) |
 
-Removing duplicates and equalising style change the number by < 0.01 in either direction, so the
-score is not carried by repeated files or by aesthetic statistics. Every DALL·E number in this
-report is therefore quoted as **0.996 clean / 0.985 mean-TF / 0.964 worst** (raw), with the
-other two rows as the robustness check. Caveat that stays: the contest set fails the colour
-canary (0.755), so part of any number on it is palette; we cannot fix contest data, only report it.
+Judges' set, at the 1%-false-alarm cut-off, in counts: of 14,565 AI images **13,815 caught, 750
+slip through**; of 7,935 real photos **80 wrongly flagged**.
 
-Other cells for the same checkpoint:
-- **Wild set: 10/10 at the 0.5 cut-off** — phone photos 0.13–0.34, Gemini 0.68–0.97 — with no
-  Gemini images in training. Without the shrink (`vote` at native size) the same weights score
-  0.04 AUROC on this set: the shrink-first rule (§3) is the mechanism, not the extra data alone.
-- **GENERAL 0.970** (mean of ddpm-holdout mean-TF and official mean-TF).
-- Cross-family test (canon3_test, 8,000-row seeded subsample, 32 generators): clean 0.890 /
-  mean-TF 0.861. The drag is entirely the tampering/inpainting generators that are test-only by
-  protocol (generative_inpainting 0.68, lama 0.83, mat 0.88, sid_tampered 0.58): a 176-px crop of
-  a partially edited image usually contains no edited pixels, which is exactly the case §5.3
-  (`pe_seg`) exists for. Whole-image generators: 26 of 28 ≥ 0.97 clean, ddpm holdout 0.972/0.956,
-  vqvae 0.905, glide 0.896.
+### 5.2 The generalisation ceiling — stated plainly
 
-Compared with the 10-minute trial (§5.1a): DALL·E mean-TF 0.974 → 0.985, worst 0.938 → 0.964,
-wild real-photo scores 0.02–0.20 → 0.13–0.34 (still all below 0.5), Gemini 0.17 → 0.68–0.97.
-(Superseded by canon4, §5.1c.)
+**On an independent 41-generator benchmark the detector catches 32% of AI images at a 1%
+false-alarm rate.** AUROC there is 0.9139, so the *ranking* is sound; what fails is calibration.
+The cut-off needed for 1% false alarms on OmniFake's reals is **0.9699** -- their real photographs
+score high on our model, so the bar rises to near 1.0 and most AI images fall under it. This is
+distribution shift on both classes, not an inability to discriminate.
 
-### 5.1c Second expansion, `canon4` (job 76) — shipped model
-Added to training (bucket-balanced, §3): Midjourney v6 and FLUX (1024), SD 1.4/2.1/SDXL (512/640),
-with CelebA-HQ/FFHQ/Open Images/SID reals (1024), AFHQ (512) and COCO train2017 originals (640; the
-contest reals are COCO *val*2017, excluded everywhere). DeepFloyd-IF (256) and all tampered images
-stay test-only. Gates: bucket ratio 1.00 in every new bucket, metadata 0.586, worst canary 0.62 (style).
+The 41 unseen generators include GPT-4o, FLUX, Ideogram, HiDream, SANA, Infinity, BAGEL and
+OmniGen -- newer and stronger than the 25 families in our training data.
 
-| | canon3 | canon4 |
+**What we can claim:** strong detection on trained generator families and close relatives.
+**What we cannot claim:** general AI-image detection across arbitrary modern generators.
+
+### 5.3 Same-corpus breakdown, all at the same cut-off
+
+| slice | AUROC | recall |
 |---|---|---|
-| DALL·E-3 vs COCO: clean / mean-TF / worst | 0.996 / 0.985 / 0.964 | **1.000 / 0.996 / 0.985** |
-| ddpm holdout mean-TF | 0.956 | 0.958 |
-| GENERAL | 0.970 | **0.977** |
-| DeepFloyd-IF, never trained (mean-TF) | — | 0.942 |
-| 2K real photos (DIV2K, n=100) false alarms at the app cut-off | 22% | 0% at 0.5, 9% at 0.15 |
+| generators seen in training | 0.9954 | 89.4% |
+| generators never seen (ddpm / ddim / DeepFloyd-IF) | 0.9663 | 74.2% |
+| partial edits (out of scope, section 3b of ERROR_ANALYSIS) | 0.8398 | 33.4% |
+| whole-image AI, 342-1024 px (the protocol earlier work reported) | **0.9996** | **99.3%** |
 
-Shortcut hunt on the 1.000 (our rule: ≥0.99 → hunt): greyscale 0.996, channels swapped 0.998 (not
-palette); every never-trained real source (COCO-640, Open Images, FFHQ, SID) scores median 0.000, so
-the gain is a wider real/fake margin everywhere, not familiarity with COCO. See §5.4 for the reason
-the app cut-off moved from 0.5 to 0.15.
+The last row matters for comparison: measured the way prior work measured -- whole-image AI only,
+342-1024 px, excluding the small-image bucket it called "not scorable" -- this model reaches
+0.9996 AUROC / 99.3% recall. The 70.0% headline is what happens when those exclusions are removed.
 
-### 5.2 Generalisation
-- Leave-one-family-out (whole diffusion family removed from training): GENERAL 0.716 (DALL·E
-  0.62, GLIDE 0.70, SD 0.59) vs 0.964 with cousins in training. Detectors key on the decoder
-  type; hybrids with GAN/VQ decoders (vq_diffusion, diffusion_gan) stay at 0.99 even when
-  "unseen".
-- Wild set (phone photos + Gemini): §3. Gemini images still score low in absolute terms
-  (max 0.17): Google's generator family is in no public dataset; ranking is correct, confidence
-  is not.
+### 5.4 Robustness (deliverable 4)
 
-### 5.3 Localisation of partial edits (`pe_seg`, held-out SID images, 2,458 never trained on)
+Full tables: `docs/figures/robustness_official.md`, `docs/figures/robustness_test.md`, both read at
+the shipped cut-off. Judges' set, 14 transformed conditions: AUROC mean **0.9977**, worst 0.9927
+(blur sigma 1.0); caught mean 94.8%; flagged mean 1.1%, worst 4.7% (JPEG q30).
 
-| metric | value |
-|---|---|
-| image-level, tampered vs real | 0.996 |
-| image-level, fully synthetic vs real | 1.000 (*suspect: synthetic are PNG, reals JPEG — format check pending*) |
-| **patch-level, altered vs untouched region (against the mask)** | **0.984** |
+Training on stacked transforms is what produced that flatness: clean AUROC 0.9996 versus 0.9977
+averaged over 14 conditions.
 
-Tampered and real are both JPEG in the held-out set, so the tampered number is not a format
-shortcut. Heat-maps on held-out images (left: image, middle: ground-truth mask, right: prediction):
+**Choosing the cut-off on clean images is a trap.** A clean-only cut-off (0.216) holds 1.1% false
+alarms on clean images and **22.9% under JPEG q30**, because JPEG shifts every score upward. The
+pooled cut-off holds ~1% across all conditions.
 
-![pe_seg heat-maps](figures/pe_seg_heatmaps_heldout.jpg)
+### 5.5 The model does not read colour
 
-### 5.4 Random unseen-generator test — "how general is it, really?"
-Per-generator AUROC only says the model ranks *that* generator above reals; it does not say one
-cut-off works for all of them. So: 44 generator sources never used in training (Midjourney v5/5.2,
-Imagen 3/4, Ideogram, GPT-4o image, Aurora, Recraft, Reve, Runway Frames, HiDream, Hunyuan, Lumina,
-Kandinsky, Würstchen, Stable Cascade, SD3/3.5, PixArt α/Σ, Playground, Kolors, LCM, SDXL-Turbo/
-Lightning, FLUX Pro/1.1/schnell, Janus, AuraFlow, …; 300 images each, 10,570 fakes, from
-Rapidata/GenAI-Bench/parti-prompts/MJHQ/open-image-preferences) pooled against 900 never-trained real
-photos (COCO-640, Open Images, FFHQ, SID), scored at native size through the app policy. One score
-scale, one cut-off (`scripts/random_gen_test.py`, per-image scores in `outputs/random_gen/`).
+The training manifest fails the dumb-pixel style canary (0.6508, line 0.65), so the checkpoint was
+tested directly: clean 0.9977, **greyscale 0.9830**, BGR swap 0.9956, RBG swap 0.9938. The decision
+survives colour destruction, so palette is not the mechanism.
 
-| all sources pooled (64 generator tags, 16,164 fakes, 900 unseen reals) | canon3 | canon4 |
-|---|---|---|
-| AUROC (fake ranked above real) | 0.980 | **0.992** |
-| caught at a 1-in-100 false-alarm budget | 84% (cut-off 0.46) | **91%** (cut-off 0.14) |
-| caught at a 5-in-100 false-alarm budget | 92% (cut-off 0.22) | **96%** (cut-off 0.04) |
+### 5.6 Data integrity behind these numbers
 
-(The first 44-source pass gave 0.982 / 83% / 93% for canon3 and 0.994 / 94% / 97% for canon4; the
-extra 20 sources added the hardest generators, which is why both numbers moved down.)
+canon6 gates: label provenance CLEAN (labels re-derived from source; 0 disagreements, 0 files with
+two labels, 0 files in two splits), per-size-bucket balance CLEAN (ratio 1.00 in every bucket),
+size audit PASS. Recorded caveats: metadata-only AUROC 0.6285 (file size on a uniform 176x176 PNG,
+i.e. detail density) and the style canary above.
 
-Per source at the same 1% false-alarm budget, canon4 ≥ canon3 on 55 of 64 tags — 40 of them at
-98–100% (Midjourney 5.2 56% → 99%, SD3 59% → 100%, HiDream 67% → 100%, GPT-4o 26% → 71%,
-Imagen 3 76% → 99%). Gemini's own generator (Nano-Banana, 300 images): 94% for both models.
-Where canon4 is *worse*: Ideogram 76% → 51%, Hunyuan-Image 2.1 79% → 54%, Seedream 3 87% → 60%,
-Reve Halfmoon 88% → 68%, Runway Frames 86% → 73%, ADM 87% → 78% — the newest proprietary
-generators, where canon4's tighter real/fake margin spreads the fakes low. **FLUX-2 Pro is a hole
-for both models: 10% caught.** The app cut-off is chosen on this test, not on the contest set:
-**0.15 ≈ 1% false alarms on unseen reals**, 5/5 Gemini images (0.19–0.78) and 0/5 phone photos
-(max 0.04) on the wild set.
+Benchmarks are proven unseen by hash, not by name: 757 of 175,923 OmniFake images (0.43%) were
+byte- or perceptually identical to training data and were removed before scoring. Benchmarks are
+scored on ORIGINAL files through the production path, never through `scripts/canonicalize.py`.
 
-Honest reading: on generators it has never seen, the model catches about 9 in 10 AI images while
-accusing about 1 in 100 real photos. The hardest current generators are FLUX-2 Pro (missed by
-both models), Ideogram, Hunyuan-Image 2.1 and Seedream 3; a source's file handling matters too
-(Midjourney v5 from MJHQ 91% vs the same generator's re-saved Rapidata copy 56% under canon3).
-Per-image scores for every run are in `outputs/random_gen/`.
 
 ## 6. Error analysis (initial)
 - **Unseen generator family (Gemini):** scored 0.08 median while FLUX/DALL·E/SD score 0.84–1.00.
@@ -397,15 +346,25 @@ prompt bank already targets the candid/amateur cues).
 | Consistency-under-transform as a cue (a patch counts only if its verdict survives mild JPEG/blur) | measured once: real-crop false alarms 16% → 4.7%, no training; **not integrated** | 2026-08-29 |
 
 ## 8. Limitations
-Out of scope by decision: AI images styled as paintings/illustrations/posters (roughly a third of the
-11% of DALL·E-3 images scoring below 0.2). Reference benchmark has a palette confound we cannot remove; wild set is small (n=10) and
-grows only with user-supplied images; unseen generator families (Gemini) are ranked correctly
-but not confidently; pe_seg is trained on one tampering source (SID) and does not yet
-generalise to wild images; per-crop inference (27 crops) costs ~0.1 s/image on an RTX 5090.
 
-- Very large real photos are still the weak spot: 100 DIV2K 2K-px photos (never trained on) score
-  median 0.17 but 22% cross the 0.5 cut-off (was 91% before the shrink-first data); the >1024-px
-  bucket in training is thin. Phone photos (5/5) are fine but n is small.
+1. **Generalisation to unseen generator families is the main weakness.** 32.1% recall at 1% false
+   alarms on an independent 41-generator benchmark, against 94.9% on the judges' set. The failure is
+   calibration under distribution shift (AUROC 0.9139), not an inability to rank.
+2. **Partially generated images are out of scope.** A real photograph with an inpainted region
+   scores as real: 33.4% recall. The 27-crop mean averages one edited region away. Future work is an
+   aggregation change, not a new model -- see ERROR_ANALYSIS section 3b.
+3. **Highly produced real photography is the dominant false-alarm class** -- studio portraits,
+   product shots on plain backgrounds, painted and illustrated images. The real half of the training
+   data is mostly candid photography.
+4. **One threshold cannot suit every image size.** Per-bucket optima span 0.257-0.711; at the shipped
+   cut-off the smallest bucket flags 3.3% of real photos against a 1% target.
+5. **The training manifest carries a mild metadata leak** (0.6285) and fails the style canary
+   (0.6508). The canary is answered on the checkpoint (5.5); the metadata figure is PNG file size at
+   a uniform 176x176, i.e. detail density, which cannot be removed without removing the signal.
+6. **Prior numbers from this project are void.** canon4/canon5 and their benchmarks did not survive
+   the loss of the training server, and the unseen-64 benchmark cannot be rebuilt (its sources are
+   documented by category only). Nothing from before 2026-08-31 is quoted here.
+
 
 ## 9. Additions log
 - 2026-08-30 (night): §5.1c canon4 (job 76) shipped; §5.4 random 44-source unseen-generator test with pooled metrics; app cut-off 0.15.
