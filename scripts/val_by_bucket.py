@@ -83,10 +83,7 @@ def main():
     model = load_model(a.model)
     rng = random.Random(a.seed)
     print(f"model: {a.model}\nval: {a.manifest}\n")
-    print(f"{'bucket':10s} {'train imgs':>11s} {'val n':>7s} {'AUROC':>8s} "
-          f"{'cut-off':>8s} {'caught':>8s} {'flagged':>8s}")
-    print("-" * 70)
-    rows = []
+    rows, pooled_y, pooled_s, pooled_b = [], [], [], []
     for b in ORDER:
         items = by.get(b, [])
         if len(items) < 40:
@@ -103,21 +100,50 @@ def main():
         scores = np.asarray(scores)
         auc = roc_auc_score(y, scores)
         thr = float(np.quantile(scores[y == 0], 1 - a.fa))
-        caught = float((scores[y == 1] >= thr).mean())
-        flagged = float((scores[y == 0] >= thr).mean())
-        rows.append((b, auc, caught))
-        print(f"{b:10s} {train_n[b]:11,d} {len(sel):7d} {auc:8.4f} {thr:8.4f} "
-              f"{caught*100:7.1f}% {flagged*100:7.1f}%")
+        rows.append({"bucket": b, "auc": auc, "own_thr": thr, "y": y, "s": scores,
+                     "own_caught": float((scores[y == 1] >= thr).mean()),
+                     "own_flagged": float((scores[y == 0] >= thr).mean())})
+        pooled_y.append(y); pooled_s.append(scores); pooled_b += [b] * len(y)
 
-    if len(rows) > 1:
-        worst = min(rows, key=lambda r: r[1])
-        best = max(rows, key=lambda r: r[1])
-        print(f"\n  best  {best[0]} {best[1]:.4f}   worst {worst[0]} {worst[1]:.4f}   "
-              f"spread {best[1]-worst[1]:.4f}")
-        print(f"  Cut-off is chosen per bucket at {a.fa*100:.3g}% false alarms, so buckets are "
-              f"compared at a matched operating point.")
-        print(f"  If the worst bucket is also the one with the fewest training images, more data "
-              f"there should help; if not, it is intrinsically harder and more data will not fix it.")
+    if not rows:
+        raise SystemExit("no bucket had enough rows to score")
+
+    Y = np.concatenate(pooled_y); S = np.concatenate(pooled_s)
+    pooled_auc = roc_auc_score(Y, S)
+    GLOBAL = float(np.quantile(S[Y == 0], 1 - a.fa))
+
+    # A per-bucket cut-off is not what ships. Production applies ONE threshold to every image
+    # regardless of its size, so the honest per-bucket figures are the ones read at that single
+    # global cut-off (Thinh 2026-08-31). Both are printed, and the gap between them is the cost
+    # of having one threshold.
+    print(f"POOLED OVER THE WHOLE SET   AUROC {pooled_auc:.4f}   n={len(Y)} "
+          f"({int((Y==0).sum())} real / {int((Y==1).sum())} fake)")
+    print(f"ONE GLOBAL CUT-OFF at {a.fa*100:.3g}% false alarms on ALL reals = {GLOBAL:.4f}  "
+          f"<- this is what a deployed product uses")
+    g_caught = float((S[Y == 1] >= GLOBAL).mean()); g_flag = float((S[Y == 0] >= GLOBAL).mean())
+    print(f"  at that cut-off, over the whole set: {g_caught*100:.1f}% of AI caught, "
+          f"{g_flag*100:.1f}% of reals flagged\n")
+
+    print(f"{'bucket':10s} {'train':>8s} {'n':>6s} {'AUROC':>8s} | "
+          f"{'AT THE GLOBAL CUT-OFF':>26s} | {'(at its own cut-off)':>24s}")
+    print(f"{'':10s} {'':8s} {'':6s} {'':8s} | {'caught':>12s} {'flagged':>12s} | "
+          f"{'cut-off':>10s} {'caught':>12s}")
+    print("-" * 104)
+    for r in rows:
+        y, sc = r["y"], r["s"]
+        gc = float((sc[y == 1] >= GLOBAL).mean()); gf = float((sc[y == 0] >= GLOBAL).mean())
+        print(f"{r['bucket']:10s} {train_n[r['bucket']]:8,d} {len(y):6d} {r['auc']:8.4f} | "
+              f"{gc*100:11.1f}% {gf*100:11.1f}% | {r['own_thr']:10.4f} {r['own_caught']*100:11.1f}%")
+
+    worst = min(rows, key=lambda r: r["auc"]); best = max(rows, key=lambda r: r["auc"])
+    print(f"\n  best {best['bucket']} {best['auc']:.4f}   worst {worst['bucket']} "
+          f"{worst['auc']:.4f}   spread {best['auc']-worst['auc']:.4f}")
+    spread = max(r["own_thr"] for r in rows) - min(r["own_thr"] for r in rows)
+    print(f"  per-bucket optimal cut-offs span {spread:.3f} "
+          f"({min(r['own_thr'] for r in rows):.3f}-{max(r['own_thr'] for r in rows):.3f}); "
+          f"that spread is exactly what one fixed threshold has to absorb.")
+    print(f"  If the worst bucket is also the one with the fewest training images, more data there "
+          f"should help; if not, it is intrinsically harder and more data will not fix it.")
 
 
 if __name__ == "__main__":
