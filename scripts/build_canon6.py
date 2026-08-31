@@ -80,7 +80,7 @@ def bucket(long_side: int) -> str:
     return ">1024"
 
 
-def balance(rows, seed, tag, cap=0, equal=0):
+def balance(rows, seed, tag, cap=0, equal=0, min_bucket=50):
     """Per bucket keep min(n_real, n_fake) (at most `cap`) of each class.
 
     `equal` > 0 makes EVERY bucket keep the same number per class (Thinh 2026-08-31):
@@ -95,8 +95,12 @@ def balance(rows, seed, tag, cap=0, equal=0):
     kept, excess, rng = [], [], random.Random(seed)
 
     if equal:
+        # A bucket with almost no supply must be DROPPED, not equalised to -- otherwise the
+        # thinnest bucket sets N for every other one. OmniFake has 532 fakes at 513-768, which
+        # capped a 90,000-image corpus at 4,060 until this threshold was raised.
         feasible = [min(len(c.get("0", [])), len(c.get("1", [])))
-                    for b, c in by.items() if min(len(c.get("0", [])), len(c.get("1", []))) >= 50]
+                    for b, c in by.items()
+                    if min(len(c.get("0", [])), len(c.get("1", []))) >= min_bucket]
         common = min(feasible) if feasible else 0
         if equal > 0:
             common = min(common, equal)
@@ -107,7 +111,7 @@ def balance(rows, seed, tag, cap=0, equal=0):
         real, fake = cls.get("0", []), cls.get("1", [])
         n = min(len(real), len(fake))
         if equal:
-            n = 0 if n < 50 else min(n, common)
+            n = 0 if n < min_bucket else min(n, common)
         if cap:
             n = min(n, cap)
         for rs in (real, fake):
@@ -127,6 +131,9 @@ def main():
     ap.add_argument("--out-prefix", default="data/manifests/canon6")
     ap.add_argument("--cap-bucket", type=int, default=45000,
                     help="max rows per class per bucket in train (0 = uncapped)")
+    ap.add_argument("--min-bucket", type=int, default=50,
+                    help="a bucket supplying fewer pairs than this is DROPPED rather than "
+                         "dragging every other bucket down to its size")
     ap.add_argument("--equal-bucket", type=int, default=0,
                     help="give EVERY native-size bucket the same count per class; "
                          "N = that count, -1 = the largest all buckets can supply, 0 = off")
@@ -195,10 +202,10 @@ def main():
     print(f"pre-balance: train {len(tr)} val {len(va)} test {len(te)}")
     print("balance (per native-size bucket, larger class subsampled):")
     eq = a.equal_bucket
-    tr, x1 = balance(tr, a.seed + 100, "train", a.cap_bucket, eq)
+    tr, x1 = balance(tr, a.seed + 100, "train", a.cap_bucket, eq, a.min_bucket)
     va, x2 = balance(va, a.seed + 101, "val",
                      max(1, a.cap_bucket // 8) if a.cap_bucket else 0,
-                     (max(1, eq // 8) if eq > 0 else eq))
+                     (max(1, eq // 8) if eq > 0 else eq), max(1, a.min_bucket // 8))
     te += x1 + x2
 
     for split, rs in (("train", tr), ("val", va), ("test", te)):
