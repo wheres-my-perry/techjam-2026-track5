@@ -34,8 +34,12 @@ SOURCES = {
     "sid":             ("data/sid_set/data/*.parquet",                 "sid",      None, None,            None),
     "celebahq_1024":   ("data/ext/celeba-hq/data/*.parquet",           "plain",    0,    "",              9000),
     "afhq_512":        ("data/ext/AFHQv2/data/*.parquet",              "plain",    0,    "",              15000),
-    "openimages_1024": ("data/ext/open-images-v7-subset/data/*.parquet","plain",   0,    "",              9000),
-    "midjourney_v6":   ("data/ext/midjourney-v6-recap/train_*.parquet","plain",    1,    "midjourney_v6", 9000),
+    # Caps raised 2026-08-31: these two decide the 769-1024 bucket, and that bucket must hold the
+    # same count as every other (canonicalize --long 320 only shrinks images above 320, so an
+    # unequal split trains the model mostly in one rescaling regime). 60,000 midjourney images
+    # were already extracted and being thrown away by the old 9,000 cap.
+    "openimages_1024": ("data/ext/open-images-v7-subset/data/*.parquet","plain",   0,    "",             22000),
+    "midjourney_v6":   ("data/ext/midjourney-v6-recap/train_*.parquet","plain",    1,    "midjourney_v6",22000),
     "elsa":            ("data/ext/ELSA_D3/data/*.parquet",             "elsa",     None, None,            None),
     "ffhq_1024":       ("data/ext/ffhq-dataset/Part1/*.png",           "files",    0,    "",              None),
 }
