@@ -73,28 +73,44 @@ python app.py
 Every experiment, including negative results, is logged in [CHANGELOG.md](CHANGELOG.md),
 [docs/PROGRESS.md](docs/PROGRESS.md) and [docs/approaches/](docs/approaches/).
 
-## Results (summary — full tables in docs/REPORT.md)
+## Results (summary — full tables in [docs/REPORT.md](docs/REPORT.md))
 
-| setting | clean | mean over 15 transforms | worst condition |
-|---|---|---|---|
-| unseen generator, seen family (ddpm held out) | 0.985 | 0.970 | 0.939 |
-| contest reference set (DALL·E Advanced vs COCO) | 0.985 | 0.958 | 0.910 |
-| unseen generator **family** (all diffusion removed from training) | 0.845 | 0.811 | — |
+Model `canon6.pt`, inference `vote(L=320)`, cut-off 0.5. **Every figure is pooled over the whole
+set and over all 15 transform conditions, read at one fixed cut-off.** Per-slice numbers read at
+per-slice thresholds are not product numbers.
 
-Honest headline: ~0.96 for a new generator inside a family we trained on, ~0.72 pooled for a
-family we never saw. Worst cells are always low-pass (blur σ2, ¼ resize).
+| set | what it tests | AUROC | recall | false alarms |
+|---|---|---|---|---|
+| Judges' reference set (DALL·E-3 vs COCO val2017) | an unseen generator, contest data | **0.9972** | **94.9%** | 1.01% |
+| Held-out test (33 generators, 8 never trained on) | our corpus, held out | 0.9520 | 70.0% | 1.00% |
+| OmniFake (41 unseen generators, independent) | generalisation to other families | 0.9139 | **32.1%** | 1.00% |
+| 25 real files (5 iPhone photos + 20 AI) | real-world behaviour | 0.890 | 17 of 20 | **0 of 5** |
+
+Robustness on the judges' set: AUROC mean **0.9977** over the brief's 14 transformed conditions,
+worst 0.9927 (blur σ1.0). The model does not read colour — greyscale scoring holds at 0.9830
+against 0.9977 clean.
 
 ## Limitations & future work
 
-- Cross-family generalisation (0.72) is the open problem; token/autoregressive generators are
-  under-represented in public data.
-- Fakes that imitate bad-camera statistics (flash, motion blur, grain) are the dominant false
-  negatives; non-photographic reals (drawings) the dominant false positives — see
-  [docs/ERROR_ANALYSIS.md](docs/ERROR_ANALYSIS.md).
-- The contest reference set itself fails a colour-canary audit (palette differs by class);
-  numbers on it carry that caveat.
-- Fixed thresholds mis-flag 10–27% of corrupted reals; thresholds must be chosen on
-  validation under the expected corruption mix.
+- **Generalisation to unseen generator families is the main weakness.** 32.1% recall at 1% false
+  alarms on an independent 41-generator benchmark (GPT-4o, FLUX, Ideogram, HiDream, SANA…), against
+  94.9% on the judges' set. AUROC there is 0.9139, so the ranking is sound and the failure is
+  calibration under distribution shift — the cut-off needed for 1% false alarms on that set is 0.97.
+- **Partially generated images are out of scope.** A real photo with an inpainted region scores as
+  real (33.4% recall). Inference averages 27 crops, which averages one edited region away.
+  *Future work:* keep the mean for the whole-image verdict and add a top-k pass over the same
+  per-crop scores to raise an "edited region suspected" flag — an aggregation change, not a new
+  model. The spec already supports it (`vote(k=3,L=320)`).
+- **Highly produced real photography is the dominant false-alarm class** — studio portraits, product
+  shots on plain backgrounds, paintings and illustrations. *Future work:* add such imagery to the
+  real half of the training set.
+- **One fixed threshold cannot suit every image size.** Per-bucket optima span 0.257–0.711; at the
+  shipped cut-off the smallest-image bucket flags 3.3% of real photos against a 1% target.
+- **Do not choose the cut-off on clean images.** A clean-only cut-off flags 22.9% of real photos
+  under JPEG q30, because JPEG shifts every score upward.
+- *Future work, untested here:* the classifier head is a single linear layer on the 1024-d
+  embedding; an MLP (1024→64→1) and an augmentation-consistency loss on the embedding
+  (`--head mlp`, `--consist`) are implemented and were being measured at submission time.
 
 ## Repo structure
 
