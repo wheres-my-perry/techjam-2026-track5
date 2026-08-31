@@ -48,9 +48,17 @@ HOLDOUT = {"ddpm", "ddim"}
 PARTIAL_EDIT = {"sid_tampered", "lama", "mat", "generative_inpainting", "palette"}
 TEST_ONLY_GEN = HOLDOUT | PARTIAL_EDIT | {"deepfloyd_if"}
 
-# Real sources routed test-only. lsun_bedroom exists solely to balance ddim/ddpm's bedrooms; with
-# those generators held out it would make bedroom one-sided REAL, which is the same bug mirrored.
-TEST_ONLY_SOURCE = {"lsun_bedroom"}
+# Real sources routed test-only.
+TEST_ONLY_SOURCE = set()
+
+# Per-source caps applied BEFORE the size-bucket balance, for sources that exist to balance a
+# SUBJECT rather than a size bucket. Holding ddim/ddpm out does not remove bedrooms from the fake
+# class: ArtiFact's LSUN-trained GANs (diffusion_gan, denoising_diffusion_gan, stable_diffusion)
+# still emit ~1,400. Measured both extremes -- all 20K LSUN bedroom reals in train gives
+# 'bedroom = fake' 2.14:1 while ddim is present, and none gives 12.55:1 once it is removed. The
+# cap admits just enough real bedrooms to match the residual fake ones, so the subject is
+# two-sided without flooding the <=341 bucket and crowding out other content.
+CAP_SOURCE = {"lsun_bedroom": 3000}
 
 
 def bucket(long_side: int) -> str:
@@ -118,6 +126,14 @@ def main():
         print(f"{p}: +{len(rows) - n_before} rows")
     print(f"total {len(rows)} rows from {len(a.canon)} manifests"
           + (f" ({n_excluded} dropped by --exclude)" if n_excluded else ""))
+
+    for src, cap in sorted(CAP_SOURCE.items()):
+        idx = [i for i, r in enumerate(rows) if r["source"] == src]
+        if len(idx) > cap:
+            rng = random.Random(a.seed + 7)
+            drop = set(rng.sample(idx, len(idx) - cap))
+            rows = [r for i, r in enumerate(rows) if i not in drop]
+            print(f"  source cap: {src} {len(idx)} -> {cap} (subject-balance cap, see CAP_SOURCE)")
 
     # ---- route + split by (source, generator), splitting whole source files ----
     groups = defaultdict(list)
