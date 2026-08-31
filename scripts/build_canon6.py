@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import random
 from collections import defaultdict
 
@@ -74,14 +75,26 @@ def main():
     ap.add_argument("--out-prefix", default="data/manifests/canon6")
     ap.add_argument("--cap-bucket", type=int, default=45000,
                     help="max rows per class per bucket in train (0 = uncapped)")
+    ap.add_argument("--exclude", default=None,
+                    help="file of canonical paths to drop (from corpus_audit --write-drop): "
+                         "blank/flat images, cross-split byte duplicates, and val/test rows that "
+                         "are perceptual copies of a training image")
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
 
-    rows, seen = [], set()
+    excluded = set()
+    if a.exclude and os.path.exists(a.exclude):
+        excluded = {l.strip() for l in open(a.exclude) if l.strip()}
+        print(f"exclusion list: {len(excluded)} canonical paths from {a.exclude}")
+
+    rows, seen, n_excluded = [], set(), 0
     for p in a.canon:
         n_before = len(rows)
         for r in csv.DictReader(open(p, newline="")):
             if not r.get("long") or int(r["long"]) <= 0:
+                continue
+            if r["path"] in excluded:      # audited-bad rows (blank, dup, near-dup)
+                n_excluded += 1
                 continue
             if r["orig"] in seen:          # same source file via two manifests
                 continue
@@ -89,7 +102,8 @@ def main():
             r["bucket"] = bucket(int(r["long"]))
             rows.append(r)
         print(f"{p}: +{len(rows) - n_before} rows")
-    print(f"total {len(rows)} rows from {len(a.canon)} manifests")
+    print(f"total {len(rows)} rows from {len(a.canon)} manifests"
+          + (f" ({n_excluded} dropped by --exclude)" if n_excluded else ""))
 
     # ---- route + split by (source, generator), splitting whole source files ----
     groups = defaultdict(list)

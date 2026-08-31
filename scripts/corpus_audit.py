@@ -56,6 +56,8 @@ def main():
     ap.add_argument("--maxd", type=int, default=2)
     ap.add_argument("--workers", type=int, default=24)
     ap.add_argument("--limit", type=int, default=0, help="0 = all rows")
+    ap.add_argument("--write-drop", default=None,
+                    help="write every offending canonical path here, for build_canon6 --exclude")
     a = ap.parse_args()
 
     rows = {}
@@ -146,6 +148,23 @@ def main():
         if pct > 0.5:
             fails += 1
             print("    -> drop them; they inflate val/test (canon5 dropped 65 val + 321 test)")
+
+    if a.write_drop:
+        drop = set(unread) | set(flat)
+        for sha, group in by_sha.items():           # cross-split byte duplicates
+            if len({g[0] for g in group}) > 1:
+                drop.update(g[1] for g in group)
+        for sp in ("val", "test"):                  # near-copies of a training image
+            for r in rows.get(sp, []):
+                d, isflat = info[r["path"]][1], info[r["path"]][2]
+                if d is None or isflat:
+                    continue
+                for k in (d >> 40, (d >> 40) ^ 1):
+                    if any(bin(d ^ t).count("1") <= a.maxd for t in buckets.get(k, ())):
+                        drop.add(r["path"]); break
+        with open(a.write_drop, "w") as fh:
+            fh.write("\n".join(sorted(drop)) + "\n")
+        print(f"\n  wrote {len(drop)} paths to drop -> {a.write_drop}")
 
     print(f"\nVERDICT: {'CLEAN' if not fails else str(fails) + ' PROBLEM AREA(S) — fix before training'}")
     raise SystemExit(1 if fails else 0)
