@@ -1,5 +1,8 @@
-"""Score the frozen WILD held-out set (data/hack: phone photos + modern-generator
-images, never trained on) with any model spec. Reports per-file scores, accuracy
+"""Score the frozen HACK SET (data/hack: phone photos + modern-generator images,
+never trained on) with any model spec.
+
+NAME: this is the HACK SET, after the folder it lives in. It was called the "wild set", which
+collides with WildFake -- one of our actual datasets -- and was ambiguous in every report. Reports per-file scores, accuracy
 at 0.5 and AUROC. This is the number that reflects the demo, not the benchmark.
 
     python -m scripts.wild_eval --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt"
@@ -51,7 +54,7 @@ def main():
             print(f"  {ok} {g:7s} {os.path.basename(f)[:34]:34s} {str(im.size):13s} P(AI)={s:.3f}")
     acc = float(np.mean((p >= 0.5) == y.astype(bool)))
     auc = roc_auc_score(y, p) if len(set(y)) == 2 else float("nan")
-    print(f"WILD  n={len(fs)} (real {int((y==0).sum())}, fake {int((y==1).sum())})  "
+    print(f"HACK SET  n={len(fs)} (real {int((y==0).sum())}, fake {int((y==1).sum())})  "
           f"acc@0.5={acc:.2f}  AUROC={auc:.3f}  real mean P={p[y==0].mean():.2f}  fake mean P={p[y==1].mean():.2f}  [{args.model}]")
 
 
