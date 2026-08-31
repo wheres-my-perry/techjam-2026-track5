@@ -65,6 +65,10 @@ CAP_SOURCE = {
     # commercial scenes -- size-balanced (bucket_audit 1.00) and content-disjoint. Capped so the
     # diverse web photos (flickr30k_web, native ~500x375) carry that bucket instead.
     "afhq_512": 4000,
+    # celebahq_1024 was 4,008 of the 8,943 reals in the 769-1024 bucket and ALL faces, while that
+    # bucket's fakes (midjourney_v6, flux_sid) contain almost none -- "1024px face => real".
+    # Capped so openimages_1024 (diverse web photography) carries the bucket instead.
+    "celebahq_1024": 1500,
 }
 
 

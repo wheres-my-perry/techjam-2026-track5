@@ -86,8 +86,11 @@ def bucket_content(manifest, eval_set):
         n = sum(nr + nf for nr, nf in by[b].values())
         if n < 500:
             continue
+        # 'other' means "the path matched no rule", not a content category: ELSA / Midjourney /
+        # flux all land there while COCO and CelebA-HQ get real tags, so treating it as a subject
+        # invents disjointness that is not in the images (verified by eye on the 513-768 bucket).
         one_sided = [(sub, nr, nf) for sub, (nr, nf) in by[b].items()
-                     if nr + nf >= max(200, 0.10 * n) and (nr == 0 or nf == 0)]
+                     if sub != "other" and nr + nf >= max(200, 0.10 * n) and (nr == 0 or nf == 0)]
         notes = []
         for lab, tag in ((0, "real"), (1, "fake")):
             c = src[b][lab]

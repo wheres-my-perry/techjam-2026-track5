@@ -50,6 +50,9 @@ routing:
     # visible only by looking at the images. flickr30k_web (everyday photos, native ~500x375)
     # carries the bucket instead.
     afhq_512: 4000
+    # celebahq_1024 was 4,008 of 8,943 reals in the 769-1024 bucket and all faces, while that
+    # bucket's fakes (midjourney_v6, flux_sid) have almost none -> "1024px face = real".
+    celebahq_1024: 1500
 
 splits:
   train_frac: 0.8
