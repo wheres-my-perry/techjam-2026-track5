@@ -12,11 +12,32 @@ You are joining mid-project. Team lead: Thinh (GitHub natsupercell). Deadline: S
 ## Non-negotiable rules (full list in the skill)
 - ONE topic at a time. Correct Thinh when he is wrong. Explain simply when asked.
 - Command blocks must be zsh-paste-safe: no # comments inside blocks, include cd.
-- Benchmark integrity: every new/changed manifest passes scripts/label_provenance_audit.py --strict
-  (labels re-derived from source; added 2026-08-30 after 24% of "fakes" turned out to be real
-  photos), scripts/shortcut_audit.py (metadata-only AUROC ~0.5) + scripts/size_audit.py BEFORE
-  any result is reported. Too-good results (>=0.99)
-  trigger a shortcut hunt, never celebration.
+- Benchmark integrity: every new/changed manifest passes ALL the gates BEFORE any result is
+  reported. Run them with ONE command so none can be forgotten:
+      python -m scripts.audit_all --prefix data/manifests/<name>          (train/val/test)
+      python -m scripts.audit_all --manifest <eval>.csv --eval-set        (an evaluation set)
+      python -m scripts.corpus_audit --prefix data/manifests/<name> --write-drop <drop.txt>
+  The full list, and what each one is FOR (updated 2026-08-31 — the old rule named only the
+  first three, which is exactly why content_audit got skipped and the canon2 'bedroom = fake'
+  bug came back in canon6 at 92.7:1):
+    * label_provenance_audit.py --strict  labels re-derived from source, independent of the
+      builder (added 2026-08-30 after 24% of "fakes" turned out to be real photos)
+    * bucket_audit.py --strict            real:fake balanced in every NATIVE size bucket
+    * shortcut_audit.py                   metadata-only AUROC ~0.5
+    * size_audit.py                       per-class image dimensions
+    * canary_audit.py                     deliberately dumb pixel models must score ~0.5
+    * content_audit.py                    every SUBJECT appears on both sides of the label.
+      NON-NEGOTIABLE: one-sided content may be kept for TESTING but NEVER used for TRAINING —
+      it is both a shortcut ("bedroom = fake") and a competence limit (a model trained on
+      bedrooms detects bedrooms and nothing else; this is why canon2 scored 0/10 on wild photos)
+    * corpus_audit.py                     blank/corrupt images, byte duplicates within and across
+      splits, and val/test rows that are perceptual copies of a training image
+  KNOW WHAT EACH GATE CANNOT SEE. shortcut_audit and size_audit read the CANONICAL files, which
+  are all one size after canonicalization, so they are structurally BLIND to native size: a set
+  can pass at 0.62 while "big = real" is perfectly learnable. audit_all checks native size from
+  the manifest's `long` column for exactly this reason. Evaluation sets with one-class size
+  buckets are reported SIZE-MATCHED only (scripts/size_matched.py).
+  Too-good results (>=0.99) trigger a shortcut hunt, never celebration.
 - Git topology (CHANGED 2026-08-28, Thinh's call — server is now primary): the SERVER clone
   (~/techjam-2026-track5 on chim@157.66.47.161:2205) is the WORKING clone; commit and push from
   there. The Mac clone (~/Documents/code/hackathon/techjam-2026-track5) is now a read-only
