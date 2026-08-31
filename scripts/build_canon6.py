@@ -34,9 +34,23 @@ from collections import defaultdict
 FIELDS = ["path", "orig", "label", "generator", "source", "long"]
 
 # Held out from train/val entirely. Keyed on the generator name, across sources.
-HOLDOUT = {"ddpm"}
+#
+# ddim added 2026-08-31 (Thinh's rule: one-sided content may be kept for TESTING but never for
+# TRAINING). Measured on canon6_train, ddim is 19,093 rows -- 30% of the fake class -- and its
+# content is bedroom 76.4% / church 23.6%, i.e. 100% in two subjects. Two separate harms:
+#   * shortcut: 'bedroom => fake' (content_audit measured 92.7:1 before LSUN reals were added);
+#   * competence: a model whose fake class is one-third bedrooms learns to detect BEDROOMS, and
+#     meets a phone photo of a person with nothing. That is why canon2 scored 0/10 on wild images.
+# Balancing it was not enough: adding real bedrooms only moves the skew to 2.14:1, and removing
+# ddim while KEEPING those reals would flip the axis to 'bedroom => real'. Both sides of the
+# bedroom/church axis therefore leave training together (see TEST_ONLY_SOURCE).
+HOLDOUT = {"ddpm", "ddim"}
 PARTIAL_EDIT = {"sid_tampered", "lama", "mat", "generative_inpainting", "palette"}
 TEST_ONLY_GEN = HOLDOUT | PARTIAL_EDIT | {"deepfloyd_if"}
+
+# Real sources routed test-only. lsun_bedroom exists solely to balance ddim/ddpm's bedrooms; with
+# those generators held out it would make bedroom one-sided REAL, which is the same bug mirrored.
+TEST_ONLY_SOURCE = {"lsun_bedroom"}
 
 
 def bucket(long_side: int) -> str:
@@ -112,7 +126,11 @@ def main():
 
     tr, va, te = [], [], []
     for i, (key, rs) in enumerate(sorted(groups.items())):
-        gen = key[1]
+        src, gen = key
+        if src in TEST_ONLY_SOURCE:
+            te += rs
+            print(f"  {str(key):46s} n={len(rs):7d} -> TEST ONLY (source paired with a held-out generator)")
+            continue
         if gen in TEST_ONLY_GEN:
             te += rs
             why = "HOLD-OUT" if gen in HOLDOUT else (
