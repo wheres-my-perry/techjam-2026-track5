@@ -34,12 +34,14 @@ def _one(job):
     path, label, generator, source, out_dir, crop, band, long_side, jpeg_fakes, seed = job
     h = hashlib.md5(path.encode()).hexdigest()[:16]
     out_path = os.path.join(out_dir, f"{h}.png")
+    native = 0
     if not os.path.exists(out_path):
         try:
             img = load_image(path)
         except Exception as e:
             print(f"skip {path}: {e}", flush=True)
             return None
+        native = max(img.size)          # BEFORE any resize: the size-bucket key
         rng = random.Random(f"{seed}|{path}")
         if jpeg_fakes and label == 1:
             buf = io.BytesIO()
@@ -66,7 +68,18 @@ def _one(job):
         tmp = out_path + f".{os.getpid()}.tmp.png"
         img.save(tmp, format="PNG")
         os.replace(tmp, out_path)
-    return {"path": out_path, "orig": path, "label": label, "generator": generator, "source": source}
+    if not native:
+        # resume path: the canonical PNG already existed, so read the native long
+        # side from the ORIGINAL header (lazy, no decode) -- the per-bucket balance
+        # gate needs it for every row, not just freshly canonicalized ones.
+        try:
+            with Image.open(path) as im:
+                native = max(im.size)
+        except Exception as e:
+            print(f"size-probe failed {path}: {e}", flush=True)
+            return None
+    return {"path": out_path, "orig": path, "label": label, "generator": generator,
+            "source": source, "long": native}
 
 
 def main():
@@ -115,7 +128,7 @@ def main():
 
     os.makedirs(os.path.dirname(args.out_manifest) or ".", exist_ok=True)
     with open(args.out_manifest, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["path", "orig", "label", "generator", "source"])
+        w = csv.DictWriter(fh, fieldnames=["path", "orig", "label", "generator", "source", "long"])
         w.writeheader()
         w.writerows(rows)
     print(f"{len(rows)} rows -> {args.out_manifest}")
