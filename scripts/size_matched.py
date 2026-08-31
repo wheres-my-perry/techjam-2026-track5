@@ -28,6 +28,20 @@ from collections import defaultdict
 import numpy as np
 from sklearn.metrics import roc_auc_score
 
+
+
+def _p(path):
+    """Normalize a manifest path for joining.
+
+    src.data.load_manifest prefixes paths with "./" while the csv stores them bare, so a dict
+    keyed on one and looked up with the other silently matches NOTHING -- val_by_bucket printed an
+    empty table and size_matched would have reported "no bucket has both classes".
+    """
+    p = str(path).replace("\\", "/")
+    while p.startswith("./"):
+        p = p[2:]
+    return p
+
 ORDER = ["<=341", "342-512", "513-768", "769-1024", ">1024"]
 
 
@@ -60,12 +74,12 @@ def main():
     long_of = {}
     for r in csv.DictReader(open(a.manifest, newline="")):
         if r.get("long"):
-            long_of[r["path"]] = int(r["long"])
+            long_of[_p(r["path"])] = int(r["long"])
 
     idx_by = defaultdict(lambda: {0: [], 1: []})
     missing = 0
     for i, p in enumerate(paths):
-        L = long_of.get(p)
+        L = long_of.get(_p(p))
         if L is None:
             missing += 1
             continue

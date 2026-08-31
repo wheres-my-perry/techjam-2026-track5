@@ -27,6 +27,20 @@ from sklearn.metrics import roc_auc_score
 from src.data import load_image, load_manifest
 from src.model import load_model
 
+
+
+def _p(path):
+    """Normalize a manifest path for joining.
+
+    src.data.load_manifest prefixes paths with "./" while the csv stores them bare, so a dict
+    keyed on one and looked up with the other silently matches NOTHING -- val_by_bucket printed an
+    empty table and size_matched would have reported "no bucket has both classes".
+    """
+    p = str(path).replace("\\", "/")
+    while p.startswith("./"):
+        p = p[2:]
+    return p
+
 ORDER = ["<=341", "342-512", "513-768", "769-1024", ">1024"]
 BATCH = 32
 
@@ -53,7 +67,7 @@ def main():
     long_of, bucket_of = {}, {}
     for r in csv.DictReader(open(a.manifest, newline="")):
         if r.get("long"):
-            bucket_of[r["path"]] = buck(r["long"])
+            bucket_of[_p(r["path"])] = buck(r["long"])
     train_n = Counter()
     for r in csv.DictReader(open(a.train, newline="")):
         if r.get("long"):
@@ -62,7 +76,7 @@ def main():
     samples = load_manifest(a.manifest)
     by = defaultdict(list)
     for s in samples:
-        b = bucket_of.get(s.path)
+        b = bucket_of.get(_p(s.path))
         if b:
             by[b].append(s)
 
