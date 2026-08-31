@@ -54,6 +54,61 @@ def run(cmd):
     return p.stdout + p.stderr
 
 
+def bucket_content(manifest, eval_set):
+    """Subject balance and source concentration WITHIN each native-size bucket.
+
+    content_audit checks subjects across the whole manifest; bucket_audit checks class counts per
+    size bucket. Neither asks whether, INSIDE one bucket, the two classes show the same subjects.
+    canon6's 342-512 bucket passed both while being content-disjoint: 10 of 12 sampled reals were
+    afhq_512 cat/dog close-ups and the fakes were diverse commercial scenes, so
+    "342-512px animal close-up => real" was learnable without detecting anything generated.
+    Found only by looking at the images; this is that check, automated.
+    """
+    try:
+        from scripts.content_audit import load_artifact_categories, subject
+    except Exception as e:
+        return "SKIP", [f"  content tagger unavailable: {e}"]
+    rows = list(csv.DictReader(open(manifest, newline="")))
+    if not rows or "long" not in rows[0]:
+        return "SKIP", ["  no `long` column"]
+    cats = load_artifact_categories()
+    by = defaultdict(lambda: defaultdict(lambda: [0, 0]))
+    src = defaultdict(lambda: defaultdict(Counter))
+    for r in rows:
+        b = buck(r["long"])
+        lab = int(r["label"])
+        by[b][subject(r, cats)][lab] += 1
+        src[b][lab][r["source"] if lab == 0 else r["generator"]] += 1
+    lines, bad = [], []
+    for b in ORDER:
+        if b not in by:
+            continue
+        n = sum(nr + nf for nr, nf in by[b].values())
+        if n < 500:
+            continue
+        one_sided = [(sub, nr, nf) for sub, (nr, nf) in by[b].items()
+                     if nr + nf >= max(200, 0.10 * n) and (nr == 0 or nf == 0)]
+        notes = []
+        for lab, tag in ((0, "real"), (1, "fake")):
+            c = src[b][lab]
+            tot = sum(c.values())
+            if tot:
+                top, k = c.most_common(1)[0]
+                if k / tot >= 0.70:
+                    notes.append(f"{tag} {k/tot:.0%} from '{top}'")
+        lines.append(f"  {b:10s} n={n:7d}  " + ("; ".join(notes) if notes else "sources mixed"))
+        for sub, nr, nf in one_sided:
+            lines.append(f"      subject '{sub}': {nr} real / {nf} fake  ONE-SIDED INSIDE THIS BUCKET")
+            bad.append(f"{b}/{sub}")
+        if len(notes) == 2:
+            bad.append(f"{b}/single-source-both-classes")
+    if bad:
+        lines.append("  => within a size bucket the classes do not show the same content, so "
+                     "content predicts the label at that size.")
+        return ("CAVEAT" if eval_set else "FAIL"), lines
+    return "PASS", lines
+
+
 def native_size(manifest, eval_set):
     """The check no canonical-pixel audit can do. Returns (verdict, lines)."""
     rows = list(csv.DictReader(open(manifest, newline="")))
@@ -144,6 +199,12 @@ def main():
         verdicts.append((f"NATIVE size {os.path.basename(t)}", vd,
                          "the one no canonical-pixel audit can do"))
         print(f"\nnative-size distribution — {t}")
+        print("\n".join(lines))
+
+        vd, lines = bucket_content(t, a.eval_set)
+        verdicts.append((f"CONTENT within size bucket {os.path.basename(t)}", vd,
+                         "same subjects on both sides INSIDE each bucket"))
+        print(f"\ncontent within each size bucket — {t}")
         print("\n".join(lines))
 
     print(f"\n{'gate':46s} {'verdict':8s} note")
