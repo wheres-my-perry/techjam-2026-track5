@@ -2,7 +2,7 @@
 images, never trained on) with any model spec. Reports per-file scores, accuracy
 at 0.5 and AUROC. This is the number that reflects the demo, not the benchmark.
 
-    python -m scripts.wild_eval --model "vote(L=320)+pe_ft:outputs/pe_ft/canon3.pt"
+    python -m scripts.wild_eval --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt"
 """
 from __future__ import annotations
 

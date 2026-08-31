@@ -31,7 +31,7 @@ from src.data import load_image  # noqa: F401  (keeps EXIF handling identical)
 from src.model import load_model
 from src.transforms import EVAL_GRID
 
-CKPT = "outputs/pe_ft/canon4.pt"
+CKPT = "outputs/pe_ft/canon6.pt"
 SPEC = f"vote(L=320)+pe_ft:{CKPT}"
 EVALUATED_MAX = 640          # largest short side any reported number used
 THRESHOLD = 0.15
@@ -110,7 +110,7 @@ def score_image(img, transform: str, dense: bool):
                      f"evaluation — crops are still native-resolution, but no measured number "
                      f"covers this size. {'Dense grid on.' if dense else 'Only 9 spots sampled; tick dense grid.'}")
     lines.append("Map: red = crop looks AI, green = crop looks real; white boxes = largest crop size. "
-                 "Model: PE-Core-L14-336 fine-tuned (316M params), checkpoint canon2.pt.")
+                 "Model: PE-Core-L14-336 fine-tuned (316M params), checkpoint canon6.pt.")
     return out, "\n\n".join(lines)
 
 

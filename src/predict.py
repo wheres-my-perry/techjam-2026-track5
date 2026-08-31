@@ -20,7 +20,7 @@ from .data import load_image
 from .model import load_model
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff", ".tif", ".heic", ".heif"}
-DEFAULT_MODEL = "vote(L=320)+pe_ft:outputs/pe_ft/canon4.pt"
+DEFAULT_MODEL = "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt"
 DEFAULT_THRESHOLD = 0.15
 BATCH = 32
 

@@ -17,7 +17,7 @@ from src.data import load_image
 from src.model import load_model
 from src.predict import iter_image_paths
 
-DEFAULT = "vote(L=320)+pe_ft:outputs/pe_ft/canon4.pt"
+DEFAULT = "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt"
 
 
 def main():
