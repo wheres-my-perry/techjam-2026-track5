@@ -33,8 +33,17 @@ pip install -r requirements.txt
 pip install -r requirements-train.txt
 ```
 `requirements.txt` = inference (numpy, Pillow, scikit-learn); `requirements-train.txt` adds
-torch/torchvision/timm/open_clip for training and the neural models. Weights: place the
-checkpoint at `outputs/pe_ft/canon6.pt` (download link in the Devpost submission).
+torch/torchvision/timm/open_clip for training and the neural models.
+
+**Weights** — download the checkpoint and place it at `outputs/pe_ft/canon6.pt`:
+
+```
+mkdir -p outputs/pe_ft && curl -L -o outputs/pe_ft/canon6.pt \
+  https://github.com/wheres-my-perry/techjam-2026-track5/releases/download/canon6-v1/canon6.pt
+```
+[Release page](https://github.com/wheres-my-perry/techjam-2026-track5/releases/tag/canon6-v1) ·
+1.26 GB · PE-Core-L14-336, 316.1M params (under the brief's 2B limit) ·
+sha256 `974fa78384c504341838f3a1c8f9df23...`
 
 ## Run — the required directory → JSON script
 
