@@ -6,3 +6,20 @@ release 379630255, 1 assets already there
   uploading canon6_mlp.pt  1265 MB  sha256 a61b58565a3db507...
     http 201  OK
   uploading canon6pe_mlp.pt  1265 MB  sha256 dcfd6ec4a22f3bfb...
+release 379630255, 8 assets already there
+  canon6_C.pt already uploaded, skipping
+  canon6_AlowLR.pt already uploaded, skipping
+  canon6_mlp.pt already uploaded, skipping
+  canon6pe_mlp.pt already uploaded, skipping
+  canon6_A.pt already uploaded, skipping
+  canon6_B.pt already uploaded, skipping
+  canon6_B6.pt already uploaded, skipping
+=== assets on the release now ===
+  canon6.pt                 1265 MB
+  canon6pe_mlp.pt           1265 MB
+  canon6_A.pt               1265 MB
+  canon6_AlowLR.pt          1265 MB
+  canon6_B.pt               1266 MB
+  canon6_B6.pt              1266 MB
+  canon6_C.pt               1265 MB
+  canon6_mlp.pt             1265 MB

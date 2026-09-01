@@ -1,0 +1,17 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+starting ship evaluation  Tue Sep  1 01:21:06 UTC 2026
+################ canon6_AlowLR
+----- held-out test, 33 generators
+**Clean AUROC:** 0.9717 · **Mean transformed:** 0.9567 · **Worst:** 0.9238 (noise_s0.10)
+POOLED  AUROC 0.9580   n=45000 (22365 real / 22635 AI)
+ONE GLOBAL CUT-OFF = 0.3756  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI            16690              5945
+  actually real            224             22141
+
+  precision 98.7%   recall 73.7%   false-alarm rate 1.00%   accuracy 86.3%
+  In words: of 22635 AI images 16690 are caught and 5945 slip through; of 22365 real photos 224 are wrongly flagged.
+
+----- OmniFake, unseen generator families, independent corpus

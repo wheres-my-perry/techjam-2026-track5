@@ -1,5 +1,5 @@
 [32mActivated conda/uv virtual environment at [36m/venv/main[0m
-==================== AUDIT PASS Tue Sep  1 00:46:58 UTC 2026 ====================
+==================== AUDIT PASS Tue Sep  1 01:21:39 UTC 2026 ====================
 ----- canon6 : seven gates
 
 gate                                           verdict  note
@@ -48,4 +48,4 @@ VERDICT: every subject has both classes
   canon6_val: 0 overlap (must be 0)
   canon6pe_train: 0 overlap (must be 0)
   canon6pe_val: 0 overlap (must be 0)
-AUDIT_PASS_DONE Tue Sep  1 00:53:36 UTC 2026
+AUDIT_PASS_DONE Tue Sep  1 01:28:15 UTC 2026
