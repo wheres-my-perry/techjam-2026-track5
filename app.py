@@ -133,7 +133,7 @@ def build_ui():
                 dense = gr.Checkbox(value=True, label="sample large images more finely (>640 px)")
                 btn = gr.Button("Detect", variant="primary")
             with gr.Column():
-                outimg = gr.Image(label="per-crop score map")
+                outimg = gr.Image(label="where the model sees AI evidence")
                 txt = gr.Markdown()
         btn.click(score_image, [inp, tf, dense], [outimg, txt])
         inp.upload(score_image, [inp, tf, dense], [outimg, txt])
