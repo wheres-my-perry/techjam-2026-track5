@@ -1,13 +1,6 @@
-[32mActivated conda/uv virtual environment at [36m/venv/main[0m
-all training finished, benchmarking  Tue Sep  1 00:46:58 UTC 2026
-########## 1. STACKED-AUGMENTATION DEPTH LADDER  Tue Sep  1 00:46:58 UTC 2026
-**Clean AUROC:** 0.9991 · **Mean transformed:** 0.9951 · **Worst:** 0.9907 (stack6_rand)
-**Clean AUROC:** 0.9969 · **Mean transformed:** 0.9928 · **Worst:** 0.9887 (stack5_rand)
-**Clean AUROC:** 1.0000 · **Mean transformed:** 0.9989 · **Worst:** 0.9968 (stack6_rand)
-**Clean AUROC:** 0.9988 · **Mean transformed:** 0.9922 · **Worst:** 0.9880 (stack6_rand)
-**Clean AUROC:** 0.9995 · **Mean transformed:** 0.9933 · **Worst:** 0.9879 (stack6_rand)
-**Clean AUROC:** 1.0000 · **Mean transformed:** 0.9935 · **Worst:** 0.9815 (stack6_rand)
-**Clean AUROC:** 0.9998 · **Mean transformed:** 0.9930 · **Worst:** 0.9865 (stack6_rand)
+# Robustness under stacked augmentation
+
+```
 ROBUSTNESS UNDER STACKED AUGMENTATION
 Row k = k DISTINCT transform families composed on the same image (6 = all of them).
 n = 400 judges' images per cell.
@@ -56,30 +49,4 @@ FALSE ALARMS — real photos wrongly flagged
   4                      9.2%        10.5%        32.2%        32.2%        15.1%         3.3%        31.6%
   5                     13.8%        12.5%        42.8%        41.4%        17.1%         3.9%        34.9%
   6 (all)               19.1%        11.8%        50.7%        48.0%        22.4%         5.3%        40.8%
-
-wrote docs/ROBUSTNESS.md
-########## 2. canon6pe_mlp slices + hack grid  Tue Sep  1 01:05:06 UTC 2026
-########## outputs/pe_ft/eval_pe_official   (outputs/pe_ft/eval_pe_official/scores.npz, 14 transformed conditions)
-  CLEAN only         n=   900 (326 real / 574 AI)  AUROC 0.9995   cut-off 0.3910
-      actually AI    -> AI    569   -> real      5
-      actually real  -> AI      4   -> real    322
-      recall  99.1%   false-alarm 1.23%
-  AUGMENTED only     n= 12600 (4564 real / 8036 AI)  AUROC 0.9971   cut-off 0.6850
-      actually AI    -> AI   7770   -> real    266
-      actually real  -> AI     46   -> real   4518
-      recall  96.7%   false-alarm 1.01%
-  50/50 judges' mix  n=  1800 (645 real / 1155 AI)  AUROC 0.9990   cut-off 0.5844
-      actually AI    -> AI   1133   -> real     22
-      actually real  -> AI      7   -> real    638
-      recall  98.1%   false-alarm 1.09%
-
-HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9565
-ONE GLOBAL CUT-OFF = 0.2682  (at 1% false alarms on all reals)
-                       predicted AI    predicted real
-  actually AI               268                32
-  actually real               1                74
-  recall 89.3%   false-alarm 1.3%
-  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
-  per condition (AUROC | mean P real | mean P fake):
-########## 3. PARTIAL-EDIT SET, every candidate  Tue Sep  1 01:06:07 UTC 2026
-##### canon6_mlp
+```
