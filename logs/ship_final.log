@@ -1,0 +1,23 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+===== tampered images, 2364 leak-checked, shipped policy  Tue Sep  1 02:33:25 UTC 2026
+**Clean AUROC:** 0.8333 · **Mean transformed:** n/a · **Worst:** n/a (None)
+ONE GLOBAL CUT-OFF = 0.3859  (at 1% false alarms on all reals)
+
+CONFUSION MATRIX at that cut-off — counts, not rates
+                       predicted AI    predicted real
+  actually AI              320               862
+  actually real             12              1170
+
+  precision 96.4%   recall 27.1%   false-alarm rate 1.02%   accuracy 63.0%
+  In words: of 1182 AI images 320 are caught and 862 slip through; of 1182 real photos 12 are wrongly flagged.
+
+BY GENERATOR (each vs ALL 1182 reals, same global cut-off)
+===== hack set, sanity check only  Tue Sep  1 02:34:21 UTC 2026
+HACK SET POOLED over 15 conditions  n=375 (75 real / 300 AI)  AUROC=0.9624
+ONE GLOBAL CUT-OFF = 0.1063  (at 1% false alarms on all reals)
+                       predicted AI    predicted real
+  actually AI               267                33
+  actually real               1                74
+  recall 89.0%   false-alarm 1.3%
+  CAVEAT: only 5 real files, so the false-alarm rate here has huge error bars; read the recall column and the per-condition table, not this cut-off, as evidence.
+SHIPFINAL_DONE Tue Sep 1 02:35:22 UTC 2026
