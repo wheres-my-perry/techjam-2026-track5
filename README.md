@@ -1,347 +1,261 @@
-# Robust Detection of AI-Generated Images Under Real-World Transformations
+# Robust AI-Generated Image Detection
 
-**TikTok TechJam 2026 — Track 5.**
+<p align="center">
+  <img src="arch.png" alt="Sketch of the crop, PE-Core embedding, and MLP prediction path" width="500">
+  <br>
+  <sup><em>Crop-and-classify architecture sketch</em></sup>
+</p>
 
-A detector that holds its accuracy after an image has been compressed, blurred, resized, noised,
-colour-shifted or cropped — the condition images are in by the time they reach a platform.
+## Objective
 
-PE-Core-L14-336 fine-tuned end-to-end, scored over a nominal 27-crop grid on a normalized scoring
-canvas. Consistency training uses two independently corrupted views of each training crop; 40% of
-the views receive a stack of two to five size-preserving transforms.
+This project explores a practical question: can we tell whether an image is authentic or
+AI-generated after it has been reposted or lightly edited? A detector may work well on an original
+file and still struggle once compression, blur, resizing, or cropping removes some of the clues it
+relies on. Our aim is to make that drop as small as possible.
 
-Behind it, a seven-gate audit suite that must pass before training. The suite is run with
-`scripts.audit_all`, `scripts.corpus_audit`, and `scripts.content_audit`; no single command currently
-runs all seven. Every early result we produced traced
-back to a shortcut in the data — image size predicting the label, a folder name standing in for a
-label, one subject appearing only on one side. The gates exist so that the model comparisons mean
-what they say.
+### Transformation setup
 
-- Brief, verbatim: [docs/TRACK5_BRIEF_ORIGINAL.md](docs/TRACK5_BRIEF_ORIGINAL.md)
-- Robustness evaluation summary: [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md)
-- Every dataset defect we found: [docs/DATASET_DEFECTS.md](docs/DATASET_DEFECTS.md)
-- Change log: [CHANGELOG.md](CHANGELOG.md)
+For the robustness check, we use six transformation families:
 
----
-
-## Overview
-
-**Model.** PE-Core-L14-336 (Meta Perception Encoder, ViT-L/14, **316.2M parameters** — under the
-brief's 2B limit), fine-tuned end-to-end. Documented baselines: ResNet-50 fine-tune, frozen CLIP +
-linear probe (`src/approaches/`).
-
-**Why a transformer.** We hypothesised that some generated images are exposed not by local texture
-but by *relations between distant regions* — lighting, geometry, mutually illogical parts — which
-convolutions are structurally weak at and self-attention models directly. On identical data and an
-identical crop protocol the transformer scored 0.964 against the CNN's 0.792. That is consistent
-with the hypothesis but is **not** a controlled test: the two also differ in size and pre-training.
-
-**Inference.** If necessary, shrink the long side to 320, then score three crop sizes
-(112/140/168 px) at up to 3×3 positions per size and average the scores. These crops are taken from
-the normalized scoring canvas, not necessarily the original pixels. An input whose short side is
-below 112 px is upscaled to 112 px before scoring; constrained dimensions can collapse nominal grid
-positions, so the standard path performs at most 27 crop evaluations.
-
-The Gradio demo has a separate, enabled-by-default dense-sampling option for inputs whose original
-short side exceeds 640 px. It can use a 4×4 through 7×7 grid per crop size and therefore show more
-than 27 boundaries. This UI-only path is not represented by the reported benchmark numbers.
-
-**We are not defending the crop averaging.** It is a carry-over from an earlier line of work that we
-did not have time to remove, and it is the direct cause of our weakest result. On a *tampered*
-photograph — an authentic image with one region replaced — the edited region falls in only a few of
-the 27 crops, so the average is pulled toward the authentic majority and the model's confidence is
-systematically depressed. Fully generated images are unaffected, because every crop carries the
-evidence. Given more time we would have removed the crop grid and scored the whole image in a single
-pass; that experiment was still running at submission time and is not reported here.
-
-**Scope: fully real or fully generated images.** Tampered photographs are explicitly out of scope for
-this prototype, for the reason above. We measured the failure rather than omitting it. The shipped
-model catches **27.1%** of tampered images (320 of 1,182, at 12 false alarms in 1,182 real
-photographs). A separate controlled experiment on the `canon6_mlp` baseline—not the shipped
-AlowLR checkpoint—raised recall from **23.3% to 72.1%** by adding tampered images to training, while
-reducing judges'-set recall by 0.3 points at the experiment's calibrated operating point.
-
-**Training.** Augmentation is based on the contest grid and goes further. Each image supplies two
-independently corrupted views of one crop. For each view, there is a 40% chance of applying a random
-**stack of 2–5 size-preserving transform families**. Centre crop is excluded because the two views
-must retain one tensor shape; when the stack branch does not fire, the regular augmentation path
-applies zero to two transforms.
-
-**Data protocol — the core contribution.** Both public benchmarks we started from let a model win
-by *image size alone*. Canonicalization first downscales images whose long side exceeds 320 px,
-then takes a deterministic seeded 176 px crop and writes a PNG (`scripts/canonicalize.py`). It never
-upscales. Because the downscale factor can leave a trace, train and validation data are balanced by
-class inside native-size buckets. **All seven audit gates must run before training.**
-
----
-
-## Architecture and loss
-
-```
-image ──► shrink long side to 320 ──► crop 112-168 px (multiple of 14)
-                                          |
-              PE-Core-L14-336 trunk  <-----+   timm: vit_pe_core_large_patch14_336.fb
-              24 transformer blocks            num_classes=0, dynamic_img_size=True
-                     |                         (position embeddings are interpolated --
-                   norm                         crops are NOT upscaled to 336, which would
-                     |                          reintroduce a resampling signature)
-                attn_pool  ------------->  e in R^1024      pooled embedding
-                                               |
-                       Linear(1024, 64) -------+
-                             GELU
-                       Linear(64, 1)  -------->  logit --> sigmoid --> P(AI)
-```
-
-**316,168,321 parameters**, under the brief's 2B limit; the head is 65,665 of them.
-
-**Loss.** Each training step takes one random crop per image and builds two independently corrupted
-views of that same crop — same pixels, different damage, no geometric change so the two are
-comparable. With embeddings `e1`, `e2` and logits from both views:
-
-```
-L = mean_v BCE_w(logit_v, y)                 classification, both views
-    + alpha * ( 1 - cos(e1, e2) )            invariance on the trunk embedding
-
-BCE_w : per-sample weight 2.0 on real images, 1.0 on generated  (--real-weight 2)
-alpha : 3.0
-```
-
-The augmentation-consistency idea, and the restraint used with it, are Le Tuan Hoang's. The
-agreement term acts on the **trunk's 1024-d output** — the pretrained representation itself.
-At the usual trunk learning rate, adding it degraded transformed-slice recall from 96.8% to 95.3%.
-Keeping the loss and reducing the trunk learning rate fivefold raised that result to 98.6%. We did
-not train a low-LR, no-consistency control, so the experiment establishes the benefit of lowering
-the LR within consistency runs, not the independent benefit of the agreement term at low LR.
-
-| | |
+| transformation | settings used |
 |---|---|
-| optimiser | AdamW, weight decay 0.05, fused |
-| **trunk LR** | **2e-6** (5x below the usual 1e-5) |
-| **head LR** | 1e-3 |
-| precision | bf16 autocast, fp32 weights, TF32 matmul |
-| gradient clip | 1.0 |
-| epochs | 4, checkpoint selected on best validation AUROC |
-| batch | 48 images x 2 views |
+| JPEG compression | quality 90, 70, 50, and 30 |
+| Gaussian blur | σ 0.5, 1.0, and 2.0 |
+| Resize down and back up | scale 0.5× and 0.25× |
+| Gaussian noise | σ 0.02, 0.05, and 0.10 |
+| Colour adjustment | brightness, contrast, and saturation raised together by 20% |
+| Centre crop | keep the central 80% |
 
-**Measured behavior.** The agreement term fell 0.0059 -> 0.0015 over four epochs while contributing
-4.4% -> 2.5% of the total loss. Among consistency runs, reducing the trunk LR from 1e-5 to 2e-6
-changed transformed-slice recall from **95.3% to 98.6%** under the slice-specific approximately-1%
-false-alarm calibration.
+We test these both one at a time and in seeded stacks of distinct families. A depth-six example has
+passed through all six families once, which is closer to the kind of accumulated damage an image
+might pick up through several reposts. The colour-adjustment cell is our current deterministic
+implementation; it does not cover every positive and negative 20% combination from the brief.
 
----
+## Strong result
 
-## Setup
+The shipped `canon6_AlowLR` model held up encouragingly in these tests:
+
+- **Clean AUROC:** 0.9999
+- **Mean AUROC over 14 implemented single-transform conditions:** 0.9995
+- **Worst single-transform AUROC:** 0.9982
+- **Six distinct transform families stacked:** 0.9968 AUROC
+
+At one cutoff calibrated on the pooled clean-plus-stacked evaluation distribution, it caught
+**98.8% of the AI images after all six transform families were composed**, while flagging
+**2.6% of the real photographs** in that depth-six condition. This is a small reference-set
+experiment rather than a claim about every image found in the wild, but it is a useful sign that the
+model is not relying only on pristine-image artifacts.
+
+## Architecture and intuition
+
+### Intuition
+
+Compression and blur change an image's pixels, but not what the image depicts. We therefore want
+two transformed versions of the same crop to produce similar internal features. The classifier
+still learns the real-versus-AI task, while an additional consistency loss discourages those
+features from moving too far when the image is damaged.
+
+### Model and prediction path
+
+We fine-tune Meta's pretrained **PE-Core-L14-336** vision transformer (316.2M parameters)
+(`vit_pe_core_large_patch14_336.fb` in timm). Its pooled 1024-dimensional feature is passed to a
+small MLP head:
+
+```mermaid
+flowchart LR
+    A[Input image] --> B[Scoring canvas<br/>downsize long side above 320<br/>raise short side below 112]
+    B --> C[Three crop sizes<br/>112, 140 and 168 px]
+    C --> P[3 horizontal x 3 vertical positions<br/>up to 9 overlapping crops per size]
+    P --> D[PE-Core-L14-336<br/>24 transformer blocks]
+    D --> E[Norm + attention pool<br/>1024-d feature]
+    E --> F[Linear 1024 to 64<br/>GELU<br/>Linear 64 to 1]
+    F --> G[Probability for each crop]
+    G --> H[Mean crop score<br/>P AI-generated]
+```
+
+For inference, images larger than the scoring range are downsized so their long side is 320 px.
+Very small inputs are brought up to the minimum 112 px short side. For **each** crop size, the crop
+is placed at the left, centre, and right positions and at the top, middle, and bottom positions.
+This gives up to 3 × 3 = 9 overlapping crops per size and up to **27 crop scores in total** across
+112, 140, and 168 px. It is not a division into nine non-overlapping tiles. If an image dimension
+is too constrained, some nominal positions coincide and the number of distinct regions is smaller.
+The transformer accepts these crop sizes directly; they are not resized to 336 px.
+
+The Gradio demo has a separate dense-sampling toggle for images whose original short side is above
+640 px. When enabled, it may use a 4×4 through 7×7 grid per crop size, so the UI can display more
+than 27 boundaries. That dense mode is not used for the reported benchmark results.
+
+### Where the robustness loss is applied
+
+Training starts with one random 112–168 px crop. Two different size-preserving transformation
+chains are applied to that **same crop**, then both views pass through the same trunk and head:
+
+```mermaid
+flowchart LR
+    C[One random crop] --> V1[Transformed view 1]
+    C --> V2[Transformed view 2]
+    V1 --> T1[Shared PE trunk]
+    V2 --> T2[Shared PE trunk]
+    T1 --> E1[Trunk feature e1<br/>1024-d]
+    T2 --> E2[Trunk feature e2<br/>1024-d]
+    E1 --> H1[Shared MLP head]
+    E2 --> H2[Shared MLP head]
+    H1 --> B1[Weighted BCE]
+    H2 --> B2[Weighted BCE]
+    E1 --> K[Cosine consistency]
+    E2 --> K
+    B1 --> L[Total loss]
+    B2 --> L
+    K --> L
+```
+
+The consistency term is calculated on the trunk's pooled **1024-dimensional feature**, after
+`norm` and `attn_pool` but before the MLP classifier. This matters: it encourages the underlying
+visual representation—not just the final probability—to stay similar across transformations.
 
 ```
+classification = weighted mean BCE over both views
+consistency    = mean(1 - cosine_similarity(e1, e2))
+total loss     = classification + 3.0 * consistency
+```
+
+Real images have classification weight 2 and generated images weight 1. Independently for each
+view, there is a 40% chance of applying a stack of two to five distinct size-preserving transform
+families; otherwise the regular path applies zero to two transformations.
+
+### What is trained
+
+The shipped model is fine-tuned **end to end**: no trunk layer is frozen. Patch and position
+embeddings, all 24 transformer blocks, normalization, attention pooling, and the MLP head are
+trainable. The trunk is kept close to its pretrained state through its small learning rate rather
+than by freezing it.
+
+| component | trainable? | learning rate |
+|---|---|---:|
+| Entire PE trunk | yes | **2e-6** |
+| New MLP head: 1024 → 64 → 1 | yes | **1e-3** |
+
+This gives the randomly initialized head room to learn quickly while updating the pretrained trunk
+much more gently. The low-LR consistency configuration performed best in our robustness comparison,
+although it changes both the trunk LR and consistency weight relative to the normal-LR run, so the
+experiment does not isolate either choice on its own.
+
+<p align="center">
+  <img src="machine.jpeg" alt="Open-air computer used to train the model" width="500">
+  <br>
+  <sup><em>Our hacked together training machine 🥀</em></sup>
+</p>
+
+
+
+## Dataset
+
+The final `canon6` corpus combines public real and generated images from WildFake, ArtiFact, and
+additional public sources. The training split contains **100,204 images**—50,102 real and 50,102
+generated—from 25 generator families. Validation is also balanced, with 12,502 images, while the
+larger held-out test split contains 157,673 images from 33 generator families.
+
+Image size and subject matter created strong shortcuts in earlier versions of the data, so the final
+corpus is balanced by class inside native-size buckets and checked for label, content, and duplicate
+leakage. Partial edits, DDPM, and DDIM are held out of training. The contest reference data—COCO
+val2017 real photographs and DALL·E Advanced images—is used only for evaluation and appears in no
+training or validation rows.
+
+## Setup and run
+
+```bash
 git clone https://github.com/wheres-my-perry/techjam-2026-track5.git
 cd techjam-2026-track5
-python3 -m venv .venv && source .venv/bin/activate
+
+python3 -m venv .venv
+source .venv/bin/activate
+
 pip install -r requirements.txt
 pip install -r requirements-train.txt
 ```
 
-`requirements.txt` contains the model/UI/test runtime: NumPy, Pillow, scikit-learn, pytest, PyTorch,
-timm, and Gradio. `requirements-train.txt` includes it and adds `datasets`, `open_clip_torch`, and
-ModelScope for training and data acquisition. HEIC/HEIF loading is optional; install
-`pillow-heif` if those formats are needed.
+`requirements.txt` is enough for inference, the Gradio demo, and tests.
+`requirements-train.txt` adds the dataset and training tools. HEIC/HEIF loading is optional; install
+`pillow-heif` when those formats are needed.
 
-**Weights:**
+Download the shipped checkpoint:
 
-```
-mkdir -p outputs/pe_ft && curl -L -o outputs/pe_ft/canon6_AlowLR.pt \
+```bash
+mkdir -p outputs/pe_ft
+curl -L -o outputs/pe_ft/canon6_AlowLR.pt \
   https://github.com/wheres-my-perry/techjam-2026-track5/releases/download/canon6-v1/canon6_AlowLR.pt
 ```
 
-1.27 GB · sha256 `16d3b0ed3b04a6ab…` ·
-[release page](https://github.com/wheres-my-perry/techjam-2026-track5/releases/tag/canon6-v1)
-Every model in the comparison below is published on the same release.
+Score every supported image under a directory:
 
----
-
-## Run — the required directory → JSON script
-
-```
+```bash
 python -m src.predict --input <image_dir> --output preds.json \
   --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt"
 ```
 
-Output is `[{"image_path": "...", "pred": 0.87, "label": 1}, ...]`, where `pred` is the confidence
-the image is AI-generated and `label` is `1` when `pred >= --threshold`. The default threshold is
-0.5. Corrupt files score 0.5 and are reported on stderr; the run never aborts.
+The output contains `image_path`, `pred` (P(AI-generated)), and a binary `label` for each image.
+The default decision threshold is 0.5. To launch the interactive crop and transformation demo:
 
-Interactive demo — drop an image, apply transforms live, and see the score map with exact inference
-crop boundaries shown by default. The UI includes toggles for boundaries and dense large-image
-sampling:
-
-```
+```bash
 python app.py
 ```
 
----
+## What we saw under repeated transformations
 
-## Reproduce
+Single-transform results use a 900-image DALL·E-3-versus-COCO reference subset. The stacked-depth
+comparison uses a separate 400-image subset containing 248 AI and 152 real images. Neither subset
+was used for training.
 
-```
-python scripts/get_wildfake.py --list                 # pick slices, then --include them
-python -m scripts.build_canon6 --canon <manifests> --out-prefix data/manifests/canon6 \
-    --cap-bucket 45000 --exclude data/manifests/canon6_drop.txt
-python -m scripts.audit_all --prefix data/manifests/canon6
-python -m scripts.corpus_audit --prefix data/manifests/canon6 \
-    --write-drop data/manifests/canon6_drop.txt
-python -m scripts.content_audit --manifests data/manifests/canon6_train.csv
-# If corpus_audit adds exclusions, rebuild with that drop file and rerun all three audits.
-python -m src.approaches.pe_ft.train --train data/manifests/canon6_train.csv \
-    --val data/manifests/canon6_val.csv --epochs 4 --augment --stack-aug 0.4 --stack-max 6 \
-    --crop-min 112 --crop-max 168 --batch 48 --real-weight 2 --head mlp \
-    --consist 2 --consist-at trunk --consist-loss cos --alpha 3.0 --lr 2e-6 \
-    --out outputs/pe_ft/canon6_AlowLR.pt
-python -m src.evaluate --manifest data/manifests/official_v2.csv \
-    --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt" \
-    --threshold 0.5 --out outputs/eval
-python -m scripts.confusion --npz outputs/eval/scores.npz --pool-conditions
-```
+| condition | AUROC |
+|---|---:|
+| Clean images | **0.9999** |
+| Mean over 14 single-transform conditions | **0.9995** |
+| Worst single transform: Gaussian noise σ0.10 | **0.9982** |
+| Six distinct transform families stacked | **0.9968** |
 
-`tests/test_corpus_config.py` asserts the corpus invariants; `configs/canon6.yaml` is the single
-source of truth for the data recipe.
-
----
-
-## Results
-
-Shipped model **`canon6_AlowLR`** — PE-Core-L14-336 with an augmentation-consistency loss on the
-trunk embedding (alpha 3.0) and a 5× reduced trunk learning rate (2e-6), inference `vote(L=320)`.
-
-The product CLI/UI uses a fixed threshold of **0.5**. The operating points below are research
-measurements calibrated separately on each named evaluation distribution to approximately 1% false
-alarms; they are not measurements at the product threshold and must not be compared as though they
-share one cutoff. AUROC is threshold-free.
-
-| evaluation set | what it tests | AUROC | recall | false alarms |
-|---|---|---|---|---|
-| Judges' reference, seeded 50/50 clean/transformed slice | contest data, never trained on | **0.9998** | **99.3%** (1,147/1,155) | 7 / 645 |
-| Held-out test, 33 generators, all 15 conditions pooled | mixed held-out corpus; 8 generators absent from train | 0.9580 | 73.7% | 1.00% |
-| 25 real-world files, all 15 conditions pooled | **sanity check only** | 0.9624 | 267 / 300 | 1 / 75 |
-
-**Clean vs transformed**, judges' set, 900 images:
-
-This diagnostic uses a different approximately-1%-false-alarm cutoff for each column: clean
-`0.0650`, transformed `0.2788`, and 50/50 mix `0.1841`. It measures separability after
-distribution-specific recalibration, not degradation at one deployed threshold.
-
-| | clean | transformed | 50/50 mix |
-|---|---|---|---|
-| images | 900 | 12,600 | 1,800 |
-| AI caught | **100.0%** (574/574) | **98.6%** (7,922/8,036) | **99.3%** (1,147/1,155) |
-| real photos flagged | 4 / 326 | 46 / 4,564 | 7 / 645 |
-| AUROC | 0.9999 | 0.9995 | 0.9998 |
-
-Mean AUROC across the implemented 14 transformed conditions: **0.9995**, worst 0.9982
-(noise σ0.10). The implemented `jitter_20` cell raises brightness, contrast, and saturation together
-by 20%; it does not exhaust the brief's ±20% jitter range.
-
-**Stacking is the real floor.** Composing all six transform families on one image — not any single
-one — is where a detector actually breaks. With the cut-off set on the distribution the model meets
-in production rather than on clean images:
+For the stacked-transform experiment, one threshold is selected per model from the pooled
+clean-plus-stack-depth distribution and then held fixed across every depth:
 
 | transform families stacked | 0 | 3 | 6 |
-|---|---|---|---|
-| AI caught | 99.2% | 98.4% | **98.8%** |
-| real photos flagged | 0.0% | 0.7% | 2.6% |
+|---|---:|---:|---:|
+| AI images caught | 99.2% | 98.4% | **98.8%** |
+| Real images flagged | 0.0% | 0.7% | **2.6%** |
 
-For this table, each model has one cutoff calibrated on the pooled clean-plus-stack-depth
-distribution and then held fixed across depths. Full methodology and all seven models:
-[docs/ROBUSTNESS.md](docs/ROBUSTNESS.md).
+In this sample, ranking quality stayed strong even after several different kinds of damage were
+combined. The product CLI and UI use a separate default threshold of `0.5`; the operating point
+above belongs specifically to this robustness evaluation.
 
----
+### What the comparison suggests
 
-## What we measured
+At maximum corruption, the seven-model comparison is:
 
-Selected controlled comparisons. Full methodology and threshold qualifications are in
-[docs/ROBUSTNESS.md](docs/ROBUSTNESS.md).
+| model | AI caught | Real flagged | Balanced accuracy |
+|---|---:|---:|---:|
+| **A+lowLR (`canon6_AlowLR`)** | **98.8%** | 2.6% | **98.1%** |
+| A: trunk consistency, normal LR | 94.8% | 2.0% | 96.4% |
+| MLP + partial-edit training data | 94.4% | 2.0% | 96.2% |
+| B: consistency on a detached head layer | 94.0% | 3.3% | 95.3% |
+| MLP baseline | 92.3% | 2.0% | 95.2% |
+| B with stronger consistency | 92.7% | 2.6% | 95.1% |
+| C: only the final trunk block trainable | 87.9% | 2.0% | 93.0% |
 
-| change | result |
-|---|---|
-| **MLP head** 1024→64→1 instead of a linear layer *(Le Kien Thanh)* | recall 94.9% → **97.0%** at the same false-alarm rate, for 65,600 extra parameters |
-| **Consistency loss on the pretrained trunk** | **negative** — transformed recall 96.8% → 95.3%. Forcing the embedding invariant to corruption suppresses the evidence that survives corruption |
-| **Lower trunk LR within consistency runs** (1e-5 → 2e-6) | transformed recall 95.3% → **98.6%**; no low-LR/no-consistency control was trained |
-| **Partially edited images added to training** | recall on edited photos 23.3% → **72.1%**, costing 0.3 points on the main benchmark |
+The clearest comparison is with the MLP baseline. At depth six, the shipped model caught **245 of
+248 AI images**, while the baseline caught **229 of 248**—a difference of 6.5 recall points. It also
+made one additional false alarm: 4 of 152 real images rather than 3. Its threshold-free AUROC was
+higher as well (**0.9968 versus 0.9907**), which suggests that the difference is not only an effect
+of where the cutoff was placed.
 
----
+Taken together, the results suggest that a gently updated pretrained trunk and the consistency
+objective work well as a combination. They do not isolate the learning rate as the only cause:
+A+lowLR changes both trunk LR (1e-5 → 2e-6) and consistency weight (α 1 → 3) relative to A.
+Likewise, the partial-edit model is a data experiment, not an architecture-only ablation. Finally,
+each missed AI image changes recall by
+about 0.4 points and each false alarm changes the rate by about 0.7 points, so differences of only
+one or two images should not be over-interpreted.
 
-## Limitations, and what we would do with more time
+## Further reading
 
-- **Generalisation to unseen generator families is not established for the shipped checkpoint.**
-  The retained OmniFake result (AUROC 0.9139, recall 32.1% at a set-specific 1% false-alarm cutoff)
-  belongs to the earlier linear-head `canon6` checkpoint, not `canon6_AlowLR`; it is therefore not
-  included in the shipped-results table. A fresh leak-checked evaluation is still required.
-- **Partially generated images are out of scope for the shipped model.** A photo with an inpainted
-  region scores as real: averaging 27 crops averages one edited region away. Measured fix above; the
-  aggregation fix (`vote(k=3)` — top-k instead of mean over the same per-crop scores) is implemented
-  and untested.
-- **Highly produced real photography is the dominant false-alarm class** — studio portraits, product
-  shots, paintings. The fix is data, not architecture.
-- **One threshold cannot suit every image size.** Per-bucket optima span 0.257–0.711; at the shipped
-  cut-off the smallest-size bucket flags 3.3% of real photos against a 1% target.
-- **Never choose the cut-off on clean images.** A clean-only cut-off flags 22.9% of real photos under
-  JPEG q30, because JPEG shifts every score upward.
-- **Validation was scored on clean images** while training and test were augmented, so checkpoint
-  selection was blind to robustness. Fixed (`--val-augment`) after the shipped model was trained.
-
----
-
-## Benchmark integrity
-
-The gates exist because every one of these actually happened to us:
-
-| gate | catches | blind to |
-|---|---|---|
-| `label_provenance_audit --strict` | labels re-derived from source, independent of the builder | content, size |
-| `bucket_audit --strict` | real:fake imbalance inside each native-size bucket | what is *in* the bucket |
-| `shortcut_audit` | metadata-only separability | **native size** |
-| `size_audit` | per-class dimensions | **native size** |
-| `canary_audit` | deliberately dumb pixel models scoring above chance | content semantics |
-| `content_audit` | a subject appearing on only one side of the label | anything its path regex can't name |
-| `corpus_audit` | blank files, byte and perceptual duplicates across splits | labels, balance |
-
-Run the complete suite:
-
-```
-python -m scripts.audit_all --prefix data/manifests/canon6
-python -m scripts.corpus_audit --prefix data/manifests/canon6 --write-drop <drop.txt>
-python -m scripts.content_audit --manifests data/manifests/canon6_train.csv
-```
-
-**23 defects found and documented**, including 24% of our training "fakes" being real photographs
-(a filename-collision bug in a label loader), and — in the public, MIT-licensed OmniFake dataset —
-88% of small images being fake while 98% of mid-sized ones were real. Full list, scoped per dataset:
-[docs/DATASET_DEFECTS.md](docs/DATASET_DEFECTS.md).
-
-Any result ≥0.99 triggers a shortcut hunt, never celebration.
-
----
-
-## Repo structure
-
-```
-src/             harness: data, transforms, metrics, evaluate, predict, model registry
-src/approaches/  one folder per model family (pe_ft, resnet_ft, clip_linear, cnn, ...)
-scripts/         acquisition, canonicalisation, the seven audit gates, analysis tools
-docs/            authoritative brief, current robustness summary, dataset-defect record
-archive/docs/    superseded experiment reports and design notes kept for provenance
-error_analysis/  false-positive / false-negative contact sheets + ranked worst.csv
-logs/            retained training/evaluation logs that support the reported numbers
-app.py           Gradio demo   ·   tests/   pytest suite   ·   run_*.sh   job scripts
-```
-
----
-
-## Team
-
-| Name | Contribution | GitHub |
-|---|---|---|
-| **Le Tuan Hoang** | Technical and theoretical consultant; technical support (server, GPU, training-pipeline detail); main idea behind the shipped model | |
-| **Le Kien Thanh** | Sourcing datasets and producing additional data; running experiments on teammates' ideas; found the 1024→64→1 MLP head used in the shipped model | |
-| **Nguyen An Thinh** | Experimenting and implementing ideas; data cleaning; observations and feedback to teammates | natsupercell |
-| **Vo Khac Trieu** | Track 3 lead | |
-
-AI coding agents (Claude) were used for implementation, experiment execution and documentation
-under the team's direction. All data decisions and reported claims were reviewed by the team.
+- [Original Track 5 brief](docs/TRACK5_BRIEF_ORIGINAL.md)
+- [Full robustness methodology and results](docs/ROBUSTNESS.md)
+- [Error analysis](docs/ERROR_ANALYSIS.md)
+- [Dataset defects and audit findings](docs/DATASET_DEFECTS.md)
