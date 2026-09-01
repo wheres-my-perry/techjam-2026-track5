@@ -53,3 +53,7 @@ outputs/
 # surrounding tree was not, so a blind "git add -A" would have tried to commit gigabytes.
 # The measured NUMBERS live in logs/ and docs/, which are committed. (2026-09-01)
 outputs/
+
+# Superseded material and private notes — kept locally, never pushed (public repo)
+archive/
+CLAUDE.md
