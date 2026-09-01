@@ -299,9 +299,10 @@ app.py           Gradio demo   ·   tests/   pytest suite   ·   run_*.sh   job 
 
 | Name | Contribution | GitHub |
 |---|---|---|
-| Thinh | Lead: problem framing, patch-evidence and cross-region-attention hypotheses, benchmark-integrity principle, crop canonicalisation design, consistency-loss idea, infrastructure | natsupercell |
-| _TBD_ | | |
-| _TBD_ | | |
+| **Le Tuan Hoang** | Technical and theoretical consultant; technical support (server, GPU, training-pipeline detail); main idea behind the shipped model | |
+| **Le Kien Thanh** | Sourcing datasets and producing additional data; running experiments on teammates' ideas | |
+| **Nguyen An Thinh** | Experimenting and implementing ideas; data cleaning; observations and feedback to teammates | natsupercell |
+| **Vo Khac Trieu** | Track 3 lead | |
 
 AI coding agents (Claude) were used for implementation, experiment execution and documentation
 under the team's direction. All data decisions and reported claims were reviewed by the team.
