@@ -24,7 +24,7 @@ try:
     pillow_heif.register_heif_opener()
 except ImportError:
     pass
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from src.crops import grid_boxes, size_ladder
 from src.data import load_image  # noqa: F401  (keeps EXIF handling identical)
@@ -98,9 +98,9 @@ def score_image(img, transform, dense: bool):
     col[..., 0] = 255 * heat; col[..., 1] = 255 * (1 - heat)
     a = 0.45 * seen[..., None]
     out = Image.fromarray(np.clip(over * (1 - a) + col * a, 0, 255).astype(np.uint8))
-    d = ImageDraw.Draw(out)
-    for (x0, y0, x1, y1) in grid_boxes(wv, hv, m.cmax, grid, m.step):
-        d.rectangle((x0, y0, x1 - 1, y1 - 1), outline=(255, 255, 255), width=1)
+    # No box overlay: the drawn grid used the display grid size, not the number of regions actually
+    # scored, so it showed (for example) a 5x5 lattice over a differently-sampled score map. The
+    # smooth heat map below is derived from the real scores and is the honest visualisation.
 
     verdict = "AI-GENERATED" if p >= THRESHOLD else "REAL"
     lines = [f"## {verdict}  —  P(AI) = {p:.3f}",
@@ -113,8 +113,8 @@ def score_image(img, transform, dense: bool):
     if min(w0, h0) > EVALUATED_MAX:
         lines.append(f"⚠ short side > {EVALUATED_MAX} px: larger than anything in the reported "
                      f"evaluation — the image is still scored at native resolution, but no measured number "
-                     f"covers this size. {'Dense grid on.' if dense else ''}")
-    lines.append("Map: red = looks AI, green = looks real; white boxes = sampling regions. "
+                     f"covers this size.")
+    lines.append("Map: red = the model finds this region AI-like, green = photographic. "
                  "Model: PE-Core-L14-336 fine-tuned (316M params), checkpoint canon6_AlowLR.pt.")
     return out, "\n\n".join(lines)
 
@@ -130,7 +130,7 @@ def build_ui():
                 tf = gr.Dropdown(list(TRANSFORMS), value=["clean"], multiselect=True,
                                  label="transforms applied before scoring — pick several to stack "
                                        "them, in the order selected")
-                dense = gr.Checkbox(value=True, label="dense grid for large images (>640 px)")
+                dense = gr.Checkbox(value=True, label="sample large images more finely (>640 px)")
                 btn = gr.Button("Detect", variant="primary")
             with gr.Column():
                 outimg = gr.Image(label="per-crop score map")
