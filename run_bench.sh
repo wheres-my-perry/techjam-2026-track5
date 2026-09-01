@@ -9,11 +9,11 @@ set -u
 cd /workspace/techjam-2026-track5
 source /venv/main/bin/activate
 export PYTHONPATH=.
-while ! grep -q B3_DONE logs/B3.log 2>/dev/null; do sleep 20; done
+
 while pgrep -f "src\.evaluate|pe_ft\.train" > /dev/null; do sleep 15; done
 echo "all training finished, benchmarking  $(date)"
 
-MODELS="canon6_mlp canon6_mlp_consist canon6_mlp2_a1 canon6_mlp2_a6 canon6pe_mlp canon6_mlp_consist_lowlr canon6_tail_a3"
+MODELS="canon6_mlp canon6_A canon6_AlowLR canon6_B canon6_B6 canon6_C canon6pe_mlp"
 DEPTHS="clean,stack1_rand,stack2_rand,stack3_rand,stack4_rand,stack5_rand,stack6_rand"
 
 echo "########## 1. STACKED-AUGMENTATION DEPTH LADDER  $(date)"

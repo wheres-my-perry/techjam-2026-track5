@@ -1,1 +1,7 @@
 [32mActivated conda/uv virtual environment at [36m/venv/main[0m
+all training finished, benchmarking  Tue Sep  1 00:07:26 UTC 2026
+########## 1. STACKED-AUGMENTATION DEPTH LADDER  Tue Sep  1 00:07:26 UTC 2026
+**Clean AUROC:** 0.9991 · **Mean transformed:** 0.9951 · **Worst:** 0.9907 (stack6_rand)
+**Clean AUROC:** 0.9969 · **Mean transformed:** 0.9928 · **Worst:** 0.9887 (stack5_rand)
+**Clean AUROC:** 1.0000 · **Mean transformed:** 0.9989 · **Worst:** 0.9968 (stack6_rand)
+**Clean AUROC:** 0.9988 · **Mean transformed:** 0.9922 · **Worst:** 0.9880 (stack6_rand)
