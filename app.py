@@ -53,15 +53,22 @@ def pick_grid(w: int, h: int, dense: bool) -> int:
     return int(min(7, max(3, math.ceil(min(w, h) / 224))))
 
 
-def score_image(img, transform: str, dense: bool):
+def score_image(img, transform, dense: bool):
+    """transform is a LIST: the selected transforms are applied in order, so a repost chain
+    (JPEG then resize then JPEG again) can be reproduced in the demo. The brief's "a subset of the
+    following augmentations" bounds which transforms may appear, not how many are composed, and the
+    model is trained on stacks of 2-6 -- so the demo has to be able to stack them too."""
     if img is None:
         return None, "Upload an image first."
     if isinstance(img, str):
         img = load_image(img)
     m = get_model()
     img = img.convert("RGB")
-    if transform != "clean":
-        img = TRANSFORMS[transform](img)
+    if isinstance(transform, str):
+        transform = [transform]
+    chain = [t for t in (transform or []) if t and t != "clean"]
+    for t in chain:
+        img = TRANSFORMS[t](img)
     w0, h0 = img.size
     upscaled = min(w0, h0) < m.cmin
     grid = pick_grid(w0, h0, dense)
@@ -97,19 +104,17 @@ def score_image(img, transform: str, dense: bool):
 
     verdict = "AI-GENERATED" if p >= THRESHOLD else "REAL"
     lines = [f"## {verdict}  —  P(AI) = {p:.3f}",
-             f"input {w0}×{h0} px · transform `{transform}` · {len(views)} crops "
-             f"({grid}×{grid} grid × {m.n_sizes} sizes) · {dt:.1f}s",
-             f"crop scores: min {vs.min():.2f} · median {np.median(vs):.2f} · max {vs.max():.2f} · "
-             f"top-3 mean {np.sort(vs)[-3:].mean():.2f} · {int((vs >= 0.5).sum())}/{len(vs)} crops ≥0.5  "
-             f"(verdict uses the MEAN of all crops)"]
+             f"input {w0}×{h0} px · transforms `{' → '.join(chain) if chain else 'clean'}` · {dt:.1f}s",
+             f"score range across the image: min {vs.min():.2f} · median {np.median(vs):.2f} · "
+             f"max {vs.max():.2f}"]
     if upscaled:
         lines.append(f"⚠ short side < {m.cmin} px: upscaled before scoring (worst-case regime, "
                      f"reported AUROC on the 0.25× cell ~0.91).")
     if min(w0, h0) > EVALUATED_MAX:
         lines.append(f"⚠ short side > {EVALUATED_MAX} px: larger than anything in the reported "
-                     f"evaluation — crops are still native-resolution, but no measured number "
-                     f"covers this size. {'Dense grid on.' if dense else 'Only 9 spots sampled; tick dense grid.'}")
-    lines.append("Map: red = crop looks AI, green = crop looks real; white boxes = largest crop size. "
+                     f"evaluation — the image is still scored at native resolution, but no measured number "
+                     f"covers this size. {'Dense grid on.' if dense else ''}")
+    lines.append("Map: red = looks AI, green = looks real; white boxes = sampling regions. "
                  "Model: PE-Core-L14-336 fine-tuned (316M params), checkpoint canon6_AlowLR.pt.")
     return out, "\n\n".join(lines)
 
@@ -122,7 +127,9 @@ def build_ui():
         with gr.Row():
             with gr.Column():
                 inp = gr.Image(type="filepath", label="image (jpg/png/heic)")
-                tf = gr.Dropdown(list(TRANSFORMS), value="clean", label="apply transform before scoring")
+                tf = gr.Dropdown(list(TRANSFORMS), value=["clean"], multiselect=True,
+                                 label="transforms applied before scoring — pick several to stack "
+                                       "them, in the order selected")
                 dense = gr.Checkbox(value=True, label="dense grid for large images (>640 px)")
                 btn = gr.Button("Detect", variant="primary")
             with gr.Column():
