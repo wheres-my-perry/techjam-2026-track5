@@ -25,7 +25,7 @@ FAMILIES = [
     ("Gaussian blur",    "sigma 0.5/1.0/2.0",   ["blur_s0.5", "blur_s1.0", "blur_s2.0"]),
     ("Resize -> upscale", "scale 0.5x / 0.25x", ["resize_0.5x", "resize_0.25x"]),
     ("Gaussian noise",   "sigma .02/.05/.10",   ["noise_s0.02", "noise_s0.05", "noise_s0.10"]),
-    ("Colour jitter",    "b/c/s +-20%",         ["jitter_20"]),
+    ("Colour jitter",    "b/c/s +20% together (implemented cell)", ["jitter_20"]),
     ("Centre crop",      "80%",                 ["crop_80"]),
 ]
 STACKS = [

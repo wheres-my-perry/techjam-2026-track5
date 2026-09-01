@@ -219,11 +219,12 @@ def main():
                          "resize 0.2-0.4, noise 0.07-0.12, jpeg 20-40) instead of the mild chain; "
                          "both classes alike (option B2, 2026-08-30)")
     ap.add_argument("--stack-aug", type=float, default=0.0,
-                    help="probability that a sample gets a random 2-or-3 transform stack from the brief's grid "
-                         "instead of the mild chain; both classes alike (Thinh: repost chains, 2026-08-30)")
+                    help="probability that a sample/view gets a random stack of 2..--stack-max "
+                         "transform families instead of the mild chain; consistency mode excludes "
+                         "center crop and caps the effective maximum at 5; both classes alike")
     ap.add_argument("--stack-max", type=int, default=3,
-                    help="deepest stack drawn when --stack-aug fires (default 3 = the original "
-                         "2-or-3 behaviour; 6 covers every transform family at once)")
+                    help="requested deepest stack (default 3); non-consistency mode can use all 6 "
+                         "families, while consistency views preserve shape and cap this at 5")
     ap.add_argument("--consist", type=int, default=0,
                     help="K>0: augmentation-consistency training (Thinh): K corrupted views of the same "
                          "crop per image; loss = BCE(all views) + alpha * agreement loss")
@@ -256,8 +257,8 @@ def main():
     ap.add_argument("--limit-train", type=int, default=0,
                     help="seeded subsample of the train manifest (small-dataset trials)")
     ap.add_argument("--head", default="linear", choices=["linear", "mlp", "mlp2"],
-                    help="classifier on the 1024-d embedding. linear = single projection (shipped); "
-                         "mlp = 1024->64->1, measured optimal by Thinh's friend")
+                    help="classifier on the 1024-d embedding. The CLI default is linear; the "
+                         "shipped canon6_AlowLR checkpoint uses mlp (1024->64->1)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 

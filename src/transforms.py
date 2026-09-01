@@ -1,7 +1,9 @@
 """Contest transform grid (Track 5) + random train-time augmentation.
 
 All transforms take and return a PIL RGB Image. PIL-only (+numpy) — no cv2.
-Eval grid parameters come verbatim from the official brief.
+The evaluation grid follows the brief's listed families and scalar settings except
+for color jitter: `jitter_20` deterministically raises brightness, contrast, and
+saturation together by 20%, so it does not cover the brief's full ±20% range.
 """
 
 from __future__ import annotations

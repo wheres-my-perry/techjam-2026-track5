@@ -1,7 +1,9 @@
 # Changelog
 
-Dated, shipped changes only. (Current status & next steps: [docs/PROGRESS.md](docs/PROGRESS.md);
-design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md](docs/DECISIONS.md).)
+Dated development history. Entries describe the repository at that point in time and include both
+shipped changes and experiments. Current behavior is documented in [README.md](README.md) and
+[ARCHITECTURE.md](ARCHITECTURE.md); retained superseded reports live under
+[archive/docs/](archive/docs/).
 
 ## 2026-08-31 (server loss — corpus and checkpoint rebuilt from scratch on a new box)
 - **mio03 died with every checkpoint and all of canon5 on it.** GitHub had only code and text, so
@@ -37,7 +39,8 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
   i.e. 40% of samples get a random 2-or-3 transform stack from the brief's grid, both classes. canon5's
   own `--stack-aug 0` was the baseline, not the intended setting.
 - **docs/TRACK5_BRIEF_ORIGINAL.md** — the verbatim problem statement is now in the repo as the single
-  source of truth; docs/TRACK5_BRIEF.md is labelled as our interpretation. The condensation had claimed
+  source of truth; [archive/docs/TRACK5_BRIEF.md](archive/docs/TRACK5_BRIEF.md) preserves our former
+  interpretation. The condensation had claimed
   the source "settles" that stacking is in scope; the original text does not say that.
 - NOT reproducible: the unseen-64 benchmark (randtest_eq). The docs describe its sources by category
   only and extract_randtest.py is not in the repo, so canon4's "0.9955 AUROC / 94% caught" cannot be
@@ -48,7 +51,8 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
   scripts/crop_agg.py (offline rules: mean/size/area/pixel/median/trim10/top3). Job 80: all layouts x
   rules within +-1.5 pts of the shipped grid @1% FA; trimmed mean +1.2 @5% FA (significant). Kept grid+mean.
 - 27 random crops, two seeds (job 79): pooled identical, 1.0% of per-image verdicts flip on seed alone.
-- src/predict.py defaults to the shipped policy + --threshold 0.15 + label field. docs/FINDINGS.md started.
+- src/predict.py then defaulted to the shipped policy + --threshold 0.15 + label field.
+  [archive/docs/FINDINGS.md](archive/docs/FINDINGS.md) was started. (The current threshold is 0.5.)
 - src/model.py CropVoteModel: `r=N` (N seeded random crops instead of the grid) and `s=seed` spec keys.
 - Same 64-source unseen set, canon4: 27-grid 0.992 / 90.8% @1%FA; 100 random 0.993 / 88.0%; 200 random
   0.993 / 88.6%; 1 centre crop 0.988 / 88.6%; whole image 168px 0.985 / 82.0%, 240px 0.987 / 87.8%.
@@ -72,7 +76,8 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
 ## 2026-08-29 (evening — small-trial verdict, pe_seg, report)
 - Job 64 (canon3s small trial): wild set flips from inverted to ranked (0.96/1.00); DALL-E 0.974 mean.
 - Job 65 pe_seg: per-patch localisation on SID masks, held-out patch AUROC 0.984; heat-maps in docs/figures.
-- docs/REPORT.md: living submission write-up (findings, recipe, results, observation-list status).
+- [archive/docs/REPORT.md](archive/docs/REPORT.md): then-current submission write-up (findings,
+  recipe, results, observation-list status).
 - pe_ft --real-weight / --limit-train; generate_hard_fakes keeps native size by default.
 
 ## 2026-08-29 (afternoon — wild test, large-image expansion)
@@ -109,12 +114,13 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
 - Random-size crops (Thinh): src/crops.py shared by training (size per batch in collate) and the
   vote+ wrapper (ladder over the same range); never upscale (old wrapper upscaled 176→224).
 - New approach src/approaches/pe_ft: facebook/PE-Core-L14-336 (316M) full fine-tune at 112-168px
-  via pos-embed interpolation, sides snap to 14. Predictions in GENERATOR_MATRIX. docs/DATASET.md
+  via pos-embed interpolation, sides snap to 14. Predictions were recorded in an unretained
+  GENERATOR_MATRIX; [archive/docs/DATASET.md](archive/docs/DATASET.md)
   written for teammates.
 
 ## 2026-08-28 (late night — dev environment moves to the server)
 - Git topology reversed (Thinh): server clone is now primary and pushes; Mac clone becomes the
-  read-only mirror. CLAUDE.md rule rewritten, rationale in docs/DECISIONS.md.
+  read-only mirror. CLAUDE.md rule rewritten; its former DECISIONS note is not retained.
 - CLAUDE.md itself committed (was untracked) so agents starting on the server get the briefing.
 
 ## 2026-08-28 (late night — data expansion approved)
@@ -123,7 +129,7 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
   with ddim/ddpm) + existing WildFake. ~430K images total, ~34GB new.
 - New: scripts/{get_lsun,build_artifact_manifest,merge_manifests}.py; run_data.{sh,sbatch} (cpu:
   download->canonicalize->merge->audit gates) chained via Slurm dependency to run_canon2.{sh,sbatch}
-  (gpu: retrain resnet on canon2 -> evals). Verification evidence in docs/DATA_CANDIDATES.md.
+  (gpu: retrain resnet on canon2 -> evals). The former DATA_CANDIDATES note is not retained.
 
 ## 2026-08-28 (night — canonical protocol)
 - scripts/canonicalize.py: seeded-random per-image resize into overlapping band, one filter/one
@@ -153,8 +159,9 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
 
 ## 2026-08-28 (morning)
 - Night shift 2 verdict: patch_relation champion (official 0.958/0.935/0.817), blur-boost resnet
-  second (0.952/0.932/0.826), spectral killed. Details: docs/PROGRESS.md, docs/approaches/01+03,
-  GENERATOR_MATRIX actuals. Known reruns: vote+clip_linear, vote+cnn (weight filename fix),
+  second (0.952/0.932/0.826), spectral killed. Retained summary:
+  [archive/docs/PROGRESS.md](archive/docs/PROGRESS.md); per-approach and GENERATOR_MATRIX files are
+  not retained. Known reruns: vote+clip_linear, vote+cnn (weight filename fix),
   vote+real_manifold (NaN on flat crops).
 
 ## 2026-08-28 (night shift 2b — attention)
@@ -173,12 +180,13 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
 
 ## 2026-08-28
 - Night eval batch (Slurm job 10) complete: 7 evals at --limit 1200 across wf_test + official.
-  Verdict in docs/PROGRESS.md; per-family actuals in docs/GENERATOR_MATRIX.md.
+  Verdict retained in [archive/docs/PROGRESS.md](archive/docs/PROGRESS.md); the former per-family
+  GENERATOR_MATRIX file is not retained.
 - Crop-voting wrapper (vote+<model>) validated: official benchmark resnet_ft 0.207 (inverted) ->
   vote+resnet_ft 0.938 clean / 0.913 mean transformed. wf_test clean 0.954.
-- Workflow: back to Slurm (sbatch/squeue/scancel) per Thinh; SERVER.md, CHEATSHEET.md, and
-  project-conventions skill reverted. Server has no rsync — results pulled via tar-over-ssh
-  (command in CHEATSHEET.md).
+- Workflow: back to Slurm (sbatch/squeue/scancel) per Thinh; the former SERVER/CHEATSHEET notes and
+  project-conventions skill were reverted. Server had no rsync, so results were pulled via
+  tar-over-ssh.
 
 ## 2026-08-27
 
@@ -224,4 +232,5 @@ design candidates: [docs/IDEAS.md](docs/IDEAS.md); decisions: [docs/DECISIONS.md
   what happens if partially edited images are TRAINED on instead of held out for test. Verified:
   with the flag off the builder reproduces `canon6_train.csv` byte-for-byte.
 - **Negative result: augmentation-consistency loss.** Best clean val (0.9973), worst hack set
-  (0.870). Not shipped. docs/REPORT.md section 4.3.
+  (0.870). That unrestrained variant was not shipped; the restrained low-LR consistency variant was.
+  Historical discussion: [archive/docs/REPORT.md](archive/docs/REPORT.md) section 4.3.

@@ -4,7 +4,8 @@ Usage:
     python -m src.predict --input <image_dir> --output preds.json [--model SPEC] [--threshold 0.15]
 
 Output JSON: [{"image_path": "...", "pred": 0.87, "label": 1}, ...]
-  pred  = P(AI-generated) from the shipped policy (shrink long side to 320, 27-crop grid, mean)
+  pred  = P(AI-generated) from the shipped policy (long side capped at 320,
+          up to 27 crop evaluations, mean aggregation)
   label = 1 if pred >= threshold (default 0.5)
 
 Choosing the cut-off (measured, pooled over all 15 transform conditions):

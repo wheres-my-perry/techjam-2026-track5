@@ -7,10 +7,13 @@ is a real bug we hit: training cropped 160 while the inference vote wrapper
 cropped 224, which is LARGER than a canon2 image, so it upscaled 176->224
 and reintroduced the resampling signature canonicalization exists to remove.
 
-Two hard rules:
-  * never crop larger than the image (no upscaling, ever);
-  * crop at native resolution (no resampling), so nothing about scale
-    correlates with the label.
+Rules inside this module:
+  * never crop larger than the supplied image canvas;
+  * cropping itself does not resample.
+
+Callers may normalize that canvas first. In particular, CropVoteModel downsizes
+long sides above its limit and has one sanctioned tiny-input upscale before it
+calls these helpers.
 """
 
 from __future__ import annotations

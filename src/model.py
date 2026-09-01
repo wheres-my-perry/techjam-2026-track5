@@ -74,10 +74,10 @@ _APPROACHES = {
 class CropVoteModel(BaseModel):
     """Inference-time patch voting (approach 01, stage 1 — no training needed).
 
-    Scores a grid of fixed-size crops at native resolution through any inner
-    model and aggregates by top-k mean: "an image is fake if some regions are
-    fake." Fixes the pooling-dilution failure measured on full-resolution eval.
-    All crops share one size -> inner model batches them efficiently.
+    Scores a grid of fixed-size crops from a normalized scoring canvas through
+    any inner model and aggregates by top-k mean. `long` may downsize the canvas;
+    a short side below cmin is upscaled into the model's supported range. Crops
+    of the same dimensions are batched efficiently by the inner model.
     """
 
     def __init__(self, inner: BaseModel, cmin=None, cmax=None,
@@ -114,10 +114,10 @@ class CropVoteModel(BaseModel):
         """Grid crops at several sizes spanning the TRAINING crop range.
 
         Training draws a random size per batch from [cmin, cmax]; inference
-        sweeps the same range on a fixed ladder, so the two match while
-        scores stay reproducible. src.crops never upscales -- the old code
-        used a flat crop=224 and upscaled any smaller image to reach it,
-        which put the resampling signature back into canon2's 176px inputs.
+        sweeps the same range on a fixed ladder, so scores stay reproducible.
+        The crop helpers do not resample, but this wrapper normalizes the canvas
+        first: long sides above `long` are downscaled and short sides below cmin
+        are upscaled into the supported range.
         """
         # Inputs smaller than the training range (the grid's resize_0.25x turns
         # a 176px image into 44px) are upscaled to CROP_MIN. This is the ONE
@@ -135,6 +135,7 @@ class CropVoteModel(BaseModel):
             sc = self.cmin / min(w, h)
             im = im.resize((max(self.cmin, round(w * sc)), max(self.cmin, round(h * sc))),
                            Image.BICUBIC)
+            w, h = im.size
         boxes = []  # (x0, y0, x1, y1) on the (possibly shrunk) image
         if self.rand:
             import random

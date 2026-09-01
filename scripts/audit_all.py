@@ -1,9 +1,15 @@
-"""Run EVERY gate on a manifest and print one verdict table.
+"""Run the fast manifest-level audit bundle and print one verdict table.
 
 Written 2026-08-31 after canon6 was nearly reported having skipped size_audit
 entirely, and after the audits that DID run turned out to be blind to the thing
-that mattered. Running the gates one at a time from memory is how a gate gets
-skipped; this makes the full set one command.
+that mattered. This command covers label provenance, bucket balance, metadata
+shortcut, pixel canary, canonical size, native size, and within-size-bucket
+content checks. The full seven-gate documented suite additionally requires:
+
+    python -m scripts.corpus_audit --prefix <prefix> --write-drop <drop.txt>
+    python -m scripts.content_audit --manifests <prefix>_train.csv
+
+Those standalone corpus and whole-manifest content audits are not invoked here.
 
 Two failure modes this encodes, both learned the hard way:
 

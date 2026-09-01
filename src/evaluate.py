@@ -1,7 +1,9 @@
 """Robustness evaluation harness.
 
-Runs a model over the full contest transform grid and reports, per condition:
-AUROC, balanced accuracy at a threshold frozen on clean data, FPR@95%TPR.
+Runs a model over the implemented transform grid and reports, per condition:
+AUROC, balanced accuracy at one threshold, and FPR@95%TPR. With --threshold the
+given cutoff is fixed across conditions. Without it, the legacy default chooses
+a Youden cutoff from the clean scores of the evaluation set.
 Also dumps top-K most confident errors (false positives / false negatives).
 
 Usage:

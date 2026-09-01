@@ -83,11 +83,12 @@ def bucket(long_side: int) -> str:
 def balance(rows, seed, tag, cap=0, equal=0, min_bucket=50):
     """Per bucket keep min(n_real, n_fake) (at most `cap`) of each class.
 
-    `equal` > 0 makes EVERY bucket keep the same number per class (Thinh 2026-08-31):
-    canonicalize --long 320 only shrinks images ABOVE 320, so <=341 reaches the model
-    un-rescaled while 769-1024 is downscaled 2.4-3.2x, and downscaling attenuates the
-    high-frequency structure detection depends on. An unequal split trains the model
-    mostly in one forensic regime. equal=-1 means "the largest N every bucket can supply".
+    `equal` > 0 makes EVERY bucket keep the same number per class (Thinh 2026-08-31).
+    canonicalize --long 320 leaves images <=320 unscaled, modestly downsizes the
+    321-341 edge of the first bucket, and downsizes 769-1024 by 2.4-3.2x. Because
+    downscaling attenuates high-frequency structure, an unequal split can train the
+    model mostly in one forensic regime. equal=-1 means "the largest N every bucket
+    can supply".
     """
     by = defaultdict(lambda: defaultdict(list))
     for r in rows:

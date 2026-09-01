@@ -1,77 +1,147 @@
 # Architecture
 
-> Living document, maintained by humans AND their agents. Update rule: whenever you change an
-> interface, add an approach, or alter the data pipeline, update this file in the same commit.
-> Status/log lives in [docs/PROGRESS.md](docs/PROGRESS.md); dated history in [CHANGELOG.md](CHANGELOG.md).
+This document describes the current repository. Dated experiment history is in
+[`CHANGELOG.md`](CHANGELOG.md), and superseded research notes are retained under
+[`archive/docs/`](archive/docs/).
 
 ## System overview
 
-Task: binary AIGC-image detection (1 = AI-generated, 0 = real), robust to the contest transform
-grid, scored on the official benchmark (DALL·E-Advanced fakes + COCO-val2017 reals — never trained on).
+The task is binary image-level AIGC detection: label 1 is AI-generated and label 0 is authentic.
+The shipped checkpoint is `outputs/pe_ft/canon6_AlowLR.pt`, loaded through this model spec:
 
 ```
-manifests (CSV) ──> approaches/<name> (train) ──> weights (outputs/<name>/*.pt)
-      │                                               │
-      └──────────> src/evaluate.py <──────────────────┘
-                     │  applies 15-condition transform grid + per-generator breakdown
-                     └─> results.json / robustness_table.md / errors_clean.json
-src/predict.py = contest deliverable CLI: image dir -> JSON [{image_path, pred}]
+vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt
 ```
 
-## Shared harness (`src/` root) — the contract everyone codes against
+```
+source manifests
+      │
+      ├─> scripts/canonicalize.py ─> canonical manifests
+      │                                  │
+      │                           scripts/build_canon6.py
+      │                                  │
+      │                       three-part audit suite
+      │                                  │
+      └──────────────────────────> pe_ft training ─> checkpoint
+                                                        │
+image directory ─> src.predict ─> load_model ─> CropVoteModel ─> PEFTModel
+                                                        │
+                                                        └─> JSON [{image_path, pred, label}]
+```
 
-| file | role |
+## Shipped inference path
+
+1. `CropVoteModel` downsizes an input whose long side exceeds 320 px using LANCZOS.
+2. If the resulting short side is below 112 px, it upscales that short side to 112 px using
+   bicubic interpolation. This is the only sanctioned inference-time upscale.
+3. It evaluates crop sizes 112, 140, and 168 px, snapped to the ViT's 14 px patch size.
+4. Standard CLI inference samples up to 3×3 positions at each size and mean-aggregates at most
+   27 scores. Constrained dimensions can collapse nominal positions.
+5. PE-Core-L14-336 runs directly on those variable-size crops with dynamic positional interpolation;
+   crops are not resized to 336 px.
+
+The Gradio app deliberately has one extra mode: for inputs whose original short side exceeds
+640 px, its enabled-by-default dense toggle selects a 4×4 through 7×7 grid per crop size. That can
+produce more than 27 crop boundaries and is not part of the reported evaluation protocol. Exact
+boundaries are projected from the scoring canvas back onto the displayed image and are visible by
+default; a second toggle hides them.
+
+## Shipped model and loss
+
+`pe_ft` uses timm's `vit_pe_core_large_patch14_336.fb` trunk with a
+`Linear(1024, 64) -> GELU -> Linear(64, 1)` head. The shipped checkpoint has 316,168,321
+parameters.
+
+Training creates two independently augmented views of one crop. The implemented loss is:
+
+```
+mean over views(weighted BCE) + alpha * cosine disagreement
+```
+
+Real examples have BCE weight 2, generated examples weight 1, and `alpha=3`. The trunk learning
+rate is `2e-6`; the fresh head learning rate is `1e-3`.
+
+For each view, `--stack-aug 0.4 --stack-max 6` gives a 40% chance of the consistency collator's
+stack branch. That branch excludes geometry and therefore applies 2–5 distinct size-preserving
+transform families despite the command-line maximum of 6. The ordinary branch applies zero to two
+transforms.
+
+## Shared harness
+
+| file | current role |
 |---|---|
-| `data.py` | manifest loading (`path,label,generator,source`, paths relative to `$DATA_ROOT`), EXIF-safe image loading |
-| `transforms.py` | `EVAL_GRID`: clean + 14 transform settings verbatim from the brief; `random_train_transform`: same distribution for train-time augmentation |
-| `metrics.py` | AUROC, balanced accuracy @ threshold frozen on clean data, FPR@95%TPR, threshold picker |
-| `evaluate.py` | full grid eval + per-generator AUROC table (held-out generator's row = unseen-generator score) + top-K error dump |
-| `predict.py` | required contest CLI |
-| `model.py` | `BaseModel` interface (`predict(images) -> P(AI) in [0,1]`) + `_APPROACHES` registry (lazy imports) |
+| `src/data.py` | manifest loading and EXIF-correct RGB loading; HEIC/HEIF is optional via `pillow-heif` |
+| `src/crops.py` | random crop sizes, deterministic size ladder, grid and tiling boxes |
+| `src/transforms.py` | clean + 14 implemented evaluation cells, extra transform stacks, and training augmentation |
+| `src/metrics.py` | AUROC, threshold selection, and condition reports |
+| `src/evaluate.py` | condition scoring, score archive, reports, error dump, and per-generator AUROC |
+| `src/predict.py` | directory-to-JSON CLI; product threshold defaults to 0.5 |
+| `src/model.py` | model registry and composable `vote`, `noise`, and `std` wrappers |
 
-## Approaches (`src/approaches/<name>/`) — one folder per idea, never import each other
+The evaluation grid is based on the brief, but it is not verbatim: `jitter_20` applies a
+simultaneous +20% brightness/contrast/saturation adjustment, whereas the brief states ±20%.
 
-| approach | what it is | params | status |
-|---|---|---|---|
-| `cnn` | scratch all-conv + GAP (size-agnostic), random-crop training | 2.3M (w64) | WildFake val AUROC 0.81 (15 ep) |
-| `clip_linear` | frozen CLIP ViT-L/14 + linear head; sharded embedding cache | ~300M frozen + 769 trained | training on server |
-| `resnet_ft` | ImageNet ResNet-50, fully fine-tuned, low LR | 23.5M | queued on server |
+If `src.evaluate` receives `--threshold`, it uses that fixed cutoff for every condition. Without
+the flag it retains the legacy behavior of choosing a Youden cutoff from clean scores on that
+evaluation set. Research scripts such as `scripts.slices`, `scripts.confusion`, and
+`scripts.depth3.py` implement their own explicitly documented calibration policies.
 
-Adding one: see `src/approaches/README.md` (folder + BaseModel subclass + one registry line).
-Planned next: `ensemble` (logistic regression over member scores), patch + relation heads (docs/IDEAS.md).
+## Registered approaches
+
+The lazy registry in `src/model.py` currently exposes:
+
+| name | implementation |
+|---|---|
+| `cnn` | scratch convolutional baseline |
+| `clip_linear` | frozen CLIP encoder with a linear classifier |
+| `resnet_ft` | fine-tuned ResNet-50 |
+| `pe_ft` | fine-tuned PE-Core-L14-336; shipped family |
+| `pe_seg` | PE-based localized-edit segmentation; reuses helpers from `pe_ft` |
+| `real_manifold` | real-manifold feature model |
+| `spectral` | FFT/spectral feature model |
+| `patch_relation` | relation head over patch embeddings |
+| `stacked` | learned ensemble over member scores |
+
+These entries show available implementations, not current training jobs or endorsed production
+models. Additions follow [`src/approaches/README.md`](src/approaches/README.md).
 
 ## Data pipeline
 
-- `scripts/get_wildfake.py` — ModelScope pull (glob includes, selective zip extraction, zip auto-delete),
-  CSV-driven manifests from `label_csv_files/*.csv`, `--holdout-generator` (fakes -> test only),
-  `--official-val` (benchmark manifest). Hard-coded exclusions: dalle3 + coco-val2017 never enter train/val/test.
-- `scripts/get_cifake.py` — CIFAKE toy set (prototyping only; not representative).
-- Current WildFake pool: 80K train / 10K val / 30K test; fakes from biggan, ddim, stargan, stylegan,
-  vqvae; **ddpm fully held out** (test only); reals from 6 sources; ~4:1 fake:real (known imbalance,
-  metrics are imbalance-proof; uncap reals on the next manifest build if rebalancing).
+`configs/canon6.yaml` records the final corpus contract, and
+`tests/test_corpus_config.py` checks selected config rules against both the builder constants and
+built manifests. The final retained build log records:
 
-## Execution environments
+| split | total | real | generated | generated families |
+|---|---:|---:|---:|---:|
+| train | 100,204 | 50,102 | 50,102 | 25 |
+| validation | 12,502 | 6,251 | 6,251 | 25 |
+| test | 157,673 | 76,535 | 81,138 | 33 |
 
-- **Cloud/agent sandbox**: code authoring + tests only (no ML-site network).
-- **Thinh's Mac (MPS)**: small experiments; ~13GB free disk — no big datasets.
-- **GPU server (mio03, 2× RTX 5090, Slurm `gpu` partition, shared with other users)**: all real
-  training/eval. Jobs get killed by an unidentified mechanism → everything is kill-resumable:
-  cnn/resnet save `<out>.pt.state` per epoch and auto-resume; CLIP extraction caches 2000-sample
-  shards (atomic writes); sbatch scripts wrap steps in retry loops. Submit via `sbatch`, watch via
-  `squeue -u chim` + `tail -f slurm_*.log`.
+The data itself is ignored by Git, so these manifests are not expected in a clean source checkout.
+COCO val2017 and DALL·E Advanced are forbidden from train and validation. Partial edits, DDPM, and
+DDIM are routed test-only by the canon6 builder.
 
-## Conventions
+The required audit suite is:
 
-- Label 1 = AI-generated, everywhere.
-- Never train/tune on the official benchmark; it is evaluated once per model, reported as-is.
-- Thresholds are picked on clean val once and frozen across transforms.
-- Weights/caches are gitignored; eval result JSON/tables are committed.
-- Seeds fixed (default 0); manifests are committed so splits are reproducible.
+```
+python -m scripts.audit_all --prefix data/manifests/canon6
+python -m scripts.corpus_audit --prefix data/manifests/canon6 --write-drop <drop.txt>
+python -m scripts.content_audit --manifests data/manifests/canon6_train.csv
+```
 
-## Addendum 2026-08-28
-- Model wrappers (src/model.py prefixes, composable): `vote+` (3x3 crop voting), `noise+`
-  (retired experiment), `std+` (short-side-512 resize). New approaches: spectral (killed),
-  patch_relation (attention over patch grid), stacked (ensemble over member scores).
-- Data tooling: scripts/{size_audit,shortcut_audit,canonicalize,rebuild_official}.py; canonical
-  crop-based manifests data/manifests/canon_*.csv. Server git = fetch + reset --hard (see
-  docs/CHEATSHEET.md).
+`audit_all` covers label provenance, bucket balance, metadata shortcut, canonical-size, pixel
+canary, native-size, and within-size-bucket content checks. It does not invoke the standalone
+corpus or whole-manifest content audits.
+
+## Reproducibility conventions
+
+- Seeds default to 0; source-path hashing makes canonical crop selection deterministic.
+- The official COCO/DALL·E reference set is evaluation-only.
+- Product predictions use threshold 0.5 unless the caller supplies another value.
+- Every reported operating point must state whether its threshold is fixed, clean-calibrated,
+  slice-calibrated, or pooled-distribution-calibrated.
+- Generated score archives and most weights are ignored; the tracked logs listed in
+  [`docs/ROBUSTNESS.md`](docs/ROBUSTNESS.md) are the retained provenance for current headline
+  measurements.
+- Execution hosts are historical and may change; consult the dated changelog rather than treating a
+  machine name as part of the architecture.

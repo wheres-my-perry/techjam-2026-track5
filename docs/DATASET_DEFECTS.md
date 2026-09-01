@@ -6,7 +6,7 @@ and fixed it.
 
 Two rules earned the hard way and repeated throughout:
 
-1. **A published, peer-reviewed dataset is not a clean dataset.** OmniFake (arXiv 2509.25682) and
+1. **A public benchmark is not automatically a clean dataset.** OmniFake (arXiv 2509.25682) and
    ArtiFact both ship confounds that would train a detector on the wrong signal.
 2. **A passing gate is often blind, not clean.** Every automated check has something it physically
    cannot see. The column "how we found it" says `by eye` for the defects no script caught.
@@ -100,9 +100,12 @@ bug and "fixing" it would corrupt the labels.
 
 ---
 
-## 3. OmniFake (`MoeNew/OmniFake`, OmniDFA, arXiv 2509.25682)
+## 3. OmniFake ([`MoeNew/OmniFake`](https://huggingface.co/datasets/MoeNew/OmniFake),
+[OmniDFA](https://github.com/teheperinko541/OmniDFA), arXiv 2509.25682)
 
-A published, MIT-licensed, peer-reviewed dataset. It carries the same class of defect as ours.
+A public, MIT-licensed dataset whose project repository labels the work ECCV 2026. The local
+evaluation artifacts do not establish its review status, so this document does not use
+"peer-reviewed" as an unsupported quality claim. It carries the same class of defect as ours.
 
 ### 3.1 CRITICAL — the same native-size confound
 **Scope: OmniFake val split, all 45 generators.**
@@ -197,8 +200,13 @@ Measured both ways on an identical 2,364-image leak-checked set, at a 1% false-a
 
 | training data | AUROC | recall on partial edits | judges'-set recall |
 |---|---|---|---|
-| without partial edits (shipped) | 0.8374 | 23.3% | 97.0% |
+| `canon6_mlp` without partial edits (controlled baseline; not the shipped AlowLR checkpoint) | 0.8374 | 23.3% | 97.0% |
 | with partial edits (`canon6pe`) | **0.9788** | **72.1%** | 96.7% |
+
+This controlled pair measures the data change. The separately trained shipped
+`canon6_AlowLR` checkpoint catches 27.1% (320/1,182) on the same dedicated edit set; comparing its
+27.1% directly with `canon6pe`'s 72.1% would also change optimization, so it is not the controlled
+before/after result.
 
 ---
 
@@ -223,8 +231,9 @@ manifest the gate had FAILED. **Printing a failure is not enforcing it.**
 
 ### 7.4 The binding gate list was incomplete
 CLAUDE.md required three audits and named `content_audit` nowhere — the one tool that catches
-bedroom/church monotony. It was skipped and the bug returned at 92.7:1. All seven gates are now bound
-and run by one command.
+bedroom/church monotony. It was skipped and the bug returned at 92.7:1. All seven gates are now
+documented as required, but they still require the three commands shown below: `audit_all` does not
+invoke the standalone corpus or whole-manifest content audits.
 
 ### 7.5 Corpus-level defects no separability gate looks at
 Over 272,074 canonical files: 12 flat/blank images, 4 byte duplicates within train, 4 files appearing

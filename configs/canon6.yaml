@@ -1,4 +1,4 @@
-# canon6 — the single source of truth for everything that goes into training.
+# canon6 — the documented corpus/training contract for the final build.
 #
 # Thinh's rule (2026-08-31): keep everything involved in training in one config, then test
 # against it automatically. Before this, the corpus definition was scattered across
@@ -6,16 +6,17 @@
 # (hyperparameters), so changing one thing silently broke another — holding ddim out fixed
 # 'bedroom = fake' at 92.7:1 and simultaneously created it at 12.55:1 from the other side.
 #
-# tests/test_corpus_config.py asserts the BUILT manifests satisfy every invariant declared here.
-# Change this file, re-run the build, run the tests. Never edit the rules in the scripts.
+# tests/test_corpus_config.py checks selected rules against the BUILT manifests and builder
+# constants. The builder still contains executable routing constants, so a rule change must update
+# this file and the builder together, rebuild the manifests, and rerun the tests.
 
 name: canon6
 
 canonicalization:
-  # Seeded random CROP at native resolution: a crop is subtractive, so both classes come out the
-  # same size with zero resampling and no resize signature to learn. --long shrinks oversized
-  # images FIRST (never upscales) so large and small native images reach the model at one scale;
-  # legal only because every native-size bucket is class-balanced (see invariants).
+  # --long first downsizes images whose native long side exceeds 320 (never upscales), then a
+  # seeded random 176px crop makes every output the same size. Images at or below 320 retain native
+  # pixels; larger inputs contain a downsampling trace. This is label-neutral only when every
+  # native-size bucket is class-balanced (see invariants).
   long: 320
   crop: 176
   format: png
@@ -59,9 +60,9 @@ splits:
   val_frac: 0.1
   # Per class per native-size bucket in train.
   cap_bucket: 45000
-  # EQUAL images per native-size bucket (Thinh, 2026-08-31). --long 320 only shrinks images above
-  # 320, so <=341 reaches the model un-rescaled while 769-1024 is downscaled 2.4-3.2x, and
-  # downscaling attenuates the high-frequency structure detection depends on. An unequal split
+  # EQUAL images per native-size bucket (Thinh, 2026-08-31). --long 320 leaves native sizes <=320
+  # unscaled and modestly downsizes the 321-341 edge of the first bucket; 769-1024 is downscaled
+  # 2.4-3.2x. Downscaling attenuates the high-frequency structure detection depends on. An unequal split
   # (canon6 was 65% <=341) trains the model mostly in one forensic regime. null = disabled.
   equal_bucket: null
   seed: 0
@@ -80,15 +81,16 @@ training:
   real_weight: 2
   crop_min: 112
   crop_max: 168
-  # 40% of samples get a random stack of 2..6 transforms drawn from the brief's own grid, both
-  # classes alike. The brief limits WHICH transforms may be applied, not how many per image.
+  # The shipped run uses two consistency views. Independently for each view, 40% take the stack
+  # branch. That branch excludes center crop to preserve tensor shape and therefore draws 2..5
+  # distinct size-preserving families even though the requested command-line maximum is 6.
   stack_aug: 0.4
   stack_max: 6
 
 inference:
-  spec: "vote(L=320)+pe_ft"   # shrink long side to 320, mean-vote a 27-crop grid
-  # cut-off is DERIVED, never inherited: canon4's 0.15 came from a benchmark we cannot rebuild.
-  cutoff_rule: "1% false alarms on clean reals of the evaluation set"
+  spec: "vote(L=320)+pe_ft"   # downsize long side when >320; mean-vote at most 27 crop scores
+  product_cutoff: 0.5
+  evaluation_cutoff_rule: "state calibration per table; never imply set-specific cutoffs are the product cutoff"
 
 # What the built manifests must satisfy. tests/test_corpus_config.py enforces these.
 invariants:
@@ -104,9 +106,10 @@ invariants:
   max_metadata_auroc: 0.65             # shortcut_audit; blind to native size, see below
   max_canary_auroc: 0.65               # canary_audit; verified on the CHECKPOINT if exceeded
 
-# Gates that must run on every new or changed manifest. `python -m scripts.audit_all` runs them
-# all in one command precisely so none is forgotten — the old CLAUDE.md rule named only three of
-# six, and the one it omitted (content_audit) is the one that caught the bedroom bug.
+# Gates that must run on every new or changed manifest. audit_all runs the first five plus its own
+# native-size and within-bucket-content checks. corpus_audit and the standalone whole-manifest
+# content_audit must be invoked separately; see README.md. The old binding rule omitted
+# content_audit, which is the gate that caught the bedroom bug.
 gates:
   - label_provenance_audit   # labels re-derived from source, independent of the builder
   - bucket_audit             # class balance per native-size bucket

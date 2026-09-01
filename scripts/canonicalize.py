@@ -1,18 +1,17 @@
-"""Canonicalize a dataset: seeded-random CROP at native resolution (+ optional
-downscale-only pre-band for oversized images).
+"""Canonicalize a dataset: optional downscale-only normalization followed by a
+seeded random fixed-size crop.
 
     python -m scripts.canonicalize --manifest data/manifests/wildfake_train.csv \
         --out-dir data/canon/wf_train --out-manifest data/manifests/canon_wf_train.csv \
         --crop 176
 
-Kills the size->label shortcut (2026-08-28): every image, both classes, ends
-up the SAME fixed size via a random-position crop of native pixels — no
-resampling, so no resample signature to learn (Thinh's design). For datasets
-with oversized images, --band MIN MAX first downscales (never upscales,
-seeded random target, LANCZOS) into the range before cropping; downscale
-traces only ever appear in eval-only sets. Per-path seeded rng: deterministic
-per image, statistically independent of the label. Output PNG (one uniform
-format). Skips existing files (resume-free).
+Every image, both classes, ends at the same fixed dimensions. Without --long or
+--band the crop uses native pixels. Either option can downsample before cropping,
+so its resize trace can occur in training as well as evaluation; native-size
+bucket balance is required to keep that trace independent of the label. Neither
+option upscales. The per-path seeded RNG is deterministic per image and independent
+of the label. Output is one uniform PNG format. Existing files are skipped for
+resumability.
 """
 
 from __future__ import annotations
@@ -88,7 +87,7 @@ def main():
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--out-manifest", required=True)
     ap.add_argument("--crop", type=int, required=True,
-                    help="final square crop size (native pixels)")
+                    help="final square crop size in the preprocessed image")
     ap.add_argument("--band", type=int, nargs=2, default=None,
                     metavar=("MIN", "MAX"),
                     help="optional downscale-only pre-band for oversized images")

@@ -3,9 +3,9 @@
 Thinh's call (2026-08-29): swap the ResNet-50 trunk for PE-Core-L14-336, a
 ViT-L/14 CLIP-style encoder (316M params, 1024-d; well under the 2B limit).
 Loaded via timm `vit_pe_core_large_patch14_336.fb` with dynamic_img_size so
-it runs on our 112-168px native-resolution crops with interpolated position
-embeddings -- NO upscaling to 336 (that would reintroduce the resampling
-signature canonicalization removes).
+it runs directly on our 112-168px scoring-canvas crops with interpolated position
+embeddings -- there is no resize to 336. The outer vote wrapper may first normalize
+the input canvas and may upscale a short side below 112 px.
 
 Crop constraint: sides must be multiples of the 14px patch. The model
 declares CROP_MIN/MAX/STEP and the shared crop code (src.crops) and the
