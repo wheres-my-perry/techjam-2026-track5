@@ -61,6 +61,58 @@ reported from a manifest that fails them.
 
 ---
 
+## Architecture and loss
+
+```
+image ──► shrink long side to 320 ──► crop 112-168 px (multiple of 14)
+                                          |
+              PE-Core-L14-336 trunk  <-----+   timm: vit_pe_core_large_patch14_336.fb
+              24 transformer blocks            num_classes=0, dynamic_img_size=True
+                     |                         (position embeddings are interpolated --
+                   norm                         crops are NOT upscaled to 336, which would
+                     |                          reintroduce a resampling signature)
+                attn_pool  ------------->  e in R^1024      pooled embedding
+                                               |
+                       Linear(1024, 64) -------+
+                             GELU
+                       Linear(64, 1)  -------->  logit --> sigmoid --> P(AI)
+```
+
+**316,168,321 parameters**, under the brief's 2B limit; the head is 65,665 of them.
+
+**Loss.** Each training step takes one random crop per image and builds two independently corrupted
+views of that same crop — same pixels, different damage, no geometric change so the two are
+comparable. With embeddings `e1`, `e2` and logits from both views:
+
+```
+L = BCE_w(logit1, y) + BCE_w(logit2, y)      classification, both views
+    + alpha * ( 1 - cos(e1, e2) )            invariance on the trunk embedding
+
+BCE_w : per-sample weight 2.0 on real images, 1.0 on generated  (--real-weight 2)
+alpha : 3.0
+```
+
+The agreement term acts on the **trunk's 1024-d output** — the pretrained representation itself.
+That is the whole idea, and also its danger: applied at full strength to a freely-moving trunk it
+*degrades* robustness (transformed recall 96.8% -> 95.3%). It only helps when the trunk is
+restrained, which is why the trunk learning rate is cut 5x.
+
+| | |
+|---|---|
+| optimiser | AdamW, weight decay 0.05, fused |
+| **trunk LR** | **2e-6** (5x below the usual 1e-5) |
+| **head LR** | 1e-3 |
+| precision | bf16 autocast, fp32 weights, TF32 matmul |
+| gradient clip | 1.0 |
+| epochs | 4, checkpoint selected on best validation AUROC |
+| batch | 48 images x 2 views |
+
+**Measured effect.** The agreement term fell 0.0059 -> 0.0015 over four epochs while contributing
+4.4% -> 2.5% of the total loss. Against the identical model trained without it, recall on
+transformed images went **95.0% -> 98.6%** at the same 1% false-alarm rate.
+
+---
+
 ## Setup
 
 ```
