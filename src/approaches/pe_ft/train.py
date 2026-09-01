@@ -242,8 +242,8 @@ def main():
                          "every step (Thinh, 2026-09-01: 'I want similarity to contribute 1/5 "
                          "importance to the loss' -> 0.2). A FIXED alpha cannot do this: the "
                          "cosine disagreement shrinks as the model learns (0.0084 -> 0.0015 over "
-                         "four epochs at alpha 1.0), so the same alpha that gives a 20% share at "
-                         "epoch 1 gives 8% by epoch 4. Here the weight is recomputed per step as "
+                         "four epochs at alpha 1.0), so the same alpha that gives a 20%% share at "
+                         "epoch 1 gives 8%% by epoch 4. Here the weight is recomputed per step as "
                          "FRAC/(1-FRAC) * BCE/agree, both detached, which makes the share exactly "
                          "FRAC by construction.")
     ap.add_argument("--tau", type=float, default=0.1, help="NT-Xent temperature")
