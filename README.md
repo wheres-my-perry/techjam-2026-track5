@@ -92,7 +92,8 @@ BCE_w : per-sample weight 2.0 on real images, 1.0 on generated  (--real-weight 2
 alpha : 3.0
 ```
 
-The agreement term acts on the **trunk's 1024-d output** — the pretrained representation itself.
+The augmentation-consistency idea, and the restraint that makes it work, are Le Tuan Hoang's. The
+agreement term acts on the **trunk's 1024-d output** — the pretrained representation itself.
 That is the whole idea, and also its danger: applied at full strength to a freely-moving trunk it
 *degrades* robustness (transformed recall 96.8% -> 95.3%). It only helps when the trunk is
 restrained, which is why the trunk learning rate is cut 5x.
@@ -225,7 +226,7 @@ Four controlled experiments, each holding one variable against the baseline. Ful
 
 | change | result |
 |---|---|
-| **MLP head** 1024→64→1 instead of a linear layer | recall 94.9% → **97.0%** at the same false-alarm rate, for 65,600 extra parameters |
+| **MLP head** 1024→64→1 instead of a linear layer *(Le Kien Thanh)* | recall 94.9% → **97.0%** at the same false-alarm rate, for 65,600 extra parameters |
 | **Consistency loss on the pretrained trunk** | **negative** — transformed recall 96.8% → 95.3%. Forcing the embedding invariant to corruption suppresses the evidence that survives corruption |
 | ↳ same loss with the trunk **restrained** (frozen to its last block, or 5× lower LR) | **positive** — transformed recall 98.2–98.6% |
 | **Partially edited images added to training** | recall on edited photos 23.3% → **72.1%**, costing 0.3 points on the main benchmark |
@@ -300,7 +301,7 @@ app.py           Gradio demo   ·   tests/   pytest suite   ·   run_*.sh   job 
 | Name | Contribution | GitHub |
 |---|---|---|
 | **Le Tuan Hoang** | Technical and theoretical consultant; technical support (server, GPU, training-pipeline detail); main idea behind the shipped model | |
-| **Le Kien Thanh** | Sourcing datasets and producing additional data; running experiments on teammates' ideas | |
+| **Le Kien Thanh** | Sourcing datasets and producing additional data; running experiments on teammates' ideas; found the 1024→64→1 MLP head used in the shipped model | |
 | **Nguyen An Thinh** | Experimenting and implementing ideas; data cleaning; observations and feedback to teammates | natsupercell |
 | **Vo Khac Trieu** | Track 3 lead | |
 
