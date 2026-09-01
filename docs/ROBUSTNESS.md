@@ -1,52 +1,105 @@
-# Robustness under stacked augmentation
+# Robustness Evaluation Summary
 
-```
-ROBUSTNESS UNDER STACKED AUGMENTATION
-Row k = k DISTINCT transform families composed on the same image (6 = all of them).
-n = 400 judges' images per cell.
+**Deliverable 4.** Clean images versus transformed images, for the shipped model
+`canon6_AlowLR` (PE-Core-L14-336, 316.2M parameters).
 
-  cut-off per model (1% false alarms on that model's CLEAN reals):
-    MLP (shipped)      0.2927
-    canon6_A           0.1283
-    canon6_AlowLR      0.0483
-    canon6_B           0.1153
-    canon6_B6          0.1367
-    canon6_C           0.4132
-    canon6_mlp+edits   0.2355
+**Evaluation set.** DALL·E-3 Advanced versus COCO val2017 originals — the contest reference data,
+**never used in training** (0 rows in train, val or test, verified automatically).
 
-RECALL — AI images caught
-  augmentations  MLP (shipped     canon6_A canon6_AlowL     canon6_B    canon6_B6     canon6_C canon6_mlp+e
-  ---------------------------------------------------------------------------------------------------------
-  0 (clean)             98.4%        98.8%       100.0%        98.8%        98.8%       100.0%        99.6%
-  1                     98.8%        98.4%       100.0%        98.8%        98.8%        99.2%       100.0%
-  2                     98.8%        98.4%       100.0%        98.8%        98.8%        98.4%        99.2%
-  3                     98.8%        98.0%       100.0%        98.4%        98.8%        98.0%        99.2%
-  4                     99.2%        98.8%       100.0%        98.8%        99.6%        97.6%        99.6%
-  5                     99.2%        98.4%       100.0%        98.8%        99.2%        94.0%        98.8%
-  6 (all)               98.0%        98.4%        99.6%        99.6%        98.8%        94.8%        98.8%
-  ------------------------------------------------------------
-  drop 0->6             -0.4         -0.4         -0.4          0.8         -0.0         -5.2         -0.8 
+**Reading rule.** One cut-off per model, chosen once and then held fixed across every condition.
+Per-condition thresholds would flatter every number here and are unavailable in production, where
+you do not know what an image has been through. Counts are given alongside rates.
 
-AUROC
-  augmentations  MLP (shipped     canon6_A canon6_AlowL     canon6_B    canon6_B6     canon6_C canon6_mlp+e
-  ---------------------------------------------------------------------------------------------------------
-  0 (clean)            0.9991       0.9969       1.0000       0.9988       0.9995       1.0000       0.9998
-  1                    0.9977       0.9951       0.9998       0.9971       0.9966       0.9995       0.9991
-  2                    0.9973       0.9950       0.9997       0.9965       0.9964       0.9992       0.9975
-  3                    0.9941       0.9934       0.9993       0.9921       0.9936       0.9972       0.9932
-  4                    0.9965       0.9942       0.9997       0.9910       0.9941       0.9954       0.9938
-  5                    0.9944       0.9887       0.9979       0.9886       0.9913       0.9883       0.9881
-  6 (all)              0.9907       0.9904       0.9968       0.9880       0.9879       0.9815       0.9865
+---
 
-FALSE ALARMS — real photos wrongly flagged
-  (a model can hold recall by drifting every score up; this is the check)
-  augmentations  MLP (shipped     canon6_A canon6_AlowL     canon6_B    canon6_B6     canon6_C canon6_mlp+e
-  ---------------------------------------------------------------------------------------------------------
-  0 (clean)              1.3%         1.3%         1.3%         1.3%         1.3%         1.3%         1.3%
-  1                      2.6%         2.0%         5.3%         3.9%         2.6%         2.6%         9.2%
-  2                      3.9%         3.9%        14.5%        13.2%         7.2%         1.3%        15.8%
-  3                      9.9%         7.2%        25.0%        24.3%         9.2%         2.6%        25.7%
-  4                      9.2%        10.5%        32.2%        32.2%        15.1%         3.3%        31.6%
-  5                     13.8%        12.5%        42.8%        41.4%        17.1%         3.9%        34.9%
-  6 (all)               19.1%        11.8%        50.7%        48.0%        22.4%         5.3%        40.8%
-```
+## 1. Clean versus transformed
+
+900 images clean, the same 900 under each of the brief's 14 transforms.
+
+| | clean | **transformed** | 50/50 mix |
+|---|---|---|---|
+| images scored | 900 | 12,600 | 1,800 |
+| **AI images caught** | **100.0%** — 574 / 574 | **98.6%** — 7,922 / 8,036 | **99.3%** — 1,147 / 1,155 |
+| real photos wrongly flagged | 4 / 326 | 46 / 4,564 | 7 / 645 |
+| **AUROC** | 0.9999 | **0.9995** | 0.9998 |
+
+Mean AUROC across the 14 transformed conditions: **0.9995**; worst single condition **0.9982**
+(Gaussian noise σ0.10).
+
+**The cost of transformation is 1.4 points of recall** at an unchanged false-alarm rate.
+
+The 50/50 row is reported because scoring is roughly half clean and half transformed; pooling all
+15 conditions equally is ~7% clean and answers neither question.
+
+---
+
+## 2. Where it actually degrades: stacked transforms
+
+No single transform is hard. Composing several on one image is. Depth *k* means *k* **distinct**
+transform families applied to the same image — distinct rather than repeated, because repeating one
+family only compounds a single artefact, while distinct families are what a repost chain does.
+
+400 images per cell, cut-off fixed at 1% false alarms on the pooled distribution the model meets.
+
+| transforms stacked | 0 | 1 | 2 | 3 | 4 | 5 | **6 (all)** |
+|---|---|---|---|---|---|---|---|
+| **AI caught** | 99.2% | 98.8% | 98.8% | 98.4% | 99.6% | 99.2% | **98.8%** |
+| **real flagged** | 0.0% | 0.0% | 0.7% | 0.7% | 0.7% | 2.6% | **2.6%** |
+| **AUROC** | 1.0000 | 0.9998 | 0.9997 | 0.9993 | 0.9997 | 0.9979 | **0.9968** |
+
+**The model loses 0.4 points of recall going from a clean image to all six transform families
+stacked on one.** That is the honest floor of this detector.
+
+---
+
+## 3. Why the shipped model was chosen
+
+Seven models were trained on identical data, each changing one variable. Recall and false alarms
+with all six transforms stacked, at one fixed cut-off:
+
+| model | AI caught | real flagged | balanced |
+|---|---|---|---|
+| **`canon6_AlowLR`** — shipped | **98.8%** | 2.6% | **98.1** |
+| `canon6_A` — same loss, unrestrained trunk | 94.8% | 2.0% | 96.4 |
+| `canon6_mlp` + tampered images in training | 94.4% | 2.0% | 96.2 |
+| `canon6_B` — constraint on a head-owned layer | 94.0% | 3.3% | 95.3 |
+| `canon6_mlp` — baseline, no constraint | 92.3% | 2.0% | 95.2 |
+| `canon6_B6` — same as B, stronger constraint | 92.7% | 2.6% | 95.1 |
+| `canon6_C` — trunk frozen to its last block | 87.9% | 2.0% | 93.0 |
+
+The shipped model applies an augmentation-consistency constraint to the pretrained trunk embedding
+**with the trunk learning rate reduced 5×**. The same constraint on a freely-moving trunk
+(`canon6_A`) is *worse* than no constraint at all on transformed images. The idea works only when
+the pretrained representation is restrained while it is applied.
+
+---
+
+## 4. Other evaluation sets
+
+| set | what it tests | n | AUROC | recall | false alarms |
+|---|---|---|---|---|---|
+| Held-out test, 33 generators, 8 never trained on | unseen generators | 45,000 | 0.9580 | 73.7% | 1.00% |
+| 25 real-world files × 15 conditions | **sanity check only** | 375 | 0.9624 | 267 / 300 | 1 / 75 |
+
+The second is a **validator, not a benchmark** — 25 files drawn from 5 source photographs is far too
+small to rank models on, and it is used only to confirm sane behaviour on real-world images.
+
+The held-out figure is depressed almost entirely by tampered photographs, which are out of scope:
+`generative_inpainting` 32.6%, `sid_tampered` 42.1%, `lama` 60.6%, `mat` 72.5%, while **every
+fully-generated family is caught at 90–100%**. On a dedicated leak-checked set of 2,364 tampered
+images the shipped model catches **27.1%** (320 / 1,182) at 12 false alarms in 1,182 real photos.
+
+---
+
+## 5. Limits of this summary
+
+1. **The cut-off must not be chosen on clean images.** A clean-only cut-off flags 22.9% of real
+   photographs under JPEG q30, because compression shifts every score upward. Every figure above
+   uses a cut-off fitted to the mixed distribution.
+2. **Validation was scored on clean images** while training and test were augmented, so checkpoint
+   selection was blind to robustness. Fixed after the shipped model was trained.
+3. **Cross-generator-family generalisation is out of scope** and evaluated only as an experiment;
+   AUROC holds while fixed-threshold recall falls, which is a calibration shift, not a ranking
+   failure.
+
+Regenerate: `python -m scripts.depth_ladder <models> --md docs/ROBUSTNESS.md`

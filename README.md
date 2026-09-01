@@ -45,9 +45,9 @@ pass; that experiment was still running at submission time and is not reported h
 
 **Scope: fully real or fully generated images.** Tampered photographs are explicitly out of scope for
 this prototype, for the reason above. We measured the failure rather than omitting it, and we
-measured the data-side fix: adding tampered images to training raises recall on them from 23.3% to
-72.1% at an unchanged false-alarm rate, costing 0.3 points on the main benchmark (measured on the
-MLP-head variant, not the shipped checkpoint).
+measured the data-side fix. The shipped model catches **27.1%** of tampered images (320 of 1,182,
+at 12 false alarms in 1,182 real photographs); adding tampered images to training raises that to
+**72.1%** at an unchanged false-alarm rate, costing 0.3 points on the main benchmark.
 
 **Training.** Augmentation mirrors the contest grid, and goes further: 40% of samples receive a
 random **stack of 2–6 transforms**, because the brief's "a subset of the following augmentations"
