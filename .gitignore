@@ -57,3 +57,6 @@ outputs/
 # Superseded material and private notes — kept locally, never pushed (public repo)
 archive/
 CLAUDE.md
+
+# Experiment sandbox — a copy of the tree, never published
+exp/
