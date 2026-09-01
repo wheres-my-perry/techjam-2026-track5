@@ -8,7 +8,7 @@ destroyed (greyscale) and with the channels permuted (BGR). If AUROC survives
 both, the decision is not a palette or colour-statistics shortcut.
 
     python -m scripts.style_check --manifest data/manifests/canon6_test.csv \
-        --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt" --limit 1500
+        --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt" --limit 1500
 """
 from __future__ import annotations
 

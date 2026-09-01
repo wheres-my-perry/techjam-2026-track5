@@ -12,7 +12,7 @@ Expects a directory tree whose top-level folders name the class/generator, e.g. 
     <root>/<Generator>/**     -> label 1, generator = folder name
 
     python -m scripts.eval_external --root data/omnival/data/x_val \
-        --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt" --per-class 400 \
+        --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt" --per-class 400 \
         --train data/manifests/canon6_train.csv --out outputs/pe_ft/external_omnifake.json
 """
 from __future__ import annotations

@@ -5,7 +5,7 @@ NAME: this is the HACK SET, after the folder it lives in. It was called the "wil
 collides with WildFake -- one of our actual datasets -- and was ambiguous in every report. Reports per-file scores, accuracy
 at 0.5 and AUROC. This is the number that reflects the demo, not the benchmark.
 
-    python -m scripts.wild_eval --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt"
+    python -m scripts.wild_eval --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt"
 """
 from __future__ import annotations
 

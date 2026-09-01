@@ -1,5 +1,4 @@
 -r requirements.txt
-torch>=2.1
 datasets>=2.16
 open_clip_torch>=2.24
 modelscope>=1.14

@@ -16,7 +16,7 @@ what they say.
 - Brief, verbatim: [docs/TRACK5_BRIEF_ORIGINAL.md](docs/TRACK5_BRIEF_ORIGINAL.md)
 - Robustness evaluation summary: [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md)
 - Every dataset defect we found: [docs/DATASET_DEFECTS.md](docs/DATASET_DEFECTS.md)
-- Full experimental log: [docs/REPORT.md](docs/REPORT.md) · [CHANGELOG.md](CHANGELOG.md)
+- Change log: [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -33,8 +33,21 @@ identical crop protocol the transformer scored 0.964 against the CNN's 0.792. Th
 with the hypothesis but is **not** a controlled test: the two also differ in size and pre-training.
 
 **Inference.** Shrink the long side to 320, score a **27-crop grid** (3×3 positions × 3 crop sizes,
-112–168 px, always at native resolution, never upscaled), mean-aggregate. Whole-image scoring at
-unseen resolutions *inverted* on our tests (AUROC 0.207); crop voting fixed it.
+112–168 px, always at native resolution, never upscaled), and average the crop scores.
+
+**We are not defending the crop averaging.** It is a carry-over from an earlier line of work that we
+did not have time to remove, and it is the direct cause of our weakest result. On a *tampered*
+photograph — an authentic image with one region replaced — the edited region falls in only a few of
+the 27 crops, so the average is pulled toward the authentic majority and the model's confidence is
+systematically depressed. Fully generated images are unaffected, because every crop carries the
+evidence. Given more time we would have removed the crop grid and scored the whole image in a single
+pass; that experiment was still running at submission time and is not reported here.
+
+**Scope: fully real or fully generated images.** Tampered photographs are explicitly out of scope for
+this prototype, for the reason above. We measured the failure rather than omitting it, and we
+measured the data-side fix: adding tampered images to training raises recall on them from 23.3% to
+72.1% at an unchanged false-alarm rate, costing 0.3 points on the main benchmark (measured on the
+MLP-head variant, not the shipped checkpoint).
 
 **Training.** Augmentation mirrors the contest grid, and goes further: 40% of samples receive a
 random **stack of 2–6 transforms**, because the brief's "a subset of the following augmentations"
@@ -156,8 +169,7 @@ recall at depth 6. Full table for all models: [docs/ROBUSTNESS.md](docs/ROBUSTNE
 
 ## What we measured
 
-Four controlled experiments, each holding one variable against the baseline. Full numbers in
-[docs/REPORT.md](docs/REPORT.md).
+Four controlled experiments, each holding one variable against the baseline. Full numbers in [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md).
 
 | change | result |
 |---|---|

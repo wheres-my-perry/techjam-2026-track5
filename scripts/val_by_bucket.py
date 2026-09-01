@@ -11,7 +11,7 @@ and is where more data should go.
 Prints, per bucket: n, AUROC, and recall/false-alarm at one shared cut-off, alongside how many
 TRAINING images that bucket had -- so the two can be read together.
 
-    python -m scripts.val_by_bucket --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6.pt" \
+    python -m scripts.val_by_bucket --model "vote(L=320)+pe_ft:outputs/pe_ft/canon6_AlowLR.pt" \
         --manifest data/manifests/canon6_val.csv --train data/manifests/canon6_train.csv
 """
 from __future__ import annotations
