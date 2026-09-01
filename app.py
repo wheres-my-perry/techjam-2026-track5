@@ -92,6 +92,15 @@ def score_image(img, transform, dense: bool):
             heat[y0:y1, x0:x1] += vs[i]; cnt[y0:y1, x0:x1] += 1; i += 1
     seen = cnt > 0
     heat[seen] /= cnt[seen]
+    # Smooth the map so the sampling lattice is not visible. The values are the model's real
+    # scores; blurring only removes the block edges of the regions they were computed over, which
+    # are an implementation detail and were misleading on screen.
+    from PIL import ImageFilter as _IF
+    _r = max(8, min(wv, hv) // 12)
+    heat = np.asarray(Image.fromarray((heat * 255).astype(np.uint8)).filter(
+        _IF.GaussianBlur(_r)), dtype=np.float32) / 255.0
+    seen = np.asarray(Image.fromarray((seen * 255).astype(np.uint8)).filter(
+        _IF.GaussianBlur(_r)), dtype=np.float32) / 255.0 > 0.15
     base = img.resize((wv, hv)) if upscaled else img
     over = np.array(base).astype(np.float32)
     col = np.zeros_like(over)
